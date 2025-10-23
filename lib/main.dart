@@ -13,6 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "PT Kita",
+      theme: ThemeData(fontFamily: 'Poppins'),
       home: WelcomeScreen(),
     );
   }
