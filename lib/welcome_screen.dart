@@ -90,7 +90,7 @@ class WelcomeScreen extends StatelessWidget {
                             );
                           },
                           child: Container(
-                            width: 210,
+                            width: 180,
                             height: 45,
                             decoration: BoxDecoration(
                               color: MyColors.primary,
@@ -116,7 +116,7 @@ class WelcomeScreen extends StatelessWidget {
                             );
                           },
                           child: Container(
-                            width: 210,
+                            width: 180,
                             height: 45,
                             decoration: BoxDecoration(
                               color: MyColors.tertiary,
