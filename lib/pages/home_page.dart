@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
 
-class Home extends StatelessWidget {
-  const Home({super.key});
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {

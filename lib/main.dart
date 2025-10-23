@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/welcome_screen.dart';
+import 'package:flutter_kita/pages/welcome_screen_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: "PT Kita",
       theme: ThemeData(fontFamily: 'Poppins'),
-      home: WelcomeScreen(),
+      home: WelcomeScreenPage(),
     );
   }
 }

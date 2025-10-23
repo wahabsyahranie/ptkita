@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/Login.dart';
-import 'package:flutter_kita/home.dart';
-import 'package:flutter_kita/register.dart';
+import 'package:flutter_kita/pages/home_page.dart';
+import 'package:flutter_kita/pages/register_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
-class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+class WelcomeScreenPage extends StatelessWidget {
+  const WelcomeScreenPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +84,7 @@ class WelcomeScreen extends StatelessWidget {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => Register(),
+                                builder: (context) => RegisterPage(),
                               ),
                             );
                           },
@@ -112,7 +111,9 @@ class WelcomeScreen extends StatelessWidget {
                         InkWell(
                           onTap: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (context) => Home()),
+                              MaterialPageRoute(
+                                builder: (context) => HomePage(),
+                              ),
                             );
                           },
                           child: Container(
