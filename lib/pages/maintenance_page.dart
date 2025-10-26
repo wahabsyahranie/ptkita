@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
 
 class MaintenancePage extends StatelessWidget {
   const MaintenancePage({super.key});
