@@ -3,6 +3,7 @@ import 'package:flutter_kita/pages/maintenance_page.dart';
 import 'package:flutter_kita/pages/repair_history_page.dart';
 import 'package:flutter_kita/pages/transaction_history_page.dart';
 import 'package:flutter_kita/pages/user_page.dart';
+import 'package:flutter_kita/pages/warranty_history_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class NavigationDrawerWidget extends StatelessWidget {
@@ -53,6 +54,12 @@ class NavigationDrawerWidget extends StatelessWidget {
               icon: Icons.tire_repair_outlined,
               onClicked: () => selectedItem(context, 2),
             ),
+            const SizedBox(height: 16),
+            buildMenuItem(
+              text: 'Riwayat Garansi',
+              icon: Icons.newspaper_sharp,
+              onClicked: () => selectedItem(context, 3),
+            ),
             const SizedBox(height: 24),
             Divider(color: MyColors.secondary),
             const SizedBox(height: 24),
@@ -95,6 +102,11 @@ class NavigationDrawerWidget extends StatelessWidget {
         Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (context) => RepairHistoryPage()));
+        break;
+      case 3:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => WarrantyHistoryPage()));
         break;
     }
   }
