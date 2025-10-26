@@ -19,9 +19,9 @@ class NavigationDrawerWidget extends StatelessWidget {
 
     return Drawer(
       child: Material(
-        color: MyColors.primary,
+        color: MyColors.secondary,
         child: ListView(
-          // padding: EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 40),
           children: <Widget>[
             buildHeader(
               urlImage: urlImage,
@@ -61,7 +61,7 @@ class NavigationDrawerWidget extends StatelessWidget {
               onClicked: () => selectedItem(context, 3),
             ),
             const SizedBox(height: 24),
-            Divider(color: MyColors.secondary),
+            Divider(color: MyColors.white),
             const SizedBox(height: 24),
             buildMenuItem(text: 'Log Out', icon: Icons.logout),
           ],
@@ -167,8 +167,8 @@ class NavigationDrawerWidget extends StatelessWidget {
           const SizedBox(width: 10),
           CircleAvatar(
             radius: 24,
-            backgroundColor: MyColors.secondary,
-            child: Icon(Icons.add_comment_outlined, color: Colors.white),
+            backgroundColor: MyColors.white,
+            child: Icon(Icons.add_comment_outlined, color: MyColors.secondary),
           ),
         ],
       ),
