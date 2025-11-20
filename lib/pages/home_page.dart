@@ -1,7 +1,8 @@
-import 'package:circle_nav_bar/circle_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
+import 'package:flutter_kita/widget/search_bar_widget.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -80,67 +81,14 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 25),
 
               //SEARCH BAR
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: MyColors.secondary, width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.search, color: MyColors.secondary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        style: TextStyle(
-                          color: MyColors.secondary,
-                          fontWeight: FontWeight.w400,
-                          fontSize: 16,
-                        ),
-                        cursorColor: MyColors.secondary,
-                        decoration: InputDecoration(
-                          hintText: 'Cari sesuatu...',
-                          hintStyle: TextStyle(
-                            color: MyColors.secondary.withOpacity(0.7),
-                            fontSize: 16,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              SearchBarWidget(),
             ],
           ),
         ),
       ),
 
       //NAVIGASI BAWAH MENGGUNAKAN PUB.dev
-      bottomNavigationBar: CircleNavBar(
-        onTap: null,
-        height: 60,
-        circleWidth: 50,
-        circleColor: MyColors.secondary,
-        activeIndex: 1,
-        activeIcons: [
-          Icon(Icons.home, color: MyColors.background),
-          Icon(Icons.qr_code, color: MyColors.white),
-          Icon(Icons.home_repair_service, color: MyColors.background),
-        ],
-        inactiveIcons: [
-          Icon(Icons.home, color: MyColors.background),
-          Icon(Icons.qr_code, color: MyColors.secondary),
-          Icon(Icons.home_repair_service, color: MyColors.background),
-        ],
-        color: MyColors.secondary,
-        cornerRadius: const BorderRadius.only(
-          topLeft: Radius.circular(14),
-          topRight: Radius.circular(14),
-        ),
-        shadowColor: MyColors.tertiary,
-        circleShadowColor: MyColors.tertiary,
-      ),
+      bottomNavigationBar: NavigationBottomWidget(),
     );
   }
 }
