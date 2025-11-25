@@ -13,6 +13,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // 👉 menambah controller search bar di sini
+  final TextEditingController _search = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
 
@@ -92,7 +94,8 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               const SizedBox(height: 25),
-              SearchBarWidget(),
+              // search bar versi baru
+              SearchBarWidget(controller: _search),
             ],
           ),
         ),
