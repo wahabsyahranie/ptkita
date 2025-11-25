@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/pages/home_page.dart';
 import 'package:flutter_kita/pages/login_page.dart';
-import 'package:flutter_kita/pages/register_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class WelcomeScreenPage extends StatelessWidget {
@@ -23,7 +21,7 @@ class WelcomeScreenPage extends StatelessWidget {
               ),
               child: Container(
                 width: double.infinity,
-                height: 555,
+                height: MediaQuery.of(context).size.height * 0.6,
                 decoration: BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage('assets/images/welcome_image.jpg'),

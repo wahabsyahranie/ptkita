@@ -106,7 +106,7 @@ class NavigationDrawerWidget extends StatelessWidget {
       case 3:
         Navigator.of(
           context,
-        ).push(MaterialPageRoute(builder: (context) => WarrantyHistoryPage()));
+        ).push(MaterialPageRoute(builder: (context) => DataGaransiPage()));
         break;
     }
   }
