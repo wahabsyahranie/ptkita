@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
-import 'package:flutter_kita/widget/search_bar_widget.dart';
 
+/// Data Garansi page
+/// - Search bar
+/// - Filter (All / Aktif / Non-Aktif)
+/// - Kartu garansi versi baru (badge sejajar nama, tanggal kanan)
+/// - Pull-to-refresh & random data (sementara)
 class DataGaransiPage extends StatefulWidget {
   const DataGaransiPage({super.key});
 
@@ -14,7 +17,7 @@ class DataGaransiPage extends StatefulWidget {
 class _DataGaransiPageState extends State<DataGaransiPage> {
   final TextEditingController _search = TextEditingController();
   List<Map<String, dynamic>> _items = [];
-  String _statusFilter = 'all'; // all | active | non
+  String _statusFilter = 'all'; // 'all' | 'active' | 'non'
 
   @override
   void initState() {
@@ -39,25 +42,21 @@ class _DataGaransiPageState extends State<DataGaransiPage> {
   Widget build(BuildContext context) {
     const pageBg = Color(0xFFF7F6F3);
     final query = _search.text.trim().toLowerCase();
-
     final filtered = _items.where((e) {
       if (query.isNotEmpty) {
         final qmatch =
-            e['buyer'].toString().toLowerCase().contains(query) ||
-            e['product'].toString().toLowerCase().contains(query) ||
-            e['serial'].toString().toLowerCase().contains(query);
+            (e['buyer'] as String).toLowerCase().contains(query) ||
+            (e['product'] as String).toLowerCase().contains(query) ||
+            (e['serial'] as String).toLowerCase().contains(query);
         if (!qmatch) return false;
       }
-
-      if (_statusFilter == 'active') return e['active'] == true;
-      if (_statusFilter == 'non') return e['active'] == false;
-
+      if (_statusFilter == 'active') return (e['active'] as bool) == true;
+      if (_statusFilter == 'non') return (e['active'] as bool) == false;
       return true; // all
     }).toList();
 
     return Scaffold(
       backgroundColor: pageBg,
-
       appBar: AppBar(
         title: const Text('Data Garansi'),
         backgroundColor: pageBg,
@@ -74,21 +73,19 @@ class _DataGaransiPageState extends State<DataGaransiPage> {
           onPressed: () => Navigator.maybePop(context),
         ),
       ),
-
       body: SafeArea(
         child: Column(
           children: [
-            // 🔍 Search Bar — sudah memakai widget global
+            // Search bar
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: SearchBarWidget(
+              child: _SearchBar(
                 controller: _search,
-                hintText: 'Nama Pembeli / No Seri Pembelian',
                 onChanged: () => setState(() {}),
               ),
             ),
 
-            // 🔘 Filter Chips
+            // Filter chips (All / Aktif / Non-Aktif)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Row(
@@ -114,7 +111,7 @@ class _DataGaransiPageState extends State<DataGaransiPage> {
               ),
             ),
 
-            // 📄 List Data
+            // list
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _onRefresh,
@@ -143,23 +140,67 @@ class _DataGaransiPageState extends State<DataGaransiPage> {
           ],
         ),
       ),
-
-      // 🟫 Bottom Navigation — sudah pakai widget global
-      bottomNavigationBar: const NavigationBottomWidget(),
     );
   }
 }
 
-/* =========================
-   Filter Chip
-   ========================= */
+/// Search bar widget (keadaan stateless; parent memaksa rebuild)
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({required this.controller, required this.onChanged});
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: MyColors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: MyColors.secondary.withOpacity(0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, color: MyColors.secondary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: (_) => onChanged(),
+              decoration: InputDecoration(
+                hintText: 'Nama Pembeli / No Seri Pembelian',
+                hintStyle: TextStyle(
+                  color: MyColors.secondary.withOpacity(0.6),
+                ),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+            ),
+          ),
+          if (controller.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                controller.clear();
+                onChanged();
+              },
+              child: Icon(
+                Icons.close_rounded,
+                color: MyColors.secondary.withOpacity(0.7),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// small toggle-like chip button
 class _FilterChipButton extends StatelessWidget {
   const _FilterChipButton({
     required this.label,
     required this.active,
     required this.onTap,
   });
-
   final String label;
   final bool active;
   final VoidCallback onTap;
@@ -191,7 +232,9 @@ class _FilterChipButton extends StatelessWidget {
 }
 
 /* =========================
-   Card Garansi
+   Card widget (badge aligned with buyer name)
+   - top row: badge | buyer (left) --- date (right)
+   - below: product (bold) and subtitle
    ========================= */
 class _DataGaransiCard extends StatelessWidget {
   const _DataGaransiCard({required this.data});
@@ -199,16 +242,18 @@ class _DataGaransiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = data['active'] as bool;
+    final bool active = data['active'] as bool;
+    final dateText = data['dateText'] as String;
     final buyer = data['buyer'] as String;
     final product = data['product'] as String;
-    final dateText = data['dateText'] as String;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {},
+        onTap: () {
+          // TODO: Navigator.push to detail page (pass data)
+        },
         child: Container(
           decoration: BoxDecoration(
             color: MyColors.white,
@@ -226,7 +271,7 @@ class _DataGaransiCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔘 Badge + Buyer + Tanggal
+                // top row: badge + buyer + date
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -238,6 +283,7 @@ class _DataGaransiCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
+                          color: Colors.black87,
                         ),
                       ),
                     ),
@@ -254,6 +300,7 @@ class _DataGaransiCard extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
+                // product title
                 Text(
                   product,
                   style: const TextStyle(
@@ -264,8 +311,9 @@ class _DataGaransiCard extends StatelessWidget {
 
                 const SizedBox(height: 6),
 
+                // subtitle
                 Text(
-                  data['subtitle'],
+                  data['subtitle'] as String,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.black.withOpacity(0.6),
@@ -280,9 +328,7 @@ class _DataGaransiCard extends StatelessWidget {
   }
 }
 
-/* =========================
-   Badge status
-   ========================= */
+/// mini badge (same as before)
 class _MiniBadge extends StatelessWidget {
   const _MiniBadge({required this.active});
   final bool active;
@@ -308,12 +354,18 @@ class _MiniBadge extends StatelessWidget {
 }
 
 /* =========================
-   Dummy generator
+   Dummy generator (only allowed subtitle values)
    ========================= */
 List<Map<String, dynamic>> _generateRandomData(int count) {
   final rnd = Random();
-
-  final buyers = ['Abdul Muhgni', 'Fahlevy', 'Rafli', 'Aulia', 'Nadia'];
+  final buyers = [
+    'Abdul Muhgni',
+    'Fahlevy',
+    'Rafli',
+    'Aulia',
+    'Nadia',
+    'Bintang',
+  ];
   final products = [
     'Alkon Hyundai',
     'Bor Listrik',
@@ -347,7 +399,6 @@ List<Map<String, dynamic>> _generateRandomData(int count) {
   return List.generate(count, (_) {
     final d = DateTime.now().subtract(Duration(days: rnd.nextInt(1000)));
     final active = rnd.nextBool();
-
     return {
       'buyer': buyers[rnd.nextInt(buyers.length)],
       'product': products[rnd.nextInt(products.length)],

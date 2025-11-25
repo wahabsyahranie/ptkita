@@ -1,13 +1,15 @@
-import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class NavigationBottomWidget extends StatelessWidget {
   final int activeIndex;
-  final ValueChanged<int>? onTap;
+  final ValueChanged<int> onTap;
 
-  const NavigationBottomWidget({super.key, this.activeIndex = 0, this.onTap});
+  const NavigationBottomWidget({
+    super.key,
+    required this.activeIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,7 @@ class NavigationBottomWidget extends StatelessWidget {
           children: [
             // Left icon (index 0)
             IconButton(
-              onPressed: () => onTap?.call(0),
+              onPressed: () => onTap(0),
               icon: Icon(Icons.home, color: MyColors.background),
             ),
 
@@ -32,7 +34,7 @@ class NavigationBottomWidget extends StatelessWidget {
               children: [
                 // Right-of-center icon (index 2)
                 IconButton(
-                  onPressed: () => onTap?.call(2),
+                  onPressed: () => onTap(2),
                   icon: Icon(
                     Icons.home_repair_service,
                     color: MyColors.background,
