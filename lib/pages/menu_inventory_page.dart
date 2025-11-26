@@ -13,8 +13,13 @@ class MenuInventoryPage extends StatefulWidget {
 
 class _MenuInventoryPageState extends State<MenuInventoryPage> {
   final ScrollController _scrollController = ScrollController();
-  int itemsToShow = 5; // jumlah awal yang ditampilkan
-  final int _increment = 2; // bertambah berapa tiap load more
+  int itemsToShow = 6; // jumlah awal yang ditampilkan
+  final int _increment = 6; // bertambah berapa tiap load more
+
+  // ====== ADDED: search controller & query ======
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+  // =============================================
 
   @override
   void initState() {
@@ -36,6 +41,9 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
   void dispose() {
     _scrollController.removeListener(() {});
     _scrollController.dispose();
+    // ====== ADDED: dispose search controller ======
+    _searchCtrl.dispose();
+    // =============================================
     super.dispose();
   }
 
@@ -75,7 +83,18 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
           padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
           child: Column(
             children: [
-              SearchBarWidget(),
+              // ====== MODIFIED: attach controller + onChanged so search works ======
+              SearchBarWidget(
+                controller: _searchCtrl,
+                hintText: 'Cari nama atau SKU',
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase().trim();
+                    // reset pagination when query changes (optional but UX-friendly)
+                    itemsToShow = 5;
+                  });
+                },
+              ),
               const SizedBox(height: 10),
 
               // StreamBuilder untuk realtime updates
@@ -101,11 +120,22 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
 
                     final allItems = docs.map((d) => d.data()).toList();
 
-                    // Batasi sesuai itemsToShow
-                    if (itemsToShow > allItems.length) {
-                      itemsToShow = allItems.length;
-                    }
-                    final showing = allItems.take(itemsToShow).toList();
+                    // ====== ADDED: filter client-side using _searchQuery ======
+                    final filtered = _searchQuery.isEmpty
+                        ? allItems
+                        : allItems.where((item) {
+                            final name = (item.name ?? '').toLowerCase();
+                            final sku = (item.sku ?? '').toLowerCase();
+                            return name.contains(_searchQuery) ||
+                                sku.contains(_searchQuery);
+                          }).toList();
+                    // =================================================================
+
+                    // Batasi sesuai itemsToShow (apply pagination to filtered list)
+                    final effectiveCount = itemsToShow > filtered.length
+                        ? filtered.length
+                        : itemsToShow;
+                    final showing = filtered.take(effectiveCount).toList();
 
                     return GridView.builder(
                       controller: _scrollController,
