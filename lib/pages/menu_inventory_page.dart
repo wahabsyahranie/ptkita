@@ -87,7 +87,11 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
                       return Center(child: Text('Error: ${snapshot.error}'));
                     }
                     if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: MyColors.secondary,
+                        ),
+                      );
                     }
 
                     final docs = snapshot.data!.docs;
@@ -169,7 +173,34 @@ class _BarangBox extends StatelessWidget {
                   child: AspectRatio(
                     aspectRatio: 3 / 2,
                     child: imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(imageUrl, fit: BoxFit.cover)
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) {
+                                return child;
+                              }
+
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  color: MyColors.secondary,
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Icon(Icons.broken_image, size: 40),
+                                ),
+                              );
+                            },
+                          )
                         : Container(
                             color: Colors.grey[100],
                             child: const Center(
