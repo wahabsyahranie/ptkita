@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_kita/models/item_model.dart';
 
 class MenuInventoryPage extends StatefulWidget {
   const MenuInventoryPage({super.key});
@@ -10,8 +12,43 @@ class MenuInventoryPage extends StatefulWidget {
 }
 
 class _MenuInventoryPageState extends State<MenuInventoryPage> {
+  final ScrollController _scrollController = ScrollController();
+  int itemsToShow = 5; // jumlah awal yang ditampilkan
+  final int _increment = 2; // bertambah berapa tiap load more
+
+  @override
+  void initState() {
+    super.initState();
+
+    // listener untuk infinite scroll (UI-side pagination)
+    _scrollController.addListener(() {
+      // jika sudah hampir di ujung bawah, tambah itemsToShow
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 120) {
+        setState(() {
+          itemsToShow += _increment;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(() {});
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final col = FirebaseFirestore.instance
+        .collection('items')
+        .withConverter<Item>(
+          fromFirestore: Item.fromFirestore,
+          toFirestore: (Item item, _) => item.toFirestore(),
+        )
+        .orderBy('name');
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -40,25 +77,46 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
             children: [
               SearchBarWidget(),
               const SizedBox(height: 10),
+
+              // StreamBuilder untuk realtime updates
               Expanded(
-                child: ListView.builder(
-                  itemCount: 20,
-                  itemBuilder: (context, index) {
-                    final nomor = index + 1;
+                child: StreamBuilder<QuerySnapshot<Item>>(
+                  stream: col.snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Row(
-                        children: [
-                          // Kotak kiri
-                          Expanded(child: _BarangBox(title: 'Barang $nomor')),
+                    final docs = snapshot.data!.docs;
+                    if (docs.isEmpty) {
+                      return const Center(child: Text('Belum ada data.'));
+                    }
 
-                          const SizedBox(width: 16),
+                    final allItems = docs.map((d) => d.data()).toList();
 
-                          // Kotak kanan
-                          Expanded(child: _BarangBox(title: 'Barang $nomor')),
-                        ],
-                      ),
+                    // Batasi sesuai itemsToShow
+                    if (itemsToShow > allItems.length) {
+                      itemsToShow = allItems.length;
+                    }
+                    final showing = allItems.take(itemsToShow).toList();
+
+                    return GridView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.only(top: 8),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.7,
+                          ),
+                      itemCount: showing.length,
+                      itemBuilder: (context, index) {
+                        return _BarangBox(item: showing[index]);
+                      },
                     );
                   },
                 ),
@@ -72,14 +130,20 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
 }
 
 class _BarangBox extends StatelessWidget {
-  final String title;
+  final Item item;
 
-  const _BarangBox({required this.title});
+  const _BarangBox({required this.item, super.key});
 
   @override
   Widget build(BuildContext context) {
+    final title = item.name ?? '-';
+    final sku = item.sku ?? '-';
+    final stock = item.stock ?? 0;
+    final price = item.price ?? 0;
+    final imageUrl = item.imageUrl;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -91,9 +155,79 @@ class _BarangBox extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 3 / 2,
+                    child: imageUrl != null && imageUrl.isNotEmpty
+                        ? Image.network(imageUrl, fit: BoxFit.cover)
+                        : Container(
+                            color: Colors.grey[100],
+                            child: const Center(
+                              child: Icon(Icons.image, size: 40),
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Center(
+                  child: Text(
+                    'Rp $price',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Stok: $stock',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black.withOpacity(0.6),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'SKU: $sku',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black.withOpacity(0.6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

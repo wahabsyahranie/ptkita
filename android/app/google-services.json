@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "353010086286",
+    "firebase_url": "https://ptkita-44a19-default-rtdb.firebaseio.com",
+    "project_id": "ptkita-44a19",
+    "storage_bucket": "ptkita-44a19.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:353010086286:android:7c9231c366cf3d63d8f4df",
+        "android_client_info": {
+          "package_name": "com.example.flutter_kita"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTHDL4Jwq0P5j-zUjkVK6RAObIUMHxcB8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
