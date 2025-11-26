@@ -92,7 +92,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               const SizedBox(height: 25),
-              SearchBarWidget(),
             ],
           ),
         ),
@@ -124,18 +123,21 @@ class _HomePageState extends State<HomePage> {
           activeIndex: _currentIndex,
           onTap: _onTapNav,
         ),
+        // resizeToAvoidBottomInset: false,
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: SizedBox(
-          width: 60,
-          height: 60,
-          child: FloatingActionButton(
-            shape: const CircleBorder(),
-            onPressed: () => _onTapNav(1),
-            backgroundColor: MyColors.secondary,
-            elevation: 4,
-            child: Icon(Icons.qr_code, color: MyColors.white),
-          ),
-        ),
+        floatingActionButton: MediaQuery.of(context).viewInsets.bottom > 0
+            ? null
+            : SizedBox(
+                width: 60,
+                height: 60,
+                child: FloatingActionButton(
+                  shape: const CircleBorder(),
+                  onPressed: () => _onTapNav(1),
+                  backgroundColor: MyColors.secondary,
+                  elevation: 4,
+                  child: Icon(Icons.qr_code, color: MyColors.white),
+                ),
+              ),
       ),
     );
   }
