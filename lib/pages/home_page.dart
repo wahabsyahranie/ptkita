@@ -114,6 +114,7 @@ class _HomePageState extends State<HomePage> {
         return true;
       },
       child: Scaffold(
+        backgroundColor: Colors.white,
         key: _scaffoldKey, // <--- root scaffold key
         extendBody: true,
         // Pindahkan endDrawer ke sini agar drawer muncul di atas bottomNavigationBar
