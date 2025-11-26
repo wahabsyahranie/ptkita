@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/pages/capture_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
@@ -98,7 +99,7 @@ class _HomePageState extends State<HomePage> {
       ),
 
       // index 1
-      const Center(child: Text('Tab 1 - QR / Middle')),
+      const CapturePage(),
 
       // index 2
       const MenuInventoryPage(),
