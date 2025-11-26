@@ -60,5 +60,4 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://ptkita-44a19-default-rtdb.firebaseio.com',
     storageBucket: 'ptkita-44a19.firebasestorage.app',
   );
-
 }
