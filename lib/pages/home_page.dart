@@ -3,8 +3,7 @@ import 'package:flutter_kita/pages/capture/capture_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
-import 'package:flutter_kita/widget/search_bar_widget.dart';
-import 'package:flutter_kita/pages/menu_inventory_page.dart';
+import 'package:flutter_kita/pages/inventory/menu_inventory_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -132,6 +131,7 @@ class _HomePageState extends State<HomePage> {
                 width: 60,
                 height: 60,
                 child: FloatingActionButton(
+                  heroTag: null,
                   shape: const CircleBorder(),
                   onPressed: () {
                     Navigator.push(
