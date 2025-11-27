@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/pages/maintenance_page.dart';
+import 'package:flutter_kita/pages/maintenance/maintenance_page.dart';
 import 'package:flutter_kita/pages/repair_history_page.dart';
 import 'package:flutter_kita/pages/transaction_history_page.dart';
 import 'package:flutter_kita/pages/user_page.dart';
