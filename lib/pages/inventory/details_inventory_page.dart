@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/item_model.dart';
@@ -30,7 +31,14 @@ class DetailsInventoryPage extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AddEditInventoryPage(item: item),
+                ),
+              );
+            },
             icon: Container(
               decoration: BoxDecoration(
                 color: MyColors.white,
@@ -49,16 +57,29 @@ class DetailsInventoryPage extends StatelessWidget {
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
+                    backgroundColor: Colors.white,
                     title: const Text('Hapus item?'),
                     content: const Text('Item akan dihapus permanen.'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Batal'),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(
+                            color: MyColors.secondary, // ← warna secondary
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Hapus'),
+                        child: const Text(
+                          'Hapus',
+                          style: TextStyle(
+                            color: MyColors.secondary, // ← warna secondary
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),

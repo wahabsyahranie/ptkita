@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/add_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
@@ -101,7 +102,7 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const AddInventoryPage(),
+                  builder: (context) => const AddEditInventoryPage(),
                 ),
               );
             },
