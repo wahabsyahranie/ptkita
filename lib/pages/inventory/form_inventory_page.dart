@@ -34,6 +34,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
   late final TextEditingController _stockCtrl;
   late final TextEditingController _descCtrl;
   String? _selectedType;
+  String? _selectedMerk;
   bool _isSaving = false;
   double _uploadProgress = 0.0;
 
@@ -58,6 +59,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _descCtrl = TextEditingController(text: it?.description ?? '');
     _selectedType = it?.type;
     _existingImageUrl = it?.imageUrl;
+    _selectedMerk = it?.merk;
   }
 
   @override
@@ -201,6 +203,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
         builder: (_) => WillPopScope(
           onWillPop: () async => false,
           child: Dialog(
+            backgroundColor: MyColors.white,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -208,7 +211,10 @@ class _InventoryFormState extends State<FormInventoryPage> {
                   const SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: MyColors.secondary,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -220,8 +226,6 @@ class _InventoryFormState extends State<FormInventoryPage> {
                               ? 'Menyimpan...'
                               : 'Memperbarui...',
                         ),
-                        const SizedBox(height: 8),
-                        LinearProgressIndicator(value: _uploadProgress),
                       ],
                     ),
                   ),
@@ -251,6 +255,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
         'type': _selectedType ?? 'unit',
         'imageUrl': imageUrl,
         'description': desc.isEmpty ? null : desc,
+        'merk': _selectedMerk ?? 'nomerk',
       };
 
       if (widget.initialItem == null) {
@@ -469,6 +474,41 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return 'Tipe wajib diisi';
+                  }
+                  return null;
+                },
+                iconEnabledColor: MyColors.background,
+                dropdownColor: Colors.white,
+              ),
+              const SizedBox(height: 15),
+              const Text("Merk"),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _selectedMerk,
+                items: const [
+                  DropdownMenuItem(value: "firman", child: Text("Firman")),
+                  DropdownMenuItem(
+                    value: "black+decker",
+                    child: Text("Black+Decker"),
+                  ),
+                  DropdownMenuItem(value: "stanley", child: Text("Stanley")),
+                  DropdownMenuItem(value: "dewalt", child: Text("Dewalt")),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedMerk = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: "Pilih merk barang",
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: MyColors.secondary, width: 2),
+                  ),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Merk wajib diisi';
                   }
                   return null;
                 },

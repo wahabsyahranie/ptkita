@@ -9,6 +9,7 @@ class Item {
   final String? description;
   final String? type;
   final String? imageUrl;
+  final String? merk;
 
   Item({
     this.id,
@@ -19,6 +20,7 @@ class Item {
     this.description,
     this.type,
     this.imageUrl,
+    this.merk,
   });
 
   // factory sesuai contoh FlutterFire docs
@@ -40,6 +42,7 @@ class Item {
       description: data?['description'] as String?,
       type: data?['type'] as String?,
       imageUrl: data?['imageUrl'] as String?,
+      merk: data?['merk'] as String?,
     );
   }
 
@@ -52,6 +55,7 @@ class Item {
       if (description != null) 'description': description,
       if (type != null) 'type': type,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (merk != null) 'merk': merk,
     };
   }
 }

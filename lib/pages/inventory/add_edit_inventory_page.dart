@@ -23,7 +23,7 @@ class AddEditInventoryPage extends StatelessWidget {
         initialItem: item,
         onSaved: () {
           // close page after saved
-          if (Navigator.canPop(context)) Navigator.of(context).pop();
+          if (Navigator.canPop(context)) Navigator.of(context).pop(true);
         },
       ),
     );
