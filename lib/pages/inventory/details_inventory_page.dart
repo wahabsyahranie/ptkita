@@ -6,6 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DetailsInventoryPage extends StatelessWidget {
   final Item? item;
+  String limitText(String text, int max) {
+    return text.length <= max ? text : text.substring(0, max) + "...";
+  }
 
   const DetailsInventoryPage({Key? key, required this.item}) : super(key: key);
 
@@ -131,12 +134,16 @@ class DetailsInventoryPage extends StatelessWidget {
                           : _placeholder(), // fallback
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 20,
-                        color: MyColors.background,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        limitText(name, 30),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          color: MyColors.background,
+                        ),
                       ),
                     ),
                   ],
@@ -153,7 +160,7 @@ class DetailsInventoryPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // NAMA
-                  _rowInfo("Nama", name),
+                  _rowInfo("Nama", limitText(name, 45)),
                   const DottedlineWidget(),
                   const SizedBox(height: 10),
 
