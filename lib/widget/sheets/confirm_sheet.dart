@@ -10,11 +10,11 @@ class ConfirmSheet extends StatelessWidget {
   final String confirmLabel;
 
   const ConfirmSheet({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     this.confirmLabel = 'Hapus',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

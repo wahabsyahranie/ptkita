@@ -7,7 +7,7 @@ import 'package:flutter_kita/styles/colors.dart';
 class AddEditInventoryPage extends StatelessWidget {
   final Item? item; // null = add; non-null = edit
 
-  const AddEditInventoryPage({Key? key, this.item}) : super(key: key);
+  const AddEditInventoryPage({super.key, this.item});
 
   @override
   Widget build(BuildContext context) {

@@ -8,7 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DetailsInventoryPage extends StatefulWidget {
   final Item? item;
-  const DetailsInventoryPage({Key? key, required this.item}) : super(key: key);
+  const DetailsInventoryPage({super.key, required this.item});
 
   @override
   State<DetailsInventoryPage> createState() => _DetailsInventoryPageState();
@@ -48,7 +48,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
 
   /// Membatasi text
   String limitText(String text, int max) {
-    return text.length <= max ? text : text.substring(0, max) + "...";
+    return text.length <= max ? text : "${text.substring(0, max)}...";
   }
 
   @override

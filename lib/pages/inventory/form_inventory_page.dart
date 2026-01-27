@@ -14,8 +14,7 @@ class FormInventoryPage extends StatefulWidget {
   final Item? initialItem;
   final void Function()? onSaved; // optional callback after save
 
-  const FormInventoryPage({Key? key, this.initialItem, this.onSaved})
-    : super(key: key);
+  const FormInventoryPage({super.key, this.initialItem, this.onSaved});
 
   @override
   State<FormInventoryPage> createState() => _InventoryFormState();
@@ -454,7 +453,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
               const Text("Tipe"),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 items: const [
                   DropdownMenuItem(value: "unit", child: Text("Unit")),
                   DropdownMenuItem(value: "part", child: Text("Part")),
@@ -484,7 +483,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
               const Text("Merk"),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedMerk,
+                initialValue: _selectedMerk,
                 items: const [
                   DropdownMenuItem(value: "firman", child: Text("Firman")),
                   DropdownMenuItem(

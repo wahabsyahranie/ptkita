@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/maintenance_model.dart';
+import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
 
@@ -12,7 +15,37 @@ class MaintenancePage extends StatefulWidget {
 }
 
 class _MaintenancePageState extends State<MaintenancePage> {
+  // search
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+  Timer? _searchDebounce;
+
   @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  // debounce search
+  void _onSearchChanged(String value) {
+    if (value.trim().isEmpty) {
+      _searchDebounce?.cancel();
+      setState(() {
+        _searchQuery = '';
+      });
+      return;
+    }
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      setState(() {
+        _searchQuery = value.toLowerCase().trim();
+      });
+    });
+  }
+
   Query<Maintenance> _buildQuery() {
     Query base = FirebaseFirestore.instance.collection('maintenance');
 
@@ -45,12 +78,12 @@ class _MaintenancePageState extends State<MaintenancePage> {
               children: [
                 Row(
                   children: [
-                    // ← Search bar harus Expanded!
+                    // searchBar
                     Expanded(
                       child: SearchBarWidget(
-                        // controller: _searchCtrl,
+                        controller: _searchCtrl,
                         hintText: 'Cari nama atau SKU',
-                        // onChanged: _onSearchChanged,
+                        onChanged: _onSearchChanged,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -65,13 +98,13 @@ class _MaintenancePageState extends State<MaintenancePage> {
                       ),
                       child: IconButton(
                         onPressed: () async {
-                          // await Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder: (context) =>
-                          //         const AddEditInventoryPage(),
-                          //   ),
-                          // );
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AddEditMaintenancePage(),
+                            ),
+                          );
                           // if (!mounted) return;
                           // setState(() {
                           //   _appliedFilter = null;
@@ -134,14 +167,23 @@ class _MaintenancePageState extends State<MaintenancePage> {
               return const Center(child: Text('Belum ada perawatan.'));
             }
 
-            final items = docs.map((d) => d.data()).toList();
+            final allIems = docs.map((d) => d.data()).toList();
+
+            final filtered = _searchQuery.isEmpty
+                ? allIems
+                : allIems.where((main) {
+                    final name = (main.name ?? '').toLowerCase();
+                    final sku = (main.sku ?? '').toLowerCase();
+                    return name.contains(_searchQuery) ||
+                        sku.contains(_searchQuery);
+                  }).toList();
 
             return ListView.separated(
               padding: const EdgeInsets.all(16),
-              itemCount: items.length,
+              itemCount: filtered.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, idx) {
-                final main = items[idx];
+                final main = filtered[idx];
                 return _MaintenanceBox(main: main);
               },
             );
@@ -155,7 +197,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
 class _MaintenanceBox extends StatelessWidget {
   final Maintenance main;
 
-  const _MaintenanceBox({required this.main, super.key});
+  const _MaintenanceBox({required this.main});
 
   String _formatDate(Timestamp? ts) {
     if (ts == null) return '-';
@@ -240,7 +282,7 @@ class _MaintenanceBox extends StatelessWidget {
                   color: Colors.grey,
                 ),
                 const SizedBox(width: 6),
-                Text('$nextMaintenanceAt'),
+                Text(nextMaintenanceAt),
                 const SizedBox(width: 16),
                 Icon(Icons.schedule, size: 18, color: Colors.grey),
                 const SizedBox(width: 6),

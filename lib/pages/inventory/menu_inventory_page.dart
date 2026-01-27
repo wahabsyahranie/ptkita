@@ -330,7 +330,7 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
 class _BarangBox extends StatelessWidget {
   final Item item;
 
-  const _BarangBox({required this.item, super.key});
+  const _BarangBox({required this.item});
 
   @override
   Widget build(BuildContext context) {
