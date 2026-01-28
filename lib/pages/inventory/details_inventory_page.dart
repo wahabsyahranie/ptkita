@@ -106,7 +106,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    backgroundColor: Colors.white,
+                    backgroundColor: MyColors.white,
                     title: const Text('Hapus item?'),
                     content: const Text('Item akan dihapus permanen.'),
                     actions: [

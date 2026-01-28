@@ -98,6 +98,62 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
       appBar: AppBar(
         backgroundColor: MyColors.white,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            padding: EdgeInsets.only(right: 20),
+            onPressed: () async {
+              final ok = await showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: MyColors.white,
+                  title: const Text('Hapus Data?'),
+                  content: const Text('Item akan dihapus permanen.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text(
+                        'Batal',
+                        style: TextStyle(
+                          color: MyColors.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text(
+                        'Hapus',
+                        style: TextStyle(
+                          color: MyColors.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              await FirebaseFirestore.instance
+                  .collection('maintenance')
+                  .doc(_maintenance!.id)
+                  .delete();
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Item dihapus')));
+                Navigator.of(context).pop();
+              }
+            },
+            icon: Container(
+              decoration: BoxDecoration(
+                color: MyColors.secondary,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: const Icon(Icons.delete, color: MyColors.white),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
