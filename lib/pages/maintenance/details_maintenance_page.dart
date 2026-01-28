@@ -13,36 +13,77 @@ class DetailsMaintenancePage extends StatefulWidget {
 
 class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
   Maintenance? _maintenance;
-  bool isComplete = false;
-  bool _loading = false;
+  bool _isSaving = false;
+
+  /// ✅ STATE VISUAL SAJA (TIDAK KE FIRESTORE)
+  List<bool> _taskChecked = [];
 
   @override
   void initState() {
     super.initState();
     _maintenance = widget.maintenance;
+
+    final taskCount = _maintenance?.tasks.length ?? 0;
+    _taskChecked = List<bool>.filled(taskCount, false);
   }
 
-  /// 🔄 Fetch ulang data terbaru dari Firestore
-  Future<void> _toggleTask(MaintenanceTask task, int index) async {
+  // =========================
+  // TOGGLE TASK (UI ONLY)
+  // =========================
+  void _toggleTask(int index) {
     setState(() {
-      _maintenance!.tasks[index] = task.copyWith(completed: !task.completed);
+      _taskChecked[index] = !_taskChecked[index];
     });
+  }
 
-    await FirebaseFirestore.instance
-        .collection('maintenance')
-        .doc(_maintenance!.id)
-        .update({
-          'tasks': _maintenance!.tasks
-              .map(
-                (e) => {
-                  'id': e.id,
-                  'title': e.title,
-                  'description': e.description,
-                  'completed': e.completed,
-                },
-              )
-              .toList(),
-        });
+  // =========================
+  // CEK SEMUA TASK SELESAI
+  // =========================
+  bool get _allTasksCompleted {
+    if (_taskChecked.isEmpty) return false;
+    return _taskChecked.every((v) => v);
+  }
+
+  // =========================
+  // SELESAIKAN PERAWATAN
+  // =========================
+  Future<void> _finishMaintenance() async {
+    if (_maintenance == null || _isSaving) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      // 📅 tanggal perawatan dilakukan
+      final now = Timestamp.now();
+
+      // ➕ hitung next maintenance dari SEKARANG
+      final nextMaintenance = Timestamp.fromDate(
+        now.toDate().add(Duration(days: _maintenance!.intervalDays)),
+      );
+
+      await FirebaseFirestore.instance
+          .collection('maintenance')
+          .doc(_maintenance!.id)
+          .update({
+            'status': 'selesai',
+            'lastMaintenanceAt': now, // ✅ hari ini
+            'nextMaintenanceAt': nextMaintenance, // ✅ hari ini + interval
+          });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perawatan berhasil diselesaikan')),
+      );
+
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyelesaikan perawatan: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -50,85 +91,45 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
     final itemName = _maintenance?.itemName ?? '-';
     final lastMaintenance = _maintenance?.lastMaintenanceAt == null
         ? 'belum pernah'
-        : _maintenance!.lastMaintenanceAt!.toString();
+        : _maintenance!.lastMaintenanceAt!.toDate().toString();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // title: const Text('Detail Perawatan'),
         backgroundColor: MyColors.white,
         surfaceTintColor: Colors.transparent,
-        actionsPadding: EdgeInsets.only(right: 15),
-        actions: [
-          // DELETE BUTTON
-          IconButton(
-            onPressed: () async {
-              final ok = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: Colors.white,
-                  title: const Text('Hapus item?'),
-                  content: const Text('Item akan dihapus permanen.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text(
-                        'Batal',
-                        style: TextStyle(
-                          color: MyColors.secondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text(
-                        'Hapus',
-                        style: TextStyle(
-                          color: MyColors.secondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-
-              if (ok == true && _maintenance?.id != null) {
-                //Hapus dokumen dari Firestore
-                await FirebaseFirestore.instance
-                    .collection('maintenance')
-                    .doc(_maintenance!.id)
-                    .delete();
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Item dihapus')));
-                  Navigator.of(context).pop();
-                }
-              }
-            },
-            icon: Container(
-              decoration: BoxDecoration(
-                color: MyColors.secondary,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.delete, color: MyColors.white),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
-          _buildContent(itemName, lastMaintenance),
+          Expanded(child: _buildContent(itemName, lastMaintenance)),
 
-          if (_loading)
-            Container(
-              color: Colors.white.withOpacity(0.4),
-              child: const Center(
-                child: CircularProgressIndicator(color: MyColors.secondary),
+          /// 🔥 TOMBOL MUNCUL JIKA SEMUA TASK CENTANG
+          if (_allTasksCompleted)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _finishMaintenance,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MyColors.secondary,
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Selesaikan Perawatan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
         ],
@@ -136,6 +137,9 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
     );
   }
 
+  // =========================
+  // CONTENT
+  // =========================
   Widget _buildContent(String itemName, String lastMaintenance) {
     return SingleChildScrollView(
       child: Column(
@@ -145,55 +149,59 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
           const SizedBox(height: 15),
           Text(
             itemName,
-            style: TextStyle(
+            style: const TextStyle(
               color: MyColors.secondary,
               fontWeight: FontWeight.w700,
               fontSize: 16,
             ),
           ),
           const SizedBox(height: 10),
-          Text(
+          const Text(
             'Perawatan tiba!',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
           ),
-          Text(
+          const Text(
             'Rawat barang ini sebelum rusak',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
           ),
           const SizedBox(height: 15),
           Text(
             'Perawatan Terakhir: $lastMaintenance',
-            style: TextStyle(fontSize: 14),
+            style: const TextStyle(fontSize: 14),
           ),
           const SizedBox(height: 15),
+
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _maintenance?.tasks.length ?? 0,
             itemBuilder: (context, index) {
+              if (_taskChecked.length != _maintenance!.tasks.length) {
+                _taskChecked = List<bool>.filled(
+                  _maintenance!.tasks.length,
+                  false,
+                );
+              }
+
               final task = _maintenance!.tasks[index];
+              final checked = _taskChecked[index];
 
               return InkWell(
-                onTap: () => _toggleTask(task, index),
-                child: task.completed
+                onTap: () => _toggleTask(index),
+                child: checked
                     ? _completeCard(task, index)
                     : _pendingCard(task, index),
               );
             },
           ),
-          // InkWell(
-          //   onTap: () {
-          //     setState(() {
-          //       isComplete = !isComplete; // toggle
-          //     });
-          //   },
-          //   child: isComplete ? _completeCard() : _pendingCard(),
-          // ),
         ],
       ),
     );
   }
 
+  // =========================
+  // CARD
+  // =========================
   Widget _completeCard(MaintenanceTask task, int index) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -251,6 +259,9 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
     );
   }
 
+  // =========================
+  // HELPER
+  // =========================
   Widget _checkIcon() {
     return Container(
       width: 40,

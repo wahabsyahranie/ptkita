@@ -18,8 +18,6 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   final List<TaskForm> _tasks = [];
   late final TextEditingController _nameCtrl;
   late final TextEditingController _intervalCtrl;
-  late final TextEditingController _titleCtrl;
-  late final TextEditingController _descriptionCtrl;
   String? _selectedItemId;
   String? _selectedItemName;
   String? _selectedPriority;
@@ -33,25 +31,43 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   void initState() {
     super.initState();
     final it = widget.initialItem;
+
     _nameCtrl = TextEditingController(text: it?.itemName ?? '');
     _intervalCtrl = TextEditingController(
       text: it?.intervalDays.toString() ?? '',
     );
-    _titleCtrl = TextEditingController(text: it?.title ?? '');
-    _descriptionCtrl = TextEditingController(text: it?.description ?? '');
-    _selectedItemId = widget.initialItem?.itemId;
-    _selectedItemName = widget.initialItem?.itemName;
 
-    _tasks.add(TaskForm('task_1'));
+    _selectedItemId = it?.itemId;
+    _selectedItemName = it?.itemName;
+    _selectedPriority = it?.priority;
+    _selectedItemSku = it?.sku;
+
+    // 🔑 LOAD TASKS SAAT EDIT
+    if (it != null && it.tasks.isNotEmpty) {
+      for (final task in it.tasks) {
+        final tf = TaskForm(task.id);
+        tf.titleCtrl.text = task.title;
+        tf.descCtrl.text = task.description;
+        _tasks.add(tf);
+      }
+    } else {
+      // create baru → 1 task default
+      _tasks.add(TaskForm('task_1'));
+    }
   }
 
   @override
   //Membersihkan memori
+  @override
   void dispose() {
     _nameCtrl.dispose();
     _intervalCtrl.dispose();
-    _titleCtrl.dispose();
-    _descriptionCtrl.dispose();
+
+    for (final t in _tasks) {
+      t.titleCtrl.dispose();
+      t.descCtrl.dispose();
+    }
+
     super.dispose();
   }
 
@@ -405,10 +421,8 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
 
 class TaskForm {
   final String id;
-  final TextEditingController titleCtrl;
-  final TextEditingController descCtrl;
+  final TextEditingController titleCtrl = TextEditingController();
+  final TextEditingController descCtrl = TextEditingController();
 
-  TaskForm(this.id)
-    : titleCtrl = TextEditingController(),
-      descCtrl = TextEditingController();
+  TaskForm(this.id);
 }
