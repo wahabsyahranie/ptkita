@@ -4,24 +4,28 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Maintenance {
   final String? id;
   final String itemId; // relasi ke items.id (opsional)
-  final String name; // nama item (bisa copy dari Item)
+  final String itemName; // nama item (bisa copy dari Item)
   final String? sku;
   final Timestamp? nextMaintenanceAt; // Firestore timestamp
   final Timestamp? lastMaintenanceAt;
   final int? intervalDays;
   final String? priority; // "tinggi"/"sedang"/"rendah"
   final String? status; // "terjadwal","terlambat","selesai", dll
+  final String? title;
+  final String? description;
 
   Maintenance({
     this.id,
     required this.itemId,
-    required this.name,
+    required this.itemName,
     this.sku,
     this.nextMaintenanceAt,
     this.lastMaintenanceAt,
     required this.intervalDays,
     required this.priority,
     required this.status,
+    this.title,
+    this.description,
   });
 
   factory Maintenance.fromFirestore(
@@ -47,26 +51,30 @@ class Maintenance {
     return Maintenance(
       id: doc.id,
       itemId: itemIdStr,
-      name: data['name'] as String? ?? '',
+      itemName: data['itemName'] as String? ?? '',
       sku: data['sku'] as String?,
       nextMaintenanceAt: data['nextMaintenanceAt'] as Timestamp?,
       lastMaintenanceAt: data['lastMaintenanceAt'] as Timestamp?,
       intervalDays: (data['intervalDays'] as num?)?.toInt() ?? 0,
       priority: data['priority'] as String? ?? 'rendah',
       status: data['status'] as String? ?? 'pending',
+      title: data['title'] as String?,
+      description: data['description'] as String?,
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
       'itemId': itemId,
-      'name': name,
+      'name': itemName,
       'sku': sku,
       'nextMaintenanceAt': nextMaintenanceAt,
       'lastMaintenanceAt': lastMaintenanceAt,
       'intervalDays': intervalDays,
       'priority': priority,
       'status': status,
+      'title': title,
+      'description': description,
     };
   }
 }

@@ -172,7 +172,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
             final filtered = _searchQuery.isEmpty
                 ? allIems
                 : allIems.where((main) {
-                    final name = (main.name ?? '').toLowerCase();
+                    final name = (main.itemName ?? '').toLowerCase();
                     final sku = (main.sku ?? '').toLowerCase();
                     return name.contains(_searchQuery) ||
                         sku.contains(_searchQuery);
@@ -218,7 +218,7 @@ class _MaintenanceBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = main.name;
+    final name = main.itemName;
     final sku = main.sku ?? '-';
     final nextMaintenanceAt = _formatDate(main.nextMaintenanceAt);
     final intervalDays = main.intervalDays ?? 0;
