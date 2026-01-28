@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
+import 'package:flutter_kita/pages/maintenance/details_maintenance_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
 
@@ -225,84 +226,98 @@ class _MaintenanceBox extends StatelessWidget {
     final priority = main.priority ?? 'rendah';
     final status = main.status ?? '-';
 
-    return Material(
-      elevation: 2,
+    return InkWell(
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // title + priority badge
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DetailsMaintenancePage(maintenance: main),
+          ),
+        );
+      },
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // title + priority badge
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _priorityColor(priority),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    priority[0].toUpperCase() + priority.substring(1),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _priorityColor(priority),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      priority[0].toUpperCase() + priority.substring(1),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            // const SizedBox(height: 6),
-            Text(sku, style: TextStyle(color: Colors.black.withOpacity(0.7))),
-            const SizedBox(height: 12),
-
-            // row icons date + interval + status
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 18,
-                  color: Colors.grey,
-                ),
-                const SizedBox(width: 6),
-                Text(nextMaintenanceAt),
-                const SizedBox(width: 16),
-                Icon(Icons.schedule, size: 18, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text('Setiap $intervalDays hari'),
-                const Spacer(),
-              ],
-            ),
-            // status badge
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: status == 'terlambat'
-                    ? Colors.orange.shade100
-                    : Colors.green.shade100,
-                borderRadius: BorderRadius.circular(12),
+                ],
               ),
-              child: Text(status, style: const TextStyle(fontSize: 12)),
-            ),
-          ],
+              // const SizedBox(height: 6),
+              Text(sku, style: TextStyle(color: Colors.black.withOpacity(0.7))),
+              const SizedBox(height: 12),
+
+              // row icons date + interval + status
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 18,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(nextMaintenanceAt),
+                  const SizedBox(width: 16),
+                  Icon(Icons.schedule, size: 18, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text('Setiap $intervalDays hari'),
+                  const Spacer(),
+                ],
+              ),
+              // status badge
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: status == 'terlambat'
+                      ? Colors.orange.shade100
+                      : Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(status, style: const TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
         ),
       ),
     );

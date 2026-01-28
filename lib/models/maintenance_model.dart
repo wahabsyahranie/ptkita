@@ -2,20 +2,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Maintenance {
-  final String? id;
-  final String itemId; // relasi ke items.id (opsional)
-  final String itemName; // nama item (bisa copy dari Item)
+  final String id;
+  final String itemId;
+  final String itemName;
   final String? sku;
-  final Timestamp? nextMaintenanceAt; // Firestore timestamp
+  final Timestamp? nextMaintenanceAt;
   final Timestamp? lastMaintenanceAt;
-  final int? intervalDays;
-  final String? priority; // "tinggi"/"sedang"/"rendah"
-  final String? status; // "terjadwal","terlambat","selesai", dll
-  final String? title;
-  final String? description;
+  final int intervalDays;
+  final String priority;
+  final String status;
+  final List<MaintenanceTask> tasks;
 
   Maintenance({
-    this.id,
+    required this.id,
     required this.itemId,
     required this.itemName,
     this.sku,
@@ -24,8 +23,7 @@ class Maintenance {
     required this.intervalDays,
     required this.priority,
     required this.status,
-    this.title,
-    this.description,
+    required this.tasks,
   });
 
   factory Maintenance.fromFirestore(
@@ -33,48 +31,84 @@ class Maintenance {
     SnapshotOptions? opts,
   ) {
     final data = doc.data() ?? {};
-    // itemId mungkin tersimpan sebagai String atau DocumentReference
+
     final rawItemId = data['itemId'];
-    String itemIdStr;
-    if (rawItemId == null) {
-      itemIdStr = ''; // fallback
-    } else if (rawItemId is String) {
-      itemIdStr = rawItemId;
-    } else if (rawItemId is DocumentReference) {
-      // ambil document id (mis. '4hYPUqP...')
-      itemIdStr = rawItemId.id;
-    } else {
-      // jika diserialisasi beda, coba toString()
-      itemIdStr = rawItemId.toString();
-    }
+    final itemIdStr = rawItemId is DocumentReference
+        ? rawItemId.id
+        : rawItemId?.toString() ?? '';
+
+    final tasks = (data['tasks'] as List<dynamic>? ?? [])
+        .map((e) => MaintenanceTask.fromMap(e as Map<String, dynamic>))
+        .toList();
 
     return Maintenance(
       id: doc.id,
       itemId: itemIdStr,
-      itemName: data['itemName'] as String? ?? '',
-      sku: data['sku'] as String?,
-      nextMaintenanceAt: data['nextMaintenanceAt'] as Timestamp?,
-      lastMaintenanceAt: data['lastMaintenanceAt'] as Timestamp?,
+      itemName: data['itemName'] ?? '',
+      sku: data['sku'],
+      nextMaintenanceAt: data['nextMaintenanceAt'],
+      lastMaintenanceAt: data['lastMaintenanceAt'],
       intervalDays: (data['intervalDays'] as num?)?.toInt() ?? 0,
-      priority: data['priority'] as String? ?? 'rendah',
-      status: data['status'] as String? ?? 'pending',
-      title: data['title'] as String?,
-      description: data['description'] as String?,
+      priority: data['priority'] ?? 'rendah',
+      status: data['status'] ?? 'pending',
+      tasks: tasks,
     );
   }
 
-  Map<String, dynamic> toFirestore() {
-    return {
-      'itemId': itemId,
-      'name': itemName,
-      'sku': sku,
-      'nextMaintenanceAt': nextMaintenanceAt,
-      'lastMaintenanceAt': lastMaintenanceAt,
-      'intervalDays': intervalDays,
-      'priority': priority,
-      'status': status,
-      'title': title,
-      'description': description,
-    };
+  Map<String, dynamic> toFirestore() => {
+    'itemId': itemId,
+    'itemName': itemName,
+    'sku': sku,
+    'nextMaintenanceAt': nextMaintenanceAt,
+    'lastMaintenanceAt': lastMaintenanceAt,
+    'intervalDays': intervalDays,
+    'priority': priority,
+    'status': status,
+    'tasks': tasks.map((e) => e.toMap()).toList(),
+  };
+}
+
+class MaintenanceTask {
+  final String id;
+  final String title;
+  final String description;
+  final bool completed;
+
+  MaintenanceTask({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.completed,
+  });
+
+  factory MaintenanceTask.fromMap(Map<String, dynamic> map) {
+    return MaintenanceTask(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      completed: map['completed'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'completed': completed,
+  };
+
+  /// 🔑 INI YANG KAMU PAKAI DI PAGE
+  MaintenanceTask copyWith({
+    String? id,
+    String? title,
+    String? description,
+    bool? completed,
+  }) {
+    return MaintenanceTask(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      completed: completed ?? this.completed,
+    );
   }
 }
