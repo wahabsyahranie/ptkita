@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/maintenance_page.dart';
-import 'package:flutter_kita/pages/repair_history_page.dart';
-import 'package:flutter_kita/pages/transaction_history_page.dart';
+import 'package:flutter_kita/pages/repair/repair_history_page.dart';
+import 'package:flutter_kita/pages/transaction/transaction_history_page.dart';
 import 'package:flutter_kita/pages/user_page.dart';
-import 'package:flutter_kita/pages/warranty_history_page.dart';
+import 'package:flutter_kita/pages/warranty/warranty_history_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class NavigationDrawerWidget extends StatelessWidget {
