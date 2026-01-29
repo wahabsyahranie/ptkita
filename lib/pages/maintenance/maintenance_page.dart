@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/models/maintenance_filter_model.dart';
 import 'package:flutter_kita/models/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/pages/maintenance/details_maintenance_page.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/maintenance_filter_sheet.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
 
@@ -21,11 +23,104 @@ class _MaintenancePageState extends State<MaintenancePage> {
   String _searchQuery = '';
   Timer? _searchDebounce;
 
+  // =========================
+  // FILTER STATE
+  // =========================
+  // Menyimpan filter yang sedang aktif di halaman Maintenance.
+  // Filter ini TIDAK disimpan ke Firestore, hanya untuk kebutuhan UI (client-side).
+  MaintenanceFilter? _appliedFilter;
+
+  // =========================
+  // DEFAULT FILTER (INIT STATE)
+  // =========================
+  // Default tampilan halaman Maintenance:
+  // - Menampilkan perawatan yang:
+  //   1. Status-nya TERLAMBAT atau TERJADWAL
+  //   2. Waktu perawatan berikutnya dalam 7 hari ke depan
+  //
+  // Tujuan:
+  // - Fokus ke perawatan yang perlu segera ditangani
+  // - Menghindari menampilkan data "selesai" sejak awal
+  @override
+  void initState() {
+    super.initState();
+    _appliedFilter = MaintenanceFilter(
+      statuses: {'terlambat', 'terjadwal'},
+      timeRange: const Duration(days: 7),
+    );
+  }
+
   @override
   void dispose() {
     _searchCtrl.dispose();
     _searchDebounce?.cancel();
     super.dispose();
+  }
+
+  // =========================
+  // APPLY FILTER (CLIENT SIDE)
+  // =========================
+  // Fungsi ini bertugas menyaring daftar maintenance berdasarkan filter yang aktif.
+  // Proses filtering dilakukan di sisi client karena:
+  // - Jumlah data < 100
+  // - Status bersifat turunan (derived state)
+  // - Menghindari kompleksitas index Firestore
+
+  List<Maintenance> applyFilter(
+    List<Maintenance> items,
+    MaintenanceFilter? filter,
+  ) {
+    // Jika tidak ada filter → tampilkan semua data
+    if (filter == null) return items;
+
+    final now = DateTime.now();
+
+    return items.where((m) {
+      final next = m.nextMaintenanceAt!.toDate();
+
+      // =========================
+      // FILTER STATUS
+      // =========================
+      // Status tidak hanya berdasarkan field 'status',
+      // tetapi juga hasil perbandingan waktu.
+      if (filter.statuses.isNotEmpty) {
+        // TERLAMBAT:
+        final isLate = next.isBefore(now) && m.status != 'selesai';
+        // TERJADWAL:
+        final isScheduled = next.isAfter(now) && m.status != 'selesai';
+
+        // - Filter meminta "terlambat" DAN data terlambat
+        // - Filter meminta "terjadwal" DAN data terjadwal
+        // - Filter meminta "selesai" DAN status = selesai
+        final statusMatch =
+            (filter.statuses.contains('terlambat') && isLate) ||
+            (filter.statuses.contains('terjadwal') && isScheduled) ||
+            (filter.statuses.contains('selesai') && m.status == 'selesai');
+
+        // Jika tidak cocok → buang data
+        if (!statusMatch) return false;
+      }
+
+      // =========================
+      // FILTER PRIORITY
+      // =========================
+      // Menyaring berdasarkan tingkat prioritas perawatan:
+      // rendah | sedang | tinggi
+      if (filter.priorities.isNotEmpty &&
+          !filter.priorities.contains(m.priority)) {
+        return false;
+      }
+
+      // =========================
+      // FILTER RENTANG WAKTU
+      // =========================
+      if (filter.timeRange != null &&
+          next.isAfter(now.add(filter.timeRange!))) {
+        return false;
+      }
+
+      return true;
+    }).toList();
   }
 
   // debounce search
@@ -45,6 +140,28 @@ class _MaintenancePageState extends State<MaintenancePage> {
         _searchQuery = value.toLowerCase().trim();
       });
     });
+  }
+
+  // =========================
+  // OPEN FILTER SHEET
+  // =========================
+  // Menampilkan bottom sheet untuk memilih filter maintenance.
+  // Filter lama dikirim sebagai initial value.
+  Future<void> _openFilterSheet() async {
+    final result = await showModalBottomSheet<MaintenanceFilter>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: MyColors.white,
+      builder: (_) {
+        return MaintenanceFilterSheet(initialFilter: _appliedFilter);
+      },
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _appliedFilter = result;
+      });
+    }
   }
 
   Query<Maintenance> _buildQuery() {
@@ -106,13 +223,6 @@ class _MaintenancePageState extends State<MaintenancePage> {
                                   const AddEditMaintenancePage(),
                             ),
                           );
-                          // if (!mounted) return;
-                          // setState(() {
-                          //   _appliedFilter = null;
-                          //   _searchQuery = '';
-                          //   _searchCtrl.clear();
-                          //   itemsToShow = 6;
-                          // });
                         },
                         icon: const Icon(
                           Icons.add,
@@ -133,8 +243,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: IconButton(
-                        onPressed: () {},
-                        // onPressed: _openFilterSheet,
+                        // onPressed: () {},
+                        onPressed: _openFilterSheet,
                         icon: const Icon(
                           Icons.filter_alt,
                           color: Colors.white,
@@ -168,11 +278,21 @@ class _MaintenancePageState extends State<MaintenancePage> {
               return const Center(child: Text('Belum ada perawatan.'));
             }
 
-            final allIems = docs.map((d) => d.data()).toList();
+            final allItems = docs.map((d) => d.data()).toList();
 
+            // =========================
+            // FILTER BERDASARKAN MAINTENANCE FILTER
+            // =========================
+            final filteredByFilter = applyFilter(allItems, _appliedFilter);
+
+            // =========================
+            // FILTER SEARCH (NAMA / SKU)
+            // =========================
+            // Search diterapkan SETELAH filter utama,
+            // agar hasil pencarian tetap relevan.
             final filtered = _searchQuery.isEmpty
-                ? allIems
-                : allIems.where((main) {
+                ? filteredByFilter
+                : filteredByFilter.where((main) {
                     final name = (main.itemName ?? '').toLowerCase();
                     final sku = (main.sku ?? '').toLowerCase();
                     return name.contains(_searchQuery) ||
@@ -217,6 +337,17 @@ class _MaintenanceBox extends StatelessWidget {
     }
   }
 
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'terlambat':
+        return Colors.orange.shade100;
+      case 'selesai':
+        return Colors.grey.shade300;
+      default:
+        return Colors.green.shade100; // terjadwal
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = main.itemName;
@@ -224,7 +355,19 @@ class _MaintenanceBox extends StatelessWidget {
     final nextMaintenanceAt = _formatDate(main.nextMaintenanceAt);
     final intervalDays = main.intervalDays ?? 0;
     final priority = main.priority ?? 'rendah';
-    final status = main.status ?? '-';
+    // final status = main.status ?? '-';
+
+    // helper build qlient status
+    String _computedStatus(Maintenance m) {
+      final now = DateTime.now();
+      final next = m.nextMaintenanceAt!.toDate();
+
+      if (m.status == 'selesai') return 'selesai';
+      if (next.isBefore(now)) return 'terlambat';
+      return 'terjadwal';
+    }
+
+    final status = _computedStatus(main);
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -309,9 +452,7 @@ class _MaintenanceBox extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: status == 'terlambat'
-                      ? Colors.orange.shade100
-                      : Colors.green.shade100,
+                  color: _statusColor(status),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(status, style: const TextStyle(fontSize: 12)),
