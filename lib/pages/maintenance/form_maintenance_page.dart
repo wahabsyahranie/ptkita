@@ -115,7 +115,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
 
     final payload = {
       'active': true,
-      'status': 'pending',
+      if (widget.initialItem == null) 'status': 'pending',
       'priority': _selectedPriority,
 
       // 🔗 reference ke item

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/maintenance_model.dart';
+import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class DetailsMaintenancePage extends StatefulWidget {
@@ -14,6 +15,8 @@ class DetailsMaintenancePage extends StatefulWidget {
 class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
   Maintenance? _maintenance;
   bool _isSaving = false;
+  String? _itemImageUrl;
+  bool _loadingItem = true;
 
   /// ✅ STATE VISUAL SAJA (TIDAK KE FIRESTORE)
   List<bool> _taskChecked = [];
@@ -23,8 +26,10 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
     super.initState();
     _maintenance = widget.maintenance;
 
-    final taskCount = _maintenance?.tasks.length ?? 0;
-    _taskChecked = List<bool>.filled(taskCount, false);
+    // final taskCount = _maintenance?.tasks.length ?? 0;
+    // _taskChecked = List<bool>.filled(taskCount, false);
+    _taskChecked = List<bool>.filled(_maintenance?.tasks.length ?? 0, false);
+    _loadItemImage();
   }
 
   // =========================
@@ -72,6 +77,11 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
 
       if (!mounted) return;
 
+      // 🔥 RESET VISUAL CHECKLIST
+      setState(() {
+        _taskChecked = List<bool>.filled(_maintenance!.tasks.length, false);
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perawatan berhasil diselesaikan')),
       );
@@ -83,6 +93,71 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  // Ambil Gambar dari items collections
+  Future<void> _loadItemImage() async {
+    if (_maintenance == null) return;
+
+    try {
+      final rawItemId = _maintenance!.itemId;
+
+      if (rawItemId.isEmpty) return;
+
+      // ✅ AMAN: handle path ATAU id
+      final DocumentReference itemRef = rawItemId.contains('/')
+          ? FirebaseFirestore.instance.doc(rawItemId)
+          : FirebaseFirestore.instance.collection('items').doc(rawItemId);
+
+      final snap = await itemRef.get();
+      final data = snap.data() as Map<String, dynamic>?;
+
+      if (!mounted) return;
+
+      setState(() {
+        _itemImageUrl = data?['imageUrl'] as String?;
+        _loadingItem = false;
+      });
+
+      // 🔍 DEBUG (hapus setelah yakin)
+      debugPrint('ITEM DOC: ${snap.id}');
+      debugPrint('IMAGE URL: $_itemImageUrl');
+    } catch (e) {
+      debugPrint('LOAD IMAGE ERROR: $e');
+      if (mounted) {
+        setState(() => _loadingItem = false);
+      }
+    }
+  }
+
+  //FUNGSI REFRESH HALAMAN SETELAH EDIT
+  Future<void> _refreshItem() async {
+    if (_maintenance == null || _maintenance!.id == null) return;
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('maintenance')
+          .doc(_maintenance!.id)
+          .get();
+
+      if (!snap.exists || !mounted) return;
+
+      final fresh = Maintenance.fromFirestore(snap, null);
+
+      setState(() {
+        _maintenance = fresh;
+
+        // 🔥 reset checklist visual
+        _taskChecked = List<bool>.filled(fresh.tasks.length, false);
+
+        // 🔥 reload image item (kalau itemId berubah)
+        _loadingItem = true;
+      });
+
+      await _loadItemImage();
+    } catch (e) {
+      debugPrint('REFRESH ERROR: $e');
     }
   }
 
@@ -99,6 +174,32 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
         backgroundColor: MyColors.white,
         surfaceTintColor: Colors.transparent,
         actions: [
+          //EDIT BUTTON
+          IconButton(
+            onPressed: () async {
+              final result = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      AddEditMaintenancePage(maintenance: _maintenance),
+                ),
+              );
+
+              // jika halaman AddEdit return true → refresh
+              if (result == true) {
+                await _refreshItem();
+              }
+            },
+            icon: Container(
+              decoration: BoxDecoration(
+                color: MyColors.secondary,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: const Icon(Icons.edit, color: MyColors.white),
+            ),
+          ),
+          //DELETE BUTTON
           IconButton(
             padding: EdgeInsets.only(right: 20),
             onPressed: () async {
@@ -201,7 +302,8 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
       child: Column(
         children: [
           const SizedBox(height: 10),
-          Image.asset('assets/icons/icon_kita.png'),
+          // Image.asset('assets/icons/icon_kita.png'),
+          _buildItemImage(),
           const SizedBox(height: 15),
           Text(
             itemName,
@@ -232,13 +334,6 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _maintenance?.tasks.length ?? 0,
             itemBuilder: (context, index) {
-              if (_taskChecked.length != _maintenance!.tasks.length) {
-                _taskChecked = List<bool>.filled(
-                  _maintenance!.tasks.length,
-                  false,
-                );
-              }
-
               final task = _maintenance!.tasks[index];
               final checked = _taskChecked[index];
 
@@ -363,6 +458,38 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildItemImage() {
+    if (_loadingItem) {
+      return const SizedBox(
+        height: 120,
+        child: Center(
+          child: CircularProgressIndicator(color: MyColors.secondary),
+        ),
+      );
+    }
+
+    if (_itemImageUrl == null || _itemImageUrl!.isEmpty) {
+      return const Icon(
+        Icons.image_not_supported,
+        size: 100,
+        color: Colors.grey,
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.network(
+        _itemImageUrl!,
+        height: 140,
+        width: 140,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) {
+          return const Icon(Icons.broken_image, size: 100, color: Colors.grey);
+        },
+      ),
     );
   }
 }
