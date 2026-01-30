@@ -12,12 +12,71 @@ class TransactionHistoryPage extends StatefulWidget {
 }
 
 class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
+  // Search
   final TextEditingController _search = TextEditingController();
+
+  // PAGINATION STATE
+  final int _limit = 10;
+  final List<DocumentSnapshot> _docs = [];
+  final ScrollController _scroll = ScrollController();
+
+  DocumentSnapshot? _lastDoc;
+  bool _isLoading = false;
+  bool _hasMore = true;
+
+  // ======================
+  // STEP 2: init & dispose
+  // ======================
+  @override
+  void initState() {
+    super.initState();
+    _loadMore();
+
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 200 &&
+          !_isLoading &&
+          _hasMore) {
+        _loadMore();
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _scroll.dispose();
     _search.dispose();
     super.dispose();
+  }
+
+  // ======================
+  // STEP 3: LOAD MORE
+  // ======================
+  Future<void> _loadMore() async {
+    if (_isLoading || !_hasMore) return;
+
+    setState(() => _isLoading = true);
+
+    Query q = FirebaseFirestore.instance
+        .collection('transaction')
+        .orderBy('createdAt', descending: true)
+        .limit(_limit);
+
+    if (_lastDoc != null) {
+      q = q.startAfterDocument(_lastDoc!);
+    }
+
+    final snap = await q.get();
+
+    if (snap.docs.isNotEmpty) {
+      _lastDoc = snap.docs.last;
+      _docs.addAll(snap.docs);
+    }
+
+    if (snap.docs.length < _limit) {
+      _hasMore = false;
+    }
+
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -72,61 +131,53 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
             /// LIST TRANSAKSI
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('transaction')
-                    .orderBy('createdAt', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('Belum ada transaksi'));
-                  }
-
-                  final q = _search.text.toLowerCase();
-
-                  final docs = snapshot.data!.docs.where((doc) {
-                    if (q.isEmpty) return true;
-
-                    final data = doc.data() as Map<String, dynamic>;
-                    final customer = data['customer'] ?? {};
-                    final summary = data['summary'] ?? {};
-
-                    return [
-                      customer['name'],
-                      customer['phone'],
-                      summary['txCode'],
-                    ].whereType<String>().join(' ').toLowerCase().contains(q);
-                  }).toList();
-
-                  if (docs.isEmpty) {
-                    return const Center(child: Text('Data tidak ditemukan'));
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                    itemCount: docs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) {
-                      final data = docs[i].data() as Map<String, dynamic>;
-                      return _TransactionCardFirestore(
-                        data: data,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TransactionDetailPage(data: data),
-                            ),
+              child: _docs.isEmpty && _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      controller: _scroll,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                      itemCount: _docs.length + (_hasMore ? 1 : 0),
+                      itemBuilder: (context, i) {
+                        // LOADING INDICATOR DI BAWAH
+                        if (i >= _docs.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
                           );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
+                        }
+
+                        final data = _docs[i].data() as Map<String, dynamic>;
+
+                        // SEARCH (client-side)
+                        final q = _search.text.toLowerCase();
+                        if (q.isNotEmpty) {
+                          final customer = data['customer'] ?? {};
+                          final summary = data['summary'] ?? {};
+                          final hay = [
+                            customer['name'],
+                            customer['phone'],
+                            summary['txCode'],
+                          ].whereType<String>().join(' ').toLowerCase();
+
+                          if (!hay.contains(q)) {
+                            return const SizedBox.shrink();
+                          }
+                        }
+
+                        return _TransactionCardFirestore(
+                          data: data,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    TransactionDetailPage(data: data),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         ),
