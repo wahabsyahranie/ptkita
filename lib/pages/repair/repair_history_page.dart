@@ -1,8 +1,12 @@
+// lib/pages/repair/repair_history_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/styles/colors.dart';
-// import 'repair_form_page.dart'; // halaman form yang dibuat di bawah
+import 'package:flutter_kita/pages/repair/repair_add_page.dart';
+
+// pastikan path ini sesuai lokasi file RepairDetailPage kamu
+import 'repair_detail_page.dart';
 
 class RepairHistoryPage extends StatefulWidget {
   const RepairHistoryPage({super.key});
@@ -25,19 +29,21 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
 
   @override
   void dispose() {
-    _search.dispose();
+    // cancel subscription first to avoid callbacks after dispose
     _sub?.cancel();
+    _search.dispose();
     super.dispose();
   }
 
   void _listenRepairs() {
-    // Jika beberapa dokumen lama belum punya 'createdAt', ubah query sesuai DB-mu.
     final col = FirebaseFirestore.instance
         .collection('repair')
         .orderBy('date', descending: true);
 
     _sub = col.snapshots().listen(
       (snap) {
+        // safety: jangan setState jika widget sudah di-unmount
+        if (!mounted) return;
         final docs = snap.docs.map((d) => _docToMap(d)).toList();
         setState(() {
           _items = docs;
@@ -45,6 +51,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
         });
       },
       onError: (e) {
+        if (!mounted) return;
         debugPrint('Firestore listen error: $e');
         setState(() => _loading = false);
       },
@@ -56,15 +63,27 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
   ) {
     final data = d.data();
 
-    final buyer = data['buyerName'] as String;
-    final product = data['itemName'] as String;
-    final tech = data['techName'] as String;
-    final status = data['status'] as String;
-    final warranty = data['warranty'] as bool;
+    // defensif: ambil berbagai kemungkinan nama field
+    final buyer = (data['buyerName'] ?? data['buyer'] ?? '-') as String;
+    final product = (data['itemName'] ?? data['product'] ?? '-') as String;
+    final tech = (data['techName'] ?? data['technician'] ?? '-') as String;
+    final status = (data['status'] ?? '-') as String;
+    // repairType used to determine "Garansi" badge
+    final repairType =
+        (data['repairType'] ?? data['repair_type'] ?? '') as String;
 
-    // DateTime dari Timestamp Firestore
-    final timestamp = data['date'] as Timestamp;
-    final date = timestamp.toDate();
+    // tanggal: ekspektasi field 'date' adalah Timestamp
+    DateTime date = DateTime.now();
+    if (data['date'] is Timestamp) {
+      date = (data['date'] as Timestamp).toDate();
+    } else if (data['date'] is String) {
+      try {
+        date = DateTime.parse(data['date'] as String);
+      } catch (_) {}
+    } else if (data['date'] is DateTime) {
+      date = data['date'] as DateTime;
+    }
+
     final dateText = _fmtShort(date);
 
     return {
@@ -73,10 +92,10 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
       'product': product,
       'technician': tech,
       'status': status,
-      'warranty': warranty,
+      'repairType': repairType,
       'date': date,
       'dateText': dateText,
-      'raw': data,
+      'raw': data, // simpan raw data supaya mudah dikirim ke detail
     };
   }
 
@@ -99,7 +118,6 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
   }
 
   Future<void> _onRefresh() async {
-    // snapshot realtime sudah auto update; hanya beri sedikit delay untuk UX pull-to-refresh
     await Future.delayed(const Duration(milliseconds: 350));
   }
 
@@ -137,7 +155,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // search bar
+            // search bar (now Stateful, safer)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
               child: _SearchBar(
@@ -183,25 +201,56 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
           ],
         ),
       ),
-
-      // floating add button -> buka form
-      // floating add button
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: aksi tambah perbaikan
+        onPressed: () async {
+          // ambil messenger dulu (safely uses context synchronously)
+          final messenger = ScaffoldMessenger.of(context);
+
+          // buka page add (kamu bisa pakai const RepairAddPage() kalau ctor const)
+          final res = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => RepairAddPage()),
+          );
+
+          // widget mungkin sudah di-unmount setelah await -> aman cek mounted
+          if (!mounted) return;
+
+          if (res is Map && res['ok'] == true) {
+            messenger.showSnackBar(const SnackBar(content: Text('Added!')));
+          }
         },
         backgroundColor: MyColors.secondary,
+        shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 }
 
-/// small search bar widget (sama seperti kode kamu)
-class _SearchBar extends StatelessWidget {
+/// Search bar made Stateful to safely listen to controller
+class _SearchBar extends StatefulWidget {
   const _SearchBar({required this.controller, required this.onChanged});
   final TextEditingController controller;
   final VoidCallback onChanged;
+
+  @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  void _listener() => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_listener);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_listener);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -218,8 +267,8 @@ class _SearchBar extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
-              controller: controller,
-              onChanged: (_) => onChanged(),
+              controller: widget.controller,
+              onChanged: (_) => widget.onChanged(),
               decoration: InputDecoration(
                 hintText: 'Cari sesuatu',
                 hintStyle: TextStyle(
@@ -230,11 +279,11 @@ class _SearchBar extends StatelessWidget {
               ),
             ),
           ),
-          if (controller.text.isNotEmpty)
+          if (widget.controller.text.isNotEmpty)
             GestureDetector(
               onTap: () {
-                controller.clear();
-                onChanged();
+                widget.controller.clear();
+                widget.onChanged();
               },
               child: Icon(
                 Icons.close_rounded,
@@ -247,33 +296,46 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-/// Repair Card widget (sama seperti kode kamu, menerima Map data)
+/// Repair Card widget
 class _RepairCard extends StatelessWidget {
   const _RepairCard({required this.data});
   final Map<String, dynamic> data;
 
   @override
   Widget build(BuildContext context) {
-    final status = data['status'] as String;
-    final hasGaransi = data['warranty'] as bool;
-    final dateText = data['dateText'] as String;
-    final buyer = data['buyer'] as String;
-    final product = data['product'] as String;
-    final tech = data['technician'] as String;
+    final status = data['status'] as String? ?? '-';
+    final dateText = data['dateText'] as String? ?? '-';
+    final buyer = data['buyer'] as String? ?? '-';
+    final product = data['product'] as String? ?? '-';
+    final tech = data['technician'] as String? ?? '-';
+    final repairType = (data['repairType'] ?? '') as String;
 
-    final statusBg = status == 'Selesai'
-        ? const Color(0xFFDFF7E5)
-        : const Color(0xFFFFF1E0);
-    final statusFg = status == 'Selesai'
-        ? const Color(0xFF1E8A3D)
-        : const Color(0xFFB87112);
+    // BARU: Logika badge garansi hanya berdasarkan repairType
+    final repairTypeHasGaransi = repairType.toLowerCase().contains('garansi');
+    final hasGaransi = repairTypeHasGaransi;
+
+    final statusBg = status == 'Selesai' ? MyColors.green : MyColors.secondary;
+    final statusFg = status == 'Selesai' ? MyColors.white : MyColors.white;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          // bisa ditambahkan navigasi ke detail (belakang)
+          final raw = data['raw'];
+          final payload = raw != null
+              ? Map<String, dynamic>.from(raw as Map)
+              : Map<String, dynamic>.from(data);
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RepairDetailPage(
+                data: payload,
+                docId: data['id'], // ← INI tambahkan
+              ),
+            ),
+          );
         },
         child: Container(
           decoration: BoxDecoration(
@@ -316,7 +378,7 @@ class _RepairCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // warranty badge
+                    // warranty badge: now depends only on repairType
                     if (hasGaransi)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -324,15 +386,19 @@ class _RepairCard extends StatelessWidget {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3FBFF),
+                          color: MyColors.white,
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            width: 1.8,
+                            color: MyColors.green, // warna hijau terang
+                          ),
                         ),
                         child: Text(
                           'Garansi',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: MyColors.secondary,
+                            color: MyColors.green,
                           ),
                         ),
                       ),

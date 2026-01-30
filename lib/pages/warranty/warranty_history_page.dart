@@ -146,56 +146,6 @@ class _DataGaransiPageState extends State<DataGaransiPage> {
   }
 }
 
-/// Search bar widget (keadaan stateless; parent memaksa rebuild)
-// class _SearchBar extends StatelessWidget {
-//   const _SearchBar({required this.controller, required this.onChanged});
-//   final TextEditingController controller;
-//   final VoidCallback onChanged;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-//       decoration: BoxDecoration(
-//         color: MyColors.white,
-//         borderRadius: BorderRadius.circular(28),
-//         border: Border.all(color: MyColors.secondary.withOpacity(0.22)),
-//       ),
-//       child: Row(
-//         children: [
-//           Icon(Icons.search_rounded, color: MyColors.secondary),
-//           const SizedBox(width: 10),
-//           Expanded(
-//             child: TextField(
-//               controller: controller,
-//               onChanged: (_) => onChanged(),
-//               decoration: InputDecoration(
-//                 hintText: 'Nama Pembeli / No Seri Pembelian',
-//                 hintStyle: TextStyle(
-//                   color: MyColors.secondary.withOpacity(0.6),
-//                 ),
-//                 border: InputBorder.none,
-//                 isDense: true,
-//               ),
-//             ),
-//           ),
-//           if (controller.text.isNotEmpty)
-//             GestureDetector(
-//               onTap: () {
-//                 controller.clear();
-//                 onChanged();
-//               },
-//               child: Icon(
-//                 Icons.close_rounded,
-//                 color: MyColors.secondary.withOpacity(0.7),
-//               ),
-//             ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
 /// small toggle-like chip button
 class _FilterChipButton extends StatelessWidget {
   const _FilterChipButton({
