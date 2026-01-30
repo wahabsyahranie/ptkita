@@ -1,3 +1,4 @@
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
@@ -5,24 +6,63 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/item_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class DetailsInventoryPage extends StatelessWidget {
+class DetailsInventoryPage extends StatefulWidget {
   final Item? item;
-  String limitText(String text, int max) {
-    return text.length <= max ? text : text.substring(0, max) + "...";
+  const DetailsInventoryPage({super.key, required this.item});
+
+  @override
+  State<DetailsInventoryPage> createState() => _DetailsInventoryPageState();
+}
+
+class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
+  Item? _item;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _item = widget.item;
   }
 
-  const DetailsInventoryPage({Key? key, required this.item}) : super(key: key);
+  /// 🔄 Fetch ulang data terbaru dari Firestore
+  Future<void> _refreshItem() async {
+    if (_item == null || _item!.id == null) return;
+
+    setState(() => _loading = true);
+
+    final snap = await FirebaseFirestore.instance
+        .collection('items')
+        .doc(_item!.id)
+        .get();
+
+    if (!snap.exists) return;
+
+    final fresh = Item.fromFirestore(snap, null);
+    if (!mounted) return;
+
+    setState(() {
+      _item = fresh;
+      _loading = false;
+    });
+  }
+
+  /// Membatasi text
+  String limitText(String text, int max) {
+    return text.length <= max ? text : "${text.substring(0, max)}...";
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Firestore values
-    final name = item?.name ?? '-';
-    final sku = item?.sku ?? '-';
-    final price = item?.price ?? 0;
-    final stock = item?.stock ?? 0;
-    final type = item?.type ?? '-';
-    final desc = item?.description ?? '-';
-    final imageUrl = item?.imageUrl;
+    // data Firestore setelah refresh
+    final name = _item?.name ?? '-';
+    final sku = _item?.sku ?? '-';
+    final price = _item?.price ?? 0;
+    final stock = _item?.stock ?? 0;
+    final type = _item?.type ?? '-';
+    final desc = _item?.description ?? '-';
+    final imageUrl = _item?.imageUrl;
+    final merk = _item?.merk ?? '-';
+    final locationCode = _item?.locationCode ?? '-';
 
     return Scaffold(
       appBar: AppBar(
@@ -30,14 +70,22 @@ class DetailsInventoryPage extends StatelessWidget {
         backgroundColor: MyColors.secondary,
         surfaceTintColor: Colors.transparent,
         actions: [
+          /// ============================
+          ///          EDIT BUTTON
+          /// ============================
           IconButton(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AddEditInventoryPage(item: item),
+                  builder: (_) => AddEditInventoryPage(item: _item),
                 ),
               );
+
+              // jika halaman AddEdit return true → refresh
+              if (result == true) {
+                await _refreshItem();
+              }
             },
             icon: Container(
               decoration: BoxDecoration(
@@ -49,7 +97,9 @@ class DetailsInventoryPage extends StatelessWidget {
             ),
           ),
 
-          // Delete
+          /// ============================
+          ///          DELETE BUTTON
+          /// ============================
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: IconButton(
@@ -57,7 +107,7 @@ class DetailsInventoryPage extends StatelessWidget {
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    backgroundColor: Colors.white,
+                    backgroundColor: MyColors.white,
                     title: const Text('Hapus item?'),
                     content: const Text('Item akan dihapus permanen.'),
                     actions: [
@@ -66,7 +116,7 @@ class DetailsInventoryPage extends StatelessWidget {
                         child: const Text(
                           'Batal',
                           style: TextStyle(
-                            color: MyColors.secondary, // ← warna secondary
+                            color: MyColors.secondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -76,7 +126,7 @@ class DetailsInventoryPage extends StatelessWidget {
                         child: const Text(
                           'Hapus',
                           style: TextStyle(
-                            color: MyColors.secondary, // ← warna secondary
+                            color: MyColors.secondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -85,10 +135,24 @@ class DetailsInventoryPage extends StatelessWidget {
                   ),
                 );
 
-                if (ok == true && item?.id != null) {
+                if (ok == true && _item?.id != null) {
+                  // 1. Ambil URL gambar
+                  final imageUrl = _item?.imageUrl;
+
+                  // 2. Jika ada gambar, hapus dari Storage
+                  if (imageUrl != null && imageUrl.isNotEmpty) {
+                    try {
+                      final ref = FirebaseStorage.instance.refFromURL(imageUrl);
+                      await ref.delete();
+                    } catch (e) {
+                      debugPrint("Gagal hapus file di storage: $e");
+                    }
+                  }
+
+                  // 3. Hapus dokumen dari Firestore
                   await FirebaseFirestore.instance
                       .collection('items')
-                      .doc(item!.id)
+                      .doc(_item!.id)
                       .delete();
 
                   if (context.mounted) {
@@ -111,142 +175,182 @@ class DetailsInventoryPage extends StatelessWidget {
           ),
         ],
       ),
+
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // TOP BANNER WITH IMAGE
-            Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                Container(
-                  height: 300,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: MyColors.secondary,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(40),
-                      bottomRight: Radius.circular(40),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
 
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: imageUrl != null && imageUrl.isNotEmpty
-                          ? Image.network(
-                              imageUrl,
-                              width: 230,
-                              height: 230,
-                              fit: BoxFit.cover,
-                            )
-                          : _placeholder(), // fallback
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        limitText(name, 30),
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 20,
-                          color: MyColors.background,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+      /// Loading indicator kecil di bawah AppBar
+      body: Stack(
+        children: [
+          _buildContent(
+            name,
+            sku,
+            price,
+            stock,
+            type,
+            desc,
+            imageUrl,
+            merk,
+            locationCode,
+          ),
 
-            const SizedBox(height: 20),
-
-            // CONTENT
+          if (_loading)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // NAMA
-                  _rowInfo("Nama", limitText(name, 45)),
-                  const DottedlineWidget(),
-                  const SizedBox(height: 10),
-
-                  // HARGA
-                  _rowInfo("Harga", "Rp $price"),
-                  const DottedlineWidget(),
-                  const SizedBox(height: 10),
-
-                  // SKU
-                  _rowInfo("SKU", sku),
-                  const DottedlineWidget(),
-                  const SizedBox(height: 10),
-
-                  // STOK
-                  _rowInfo("Stok", stock.toString()),
-                  const DottedlineWidget(),
-                  const SizedBox(height: 10),
-
-                  // TYPE
-                  _rowInfo("Type", type),
-                  const DottedlineWidget(),
-                  const SizedBox(height: 10),
-
-                  // DESKRIPSI
-                  const Text(
-                    "Deskripsi",
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                  ),
-                  Text(desc),
-                  const DottedlineWidget(),
-
-                  const SizedBox(height: 30),
-
-                  // CLOSE BUTTON
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: double.infinity,
-                      height: 55,
-                      decoration: BoxDecoration(
-                        color: MyColors.secondary,
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        "Tutup",
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: MyColors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
+              color: Colors.white.withOpacity(0.4),
+              child: const Center(
+                child: CircularProgressIndicator(color: MyColors.secondary),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  /// Reusable Row for simple key-value
+  Widget _buildContent(
+    String name,
+    String sku,
+    num price,
+    int stock,
+    String type,
+    String desc,
+    String? imageUrl,
+    String merk,
+    String locationCode,
+  ) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // ======== TOP IMAGE ========
+          Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              Container(
+                height: 300,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: MyColors.secondary,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: imageUrl != null && imageUrl.isNotEmpty
+                        ? Image.network(
+                            imageUrl,
+                            width: 230,
+                            height: 230,
+                            fit: BoxFit.cover,
+                          )
+                        : _placeholder(),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      limitText(name, 30),
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        color: MyColors.background,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // ========= BODY DETAIL =========
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _rowInfo("Nama", limitText(name, 45)),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                _rowInfo("Harga", "Rp $price"),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                _rowInfo("SKU", sku),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                _rowInfo("Stok", stock.toString()),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                _rowInfo("Type", type),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                _rowInfo("Merk", merk),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                _rowInfo("Rak", locationCode),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                const Text(
+                  "Deskripsi",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                Text(desc),
+                const DottedlineWidget(),
+
+                const SizedBox(height: 30),
+
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: double.infinity,
+                    height: 55,
+                    decoration: BoxDecoration(
+                      color: MyColors.secondary,
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      "Tutup",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: MyColors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Row reusable
   Widget _rowInfo(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

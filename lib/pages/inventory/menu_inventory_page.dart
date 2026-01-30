@@ -1,14 +1,13 @@
-// lib/pages/inventory/menu_inventory_page.dart
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
-import 'package:flutter_kita/pages/inventory/add_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/item_model.dart';
+import 'package:flutter_kita/widget/sheets/filter_sheet.dart';
 
 class MenuInventoryPage extends StatefulWidget {
   const MenuInventoryPage({super.key});
@@ -22,19 +21,19 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
   int itemsToShow = 6; // jumlah awal yang ditampilkan
   final int _increment = 6; // bertambah berapa tiap load more
 
-  // ====== ADDED: search controller & query ======
+  // search
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
-  Timer? _searchDebounce; // debounce timer
-  // =============================================
+  Timer? _searchDebounce;
+
+  // applied filters (null = tidak ada filter)
+  Map<String, dynamic>? _appliedFilter;
 
   @override
   void initState() {
     super.initState();
 
-    // listener untuk infinite scroll (UI-side pagination)
     _scrollController.addListener(() {
-      // jika sudah hampir di ujung bawah, tambah itemsToShow
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 120) {
         setState(() {
@@ -46,19 +45,14 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
 
   @override
   void dispose() {
-    // remove listener by disposing controller
     _scrollController.dispose();
-
-    // dispose search controller and cancel debounce timer
     _searchCtrl.dispose();
     _searchDebounce?.cancel();
-
     super.dispose();
   }
 
-  // ====== NEW: debounced onChanged handler ======
+  // debounce search
   void _onSearchChanged(String value) {
-    // kalau kosong, apply langsung supaya daftar kembali full (UX-friendly)
     if (value.trim().isEmpty) {
       _searchDebounce?.cancel();
       setState(() {
@@ -73,81 +67,185 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
       if (!mounted) return;
       setState(() {
         _searchQuery = value.toLowerCase().trim();
-        itemsToShow = 6; // reset pagination saat query baru
+        itemsToShow = 6;
       });
     });
   }
-  // =============================================
+
+  /// Build Firestore query dynamically based on _appliedFilter.
+  /// Always returns a Query<Item> with converter.
+  Query<Item> _buildQuery() {
+    // start base query
+    Query base = FirebaseFirestore.instance.collection('items');
+
+    // apply availability
+    final availability = _appliedFilter?['availability'] as String?;
+    if (availability != null) {
+      if (availability == 'tersedia') {
+        // stock > 0
+        base = base.where('stock', isGreaterThan: 0);
+      } else if (availability == 'habis') {
+        base = base.where('stock', isEqualTo: 0);
+      }
+    }
+
+    // apply category/type
+    final category = _appliedFilter?['category'] as String?;
+    if (category != null && category.isNotEmpty) {
+      base = base.where('type', isEqualTo: category);
+    }
+
+    // apply brands (merk)
+    final brands =
+        _appliedFilter?['brands'] as List<dynamic>?; // dynamic from sheet
+    if (brands != null && brands.isNotEmpty) {
+      // if only one brand, it's fine to use isEqualTo,
+      // otherwise use whereIn (Firestore supports up to 10 elements for 'in')
+      final cleaned = brands.map((e) => e.toString()).toList();
+      if (cleaned.length == 1) {
+        base = base.where('merk', isEqualTo: cleaned.first);
+      } else {
+        base = base.where('merk', whereIn: cleaned);
+      }
+    }
+
+    // finally order by name for stable UI (if no inequality on name)
+    base = base.orderBy('name');
+
+    // return with converter
+    return base.withConverter<Item>(
+      fromFirestore: Item.fromFirestore,
+      toFirestore: (Item item, _) => item.toFirestore(),
+    );
+  }
+
+  // open filter sheet and apply result
+  Future<void> _openFilterSheet() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        // wrap to give rounded white background
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+          ),
+          child: const FilterSheet(),
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _appliedFilter = result;
+        itemsToShow = 6; // reset pagination when apply filter
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final col = FirebaseFirestore.instance
-        .collection('items')
-        .withConverter<Item>(
-          fromFirestore: Item.fromFirestore,
-          toFirestore: (Item item, _) => item.toFirestore(),
-        )
-        .orderBy('name');
+    final query = _buildQuery();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Data Barang'),
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        actions: [
-          // tombol add
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddEditInventoryPage(),
+        elevation: 2,
+        shadowColor: Colors.black.withOpacity(0.25),
+        title: const Text("Data Barang"),
+
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(70),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    // ← Search bar harus Expanded!
+                    Expanded(
+                      child: SearchBarWidget(
+                        controller: _searchCtrl,
+                        hintText: 'Cari nama atau SKU',
+                        onChanged: _onSearchChanged,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // tombol add
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: MyColors.secondary,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: IconButton(
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AddEditInventoryPage(),
+                            ),
+                          );
+                          if (!mounted) return;
+                          setState(() {
+                            _appliedFilter = null;
+                            _searchQuery = '';
+                            _searchCtrl.clear();
+                            itemsToShow = 6;
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // tombol filter
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: MyColors.secondary,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: IconButton(
+                        onPressed: _openFilterSheet,
+                        icon: const Icon(
+                          Icons.filter_alt,
+                          color: Colors.white,
+                          size: 25,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
-            icon: Container(
-              decoration: BoxDecoration(
-                color: MyColors.secondary,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.add, color: Colors.white),
+                const SizedBox(height: 5),
+              ],
             ),
           ),
-          // tombol filter
-          IconButton(
-            onPressed: () {
-              // panggil sheet filter
-            },
-            icon: Container(
-              decoration: BoxDecoration(
-                color: MyColors.secondary,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.menu, color: Colors.white),
-            ),
-          ),
-        ],
+        ),
       ),
+
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
           child: Column(
             children: [
-              // ====== pass the debounced handler to SearchBarWidget ======
-              SearchBarWidget(
-                controller: _searchCtrl,
-                hintText: 'Cari nama atau SKU',
-                onChanged: _onSearchChanged, // <-- gunakan fungsi debounce
-              ),
-              const SizedBox(height: 10),
-
-              // StreamBuilder untuk realtime updates
+              // Use stream from dynamic query
               Expanded(
                 child: StreamBuilder<QuerySnapshot<Item>>(
-                  stream: col.snapshots(),
+                  stream: query.snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Center(child: Text('Error: ${snapshot.error}'));
@@ -165,9 +263,10 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
                       return const Center(child: Text('Belum ada data.'));
                     }
 
+                    // convert to model list
                     final allItems = docs.map((d) => d.data()).toList();
 
-                    // ====== ADDED: filter client-side using _searchQuery ======
+                    // still apply client-side search (name or sku)
                     final filtered = _searchQuery.isEmpty
                         ? allItems
                         : allItems.where((item) {
@@ -176,9 +275,8 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
                             return name.contains(_searchQuery) ||
                                 sku.contains(_searchQuery);
                           }).toList();
-                    // =================================================================
 
-                    // Batasi sesuai itemsToShow (apply pagination to filtered list)
+                    // pagination UI-side
                     final effectiveCount = itemsToShow > filtered.length
                         ? filtered.length
                         : itemsToShow;
@@ -196,7 +294,25 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
                           ),
                       itemCount: showing.length,
                       itemBuilder: (context, index) {
-                        return _BarangBox(item: showing[index]);
+                        final itm = showing[index];
+                        return GestureDetector(
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => DetailsInventoryPage(item: itm),
+                              ),
+                            );
+                            if (!mounted) return;
+                            setState(() {
+                              _appliedFilter = null;
+                              _searchQuery = '';
+                              _searchCtrl.clear();
+                              itemsToShow = 6;
+                            });
+                          },
+                          child: _BarangBox(item: itm),
+                        );
                       },
                     );
                   },
@@ -210,10 +326,11 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
   }
 }
 
+// _BarangBox unchanged from your code
 class _BarangBox extends StatelessWidget {
   final Item item;
 
-  const _BarangBox({required this.item, super.key});
+  const _BarangBox({required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +339,7 @@ class _BarangBox extends StatelessWidget {
     final stock = item.stock ?? 0;
     final price = item.price ?? 0;
     final imageUrl = item.imageUrl;
-    final description = item.description;
+    // final description = item.description;
 
     return InkWell(
       onTap: () {

@@ -25,7 +25,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     // Buat pages tanpa endDrawer di inner scaffold
-    final List<Widget> _pages = [
+    final List<Widget> pages = [
       // index 0 - halaman utama (tanpa endDrawer di sini)
       SafeArea(
         child: Padding(
@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage> {
         extendBody: true,
         // Pindahkan endDrawer ke sini agar drawer muncul di atas bottomNavigationBar
         endDrawer: const NavigationDrawerWidget(),
-        body: IndexedStack(index: _currentIndex, children: _pages),
+        body: IndexedStack(index: _currentIndex, children: pages),
         bottomNavigationBar: NavigationBottomWidget(
           activeIndex: _currentIndex,
           onTap: _onTapNav,

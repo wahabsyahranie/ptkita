@@ -14,8 +14,7 @@ class FormInventoryPage extends StatefulWidget {
   final Item? initialItem;
   final void Function()? onSaved; // optional callback after save
 
-  const FormInventoryPage({Key? key, this.initialItem, this.onSaved})
-    : super(key: key);
+  const FormInventoryPage({super.key, this.initialItem, this.onSaved});
 
   @override
   State<FormInventoryPage> createState() => _InventoryFormState();
@@ -33,7 +32,9 @@ class _InventoryFormState extends State<FormInventoryPage> {
   late final TextEditingController _priceCtrl;
   late final TextEditingController _stockCtrl;
   late final TextEditingController _descCtrl;
+  late final TextEditingController _locationCtrl;
   String? _selectedType;
+  String? _selectedMerk;
   bool _isSaving = false;
   double _uploadProgress = 0.0;
 
@@ -58,6 +59,8 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _descCtrl = TextEditingController(text: it?.description ?? '');
     _selectedType = it?.type;
     _existingImageUrl = it?.imageUrl;
+    _selectedMerk = it?.merk;
+    _locationCtrl = TextEditingController(text: it?.locationCode ?? '');
   }
 
   @override
@@ -67,6 +70,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _priceCtrl.dispose();
     _stockCtrl.dispose();
     _descCtrl.dispose();
+    _locationCtrl.dispose();
     super.dispose();
   }
 
@@ -185,6 +189,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     final priceText = _priceCtrl.text.trim();
     final stockText = _stockCtrl.text.trim();
     final desc = _descCtrl.text.trim();
+    final location = _locationCtrl.text.trim();
 
     final priceNum =
         num.tryParse(priceText.replaceAll(',', '').replaceAll('.', '')) ?? 0;
@@ -201,6 +206,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
         builder: (_) => WillPopScope(
           onWillPop: () async => false,
           child: Dialog(
+            backgroundColor: MyColors.white,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -208,7 +214,10 @@ class _InventoryFormState extends State<FormInventoryPage> {
                   const SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: MyColors.secondary,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -220,8 +229,6 @@ class _InventoryFormState extends State<FormInventoryPage> {
                               ? 'Menyimpan...'
                               : 'Memperbarui...',
                         ),
-                        const SizedBox(height: 8),
-                        LinearProgressIndicator(value: _uploadProgress),
                       ],
                     ),
                   ),
@@ -251,6 +258,8 @@ class _InventoryFormState extends State<FormInventoryPage> {
         'type': _selectedType ?? 'unit',
         'imageUrl': imageUrl,
         'description': desc.isEmpty ? null : desc,
+        'merk': _selectedMerk ?? 'nomerk',
+        'locationCode': location,
       };
 
       if (widget.initialItem == null) {
@@ -446,10 +455,30 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 },
               ),
               const SizedBox(height: 15),
+              const Text("Rak"),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _locationCtrl,
+                cursorColor: MyColors.background,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: "Masukkan kode rak",
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: MyColors.secondary, width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Rak wajib diisi";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
               const Text("Tipe"),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 items: const [
                   DropdownMenuItem(value: "unit", child: Text("Unit")),
                   DropdownMenuItem(value: "part", child: Text("Part")),
@@ -469,6 +498,41 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return 'Tipe wajib diisi';
+                  }
+                  return null;
+                },
+                iconEnabledColor: MyColors.background,
+                dropdownColor: Colors.white,
+              ),
+              const SizedBox(height: 15),
+              const Text("Merk"),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedMerk,
+                items: const [
+                  DropdownMenuItem(value: "firman", child: Text("Firman")),
+                  DropdownMenuItem(
+                    value: "black+decker",
+                    child: Text("Black+Decker"),
+                  ),
+                  DropdownMenuItem(value: "stanley", child: Text("Stanley")),
+                  DropdownMenuItem(value: "dewalt", child: Text("Dewalt")),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedMerk = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: "Pilih merk barang",
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: MyColors.secondary, width: 2),
+                  ),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Merk wajib diisi';
                   }
                   return null;
                 },

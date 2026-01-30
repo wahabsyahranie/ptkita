@@ -34,7 +34,7 @@ class NavigationBottomWidget extends StatelessWidget {
               children: [
                 // Right-of-center icon (index 2)
                 IconButton(
-                  onPressed: () => onTap(2),
+                  onPressed: () => onTap(1),
                   icon: Icon(
                     Icons.home_repair_service,
                     color: MyColors.background,

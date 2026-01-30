@@ -110,11 +110,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
     final filtered = _items.where((e) {
       if (q.isNotEmpty) {
         final s =
-            ((e['buyer'] ?? '') as String).toLowerCase() +
-            ' ' +
-            ((e['product'] ?? '') as String).toLowerCase() +
-            ' ' +
-            ((e['technician'] ?? '') as String).toLowerCase();
+            '${((e['buyer'] ?? '') as String).toLowerCase()} ${((e['product'] ?? '') as String).toLowerCase()} ${((e['technician'] ?? '') as String).toLowerCase()}';
         return s.contains(q);
       }
       return true;
