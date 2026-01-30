@@ -115,8 +115,6 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
 
     final payload = {
       'active': true,
-      if (widget.initialItem == null) 'status': 'pending',
-      'priority': _selectedPriority,
 
       // 🔗 reference ke item
       'itemId': FirebaseFirestore.instance

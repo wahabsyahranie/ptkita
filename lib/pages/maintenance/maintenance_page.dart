@@ -40,7 +40,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
   //
   // Tujuan:
   // - Fokus ke perawatan yang perlu segera ditangani
-  // - Menghindari menampilkan data "selesai" sejak awal
+  // - Fokus pada perawatan yang perlu ditangani (terlambat & terjadwal)
+
   @override
   void initState() {
     super.initState();
@@ -85,17 +86,16 @@ class _MaintenancePageState extends State<MaintenancePage> {
       // tetapi juga hasil perbandingan waktu.
       if (filter.statuses.isNotEmpty) {
         // TERLAMBAT:
-        final isLate = next.isBefore(now) && m.status != 'selesai';
+        final isLate = next.isBefore(now);
         // TERJADWAL:
-        final isScheduled = next.isAfter(now) && m.status != 'selesai';
+        final isScheduled = next.isAfter(now);
 
         // - Filter meminta "terlambat" DAN data terlambat
         // - Filter meminta "terjadwal" DAN data terjadwal
         // - Filter meminta "selesai" DAN status = selesai
         final statusMatch =
             (filter.statuses.contains('terlambat') && isLate) ||
-            (filter.statuses.contains('terjadwal') && isScheduled) ||
-            (filter.statuses.contains('selesai') && m.status == 'selesai');
+            (filter.statuses.contains('terjadwal') && isScheduled);
 
         // Jika tidak cocok → buang data
         if (!statusMatch) return false;
@@ -152,6 +152,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: MyColors.white,
+      useSafeArea: true,
       builder: (_) {
         return MaintenanceFilterSheet(initialFilter: _appliedFilter);
       },
@@ -186,7 +187,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
         surfaceTintColor: Colors.transparent,
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.25),
-        title: const Text("Data Perawatan"),
+        title: const Text("Daftar Perawatan"),
 
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(70),
@@ -338,14 +339,7 @@ class _MaintenanceBox extends StatelessWidget {
   }
 
   Color _statusColor(String status) {
-    switch (status) {
-      case 'terlambat':
-        return Colors.orange.shade100;
-      case 'selesai':
-        return Colors.grey.shade300;
-      default:
-        return Colors.green.shade100; // terjadwal
-    }
+    return status == 'terlambat' ? Colors.red.shade100 : Colors.green.shade100;
   }
 
   @override
@@ -353,21 +347,18 @@ class _MaintenanceBox extends StatelessWidget {
     final name = main.itemName;
     final sku = main.sku ?? '-';
     final nextMaintenanceAt = _formatDate(main.nextMaintenanceAt);
-    final intervalDays = main.intervalDays ?? 0;
-    final priority = main.priority ?? 'rendah';
-    // final status = main.status ?? '-';
+    final intervalDays = main.intervalDays;
+    final priority = main.priority;
 
     // helper build qlient status
-    String _computedStatus(Maintenance m) {
+    String _computedStatus() {
       final now = DateTime.now();
-      final next = m.nextMaintenanceAt!.toDate();
+      final next = main.nextMaintenanceAt!.toDate();
 
-      if (m.status == 'selesai') return 'selesai';
-      if (next.isBefore(now)) return 'terlambat';
-      return 'terjadwal';
+      return next.isBefore(now) ? 'terlambat' : 'terjadwal';
     }
 
-    final status = _computedStatus(main);
+    final status = _computedStatus();
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),

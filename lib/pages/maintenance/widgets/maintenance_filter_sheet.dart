@@ -66,7 +66,7 @@ class _MaintenanceFilterSheetState extends State<MaintenanceFilterSheet> {
             const SizedBox(height: 10),
             Wrap(
               spacing: 12,
-              children: ['terlambat', 'terjadwal', 'selesai'].map((s) {
+              children: ['terlambat', 'terjadwal'].map((s) {
                 return _chipButton(
                   label: s,
                   selected: statuses.contains(s),
