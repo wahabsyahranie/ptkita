@@ -79,6 +79,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     setState(() => _isLoading = false);
   }
 
+  // build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
