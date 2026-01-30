@@ -62,6 +62,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     final desc = _item?.description ?? '-';
     final imageUrl = _item?.imageUrl;
     final merk = _item?.merk ?? '-';
+    final locationCode = _item?.locationCode ?? '-';
 
     return Scaffold(
       appBar: AppBar(
@@ -180,7 +181,17 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
       /// Loading indicator kecil di bawah AppBar
       body: Stack(
         children: [
-          _buildContent(name, sku, price, stock, type, desc, imageUrl, merk),
+          _buildContent(
+            name,
+            sku,
+            price,
+            stock,
+            type,
+            desc,
+            imageUrl,
+            merk,
+            locationCode,
+          ),
 
           if (_loading)
             Container(
@@ -203,6 +214,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     String desc,
     String? imageUrl,
     String merk,
+    String locationCode,
   ) {
     return SingleChildScrollView(
       child: Column(
@@ -293,6 +305,10 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const SizedBox(height: 10),
 
                 _rowInfo("Merk", merk),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                _rowInfo("Rak", locationCode),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
