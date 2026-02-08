@@ -4,153 +4,7 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
 import 'package:flutter_kita/pages/inventory/menu_inventory_page.dart';
-
-// class HomePage extends StatefulWidget {
-//   const HomePage({super.key});
-
-//   @override
-//   State<HomePage> createState() => _HomePageState();
-// }
-
-// class _HomePageState extends State<HomePage> {
-//   // 👉 menambah controller search bar di sini
-//   final TextEditingController _search = TextEditingController();
-//   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-//   int _currentIndex = 0;
-
-//   void _onTapNav(int index) {
-//     setState(() => _currentIndex = index);
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     // Buat pages tanpa endDrawer di inner scaffold
-//     final List<Widget> pages = [
-//       // index 0 - halaman utama (tanpa endDrawer di sini)
-//       SafeArea(
-//         child: Padding(
-//           padding: const EdgeInsets.all(25),
-//           child: Column(
-//             children: [
-//               Row(
-//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                 children: [
-//                   Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Text(
-//                         'Selamat datang,',
-//                         style: TextStyle(
-//                           fontSize: 14,
-//                           fontWeight: FontWeight.w400,
-//                         ),
-//                       ),
-//                       const SizedBox(height: 8),
-//                       Text(
-//                         'Wahab Syahranie',
-//                         style: TextStyle(
-//                           fontSize: 16,
-//                           fontWeight: FontWeight.w700,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                   Builder(
-//                     builder: (innerCtx) {
-//                       return Row(
-//                         children: [
-//                           Container(
-//                             decoration: BoxDecoration(
-//                               color: MyColors.secondary,
-//                               borderRadius: BorderRadius.circular(25),
-//                             ),
-//                             padding: EdgeInsets.all(12),
-//                             child: Icon(
-//                               Icons.notifications,
-//                               color: MyColors.white,
-//                             ),
-//                           ),
-//                           const SizedBox(width: 10),
-//                           InkWell(
-//                             // gunakan scaffoldKey untuk membuka endDrawer root
-//                             onTap: () {
-//                               _scaffoldKey.currentState?.openEndDrawer();
-//                             },
-//                             child: Container(
-//                               width: 53,
-//                               height: 53,
-//                               decoration: BoxDecoration(shape: BoxShape.circle),
-//                               clipBehavior: Clip.antiAlias,
-//                               child: Image.asset(
-//                                 'assets/images/person_image.jpg',
-//                                 fit: BoxFit.cover,
-//                               ),
-//                             ),
-//                           ),
-//                         ],
-//                       );
-//                     },
-//                   ),
-//                 ],
-//               ),
-//               const SizedBox(height: 25),
-//             ],
-//           ),
-//         ),
-//       ),
-
-//       // index 1
-//       // const CapturePage(),
-
-//       // index 2
-//       const MenuInventoryPage(),
-//     ];
-
-//     return WillPopScope(
-//       onWillPop: () async {
-//         if (_currentIndex != 0) {
-//           setState(() => _currentIndex = 0);
-//           return false;
-//         }
-//         return true;
-//       },
-//       child: Scaffold(
-//         backgroundColor: Colors.white,
-//         key: _scaffoldKey, // <--- root scaffold key
-//         extendBody: true,
-//         // Pindahkan endDrawer ke sini agar drawer muncul di atas bottomNavigationBar
-//         endDrawer: const NavigationDrawerWidget(),
-//         body: IndexedStack(index: _currentIndex, children: pages),
-//         bottomNavigationBar: NavigationBottomWidget(
-//           activeIndex: _currentIndex,
-//           onTap: _onTapNav,
-//         ),
-//         // resizeToAvoidBottomInset: false,
-//         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-//         floatingActionButton: MediaQuery.of(context).viewInsets.bottom > 0
-//             ? null
-//             : SizedBox(
-//                 width: 60,
-//                 height: 60,
-//                 child: FloatingActionButton(
-//                   heroTag: null,
-//                   shape: const CircleBorder(),
-//                   onPressed: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(builder: (_) => const CapturePage()),
-//                     );
-//                   },
-
-//                   backgroundColor: MyColors.secondary,
-//                   elevation: 4,
-//                   child: Icon(Icons.qr_code, color: MyColors.white),
-//                 ),
-//               ),
-//       ),
-//     );
-//   }
-// }
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -167,6 +21,58 @@ class _HomePageState extends State<HomePage> {
 
   void _onTapNav(int index) {
     setState(() => _currentIndex = index);
+  }
+
+  // QUERY CARD JENIS BARANG
+  Stream<int> _totalItemsStream() {
+    return FirebaseFirestore.instance
+        .collection('items')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  //QUERY CARD STOK HABIS
+  Stream<int> _outOfStockStream() {
+    return FirebaseFirestore.instance
+        .collection('items')
+        .where('stock', isEqualTo: 0)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  //HELPER CARD HARI INI
+  DateTime _todayStart() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  DateTime _todayEnd() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+  }
+
+  //QUERY CARD PERAWATAN HARI INI
+  Stream<int> _totalMaintenanceTodayStream() {
+    final start = Timestamp.fromDate(_todayStart());
+    final end = Timestamp.fromDate(_todayEnd());
+
+    return FirebaseFirestore.instance
+        .collection('maintenance')
+        .where('nextMaintenanceAt', isGreaterThanOrEqualTo: start)
+        .where('nextMaintenanceAt', isLessThanOrEqualTo: end)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  //QUERY CARD PERAWATAN HARI INI (SELESAI)
+  Stream<int> _completedMaintenanceStream() {
+    final start = Timestamp.fromDate(_todayStart());
+
+    return FirebaseFirestore.instance
+        .collection('maintenance')
+        .where('nextMaintenanceAt', isLessThan: start)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
   }
 
   @override
@@ -285,61 +191,96 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-
-            // Container(
-            //   width: 53,
-            //   height: 53,
-            //   decoration: const BoxDecoration(shape: BoxShape.circle),
-            //   clipBehavior: Clip.antiAlias,
-            //   child: Image.asset(
-            //     'assets/images/person_image.jpg',
-            //     fit: BoxFit.cover,
-            //   ),
-            // ),
           ],
         ),
       ],
     );
   }
 
+  //WIDGET PERAWATAN HARI INI
   Widget _todayMaintenanceCard() {
+    return StreamBuilder<int>(
+      stream: _totalMaintenanceTodayStream(),
+      builder: (context, totalSnapshot) {
+        if (!totalSnapshot.hasData) {
+          return _maintenanceLoadingCard();
+        }
+
+        return StreamBuilder<int>(
+          stream: _completedMaintenanceStream(),
+          builder: (context, completedSnapshot) {
+            if (!completedSnapshot.hasData) {
+              return _maintenanceLoadingCard();
+            }
+
+            final total = totalSnapshot.data!;
+            final completed = completedSnapshot.data!;
+            final progress = total == 0 ? 1.0 : completed / total;
+
+            return Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: MyColors.greySoft,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Perawatan Hari Ini',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('$completed / $total perawatan selesai'),
+                    ],
+                  ),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 6,
+                          backgroundColor: Colors.white,
+                          valueColor: AlwaysStoppedAnimation(
+                            MyColors.secondary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${(progress * 100).round()}%',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  //HELPER LOADING (PERAWATAN HARI INI)
+  Widget _maintenanceLoadingCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: MyColors.greySoft,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                'Perawatan Hari Ini',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text('6/8 perawatan selesai'),
-            ],
-          ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(
-                  value: 0.75,
-                  strokeWidth: 6,
-                  backgroundColor: Colors.white,
-                  valueColor: AlwaysStoppedAnimation(MyColors.secondary),
-                ),
-              ),
-              const Text('75%', style: TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ],
+      child: const SizedBox(
+        height: 60,
+        child: Center(child: CircularProgressIndicator()),
       ),
     );
   }
@@ -347,18 +288,70 @@ class _HomePageState extends State<HomePage> {
   Widget _statisticCards() {
     return Row(
       children: [
-        _statCard(
-          title: 'Jenis Barang',
-          value: '20 pcs.',
-          subtitle: 'Jumlah jenis barang tersedia',
-          icon: Icons.inventory_2_outlined,
+        //CARD JENIS BARANG
+        StreamBuilder<int>(
+          stream: _totalItemsStream(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _statCard(
+                title: 'Jenis Barang',
+                value: '...',
+                subtitle: 'Memuat data',
+                icon: Icons.inventory_2_outlined,
+              );
+            }
+
+            if (snapshot.hasError) {
+              return _statCard(
+                title: 'Jenis Barang',
+                value: '-',
+                subtitle: 'Gagal memuat data',
+                icon: Icons.inventory_2_outlined,
+              );
+            }
+
+            final totalItems = snapshot.data ?? 0;
+
+            return _statCard(
+              title: 'Jenis Barang',
+              value: '$totalItems pcs.',
+              subtitle: 'Jumlah jenis barang tersedia',
+              icon: Icons.inventory_2_outlined,
+            );
+          },
         ),
         const SizedBox(width: 15),
-        _statCard(
-          title: 'Stok Habis',
-          value: '10 pcs.',
-          subtitle: 'Cek barang dengan stok kosong',
-          icon: Icons.production_quantity_limits_outlined,
+        //CARD STOK HABIS
+        StreamBuilder<int>(
+          stream: _outOfStockStream(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _statCard(
+                title: 'Stok Habis',
+                value: '...',
+                subtitle: 'Memuat data',
+                icon: Icons.production_quantity_limits_outlined,
+              );
+            }
+
+            if (snapshot.hasError) {
+              return _statCard(
+                title: 'Stok Habis',
+                value: '-',
+                subtitle: 'Gagal memuat data',
+                icon: Icons.production_quantity_limits_outlined,
+              );
+            }
+
+            final totalOutOfStock = snapshot.data ?? 0;
+
+            return _statCard(
+              title: 'Stok Habis',
+              value: '$totalOutOfStock pcs.',
+              subtitle: 'Cek barang dengan stok kosong',
+              icon: Icons.production_quantity_limits_outlined,
+            );
+          },
         ),
       ],
     );
