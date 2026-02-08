@@ -48,6 +48,10 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // =========================
   DateTime? _transactionDate;
 
+  DateTime _addYears(DateTime date, int years) {
+    return DateTime(date.year + years, date.month, date.day);
+  }
+
   // =========================
   // CART
   // =========================
@@ -104,19 +108,6 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
 
     final price = _selectedItem!['price'] as int;
 
-    DateTime? startAt;
-    DateTime? expireAt;
-
-    if (_hasWarranty) {
-      final result = _calculateWarrantyDate(
-        start: _transactionDate!,
-        durationYear: _warrantyYear,
-      );
-
-      startAt = result['startAt'];
-      expireAt = result['expireAt'];
-    }
-
     setState(() {
       _cartItems.add({
         'itemId': _selectedItem!['id'],
@@ -124,19 +115,20 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
         'price': price,
         'qty': _qty,
         'subtotal': _qty * price,
+
+        // ===== GARANSI (DIRATAKAN) =====
         'hasWarranty': _hasWarranty,
-        if (_hasWarranty)
-          'warranty': {
-            'type': _warrantyType,
-            'durationYear': _warrantyYear,
-            'startAt': Timestamp.fromDate(startAt!),
-            'expireAt': Timestamp.fromDate(expireAt!),
-          },
+        'warrantyYear': _hasWarranty ? _warrantyYear : 0,
+        'warrantyType': _hasWarranty ? _warrantyType : null,
+        'serialNumber': '', // nanti bisa diisi kalau mau
       });
 
       _selectedItem = null;
       _selectedItemId = null;
       _qty = 1;
+      _hasWarranty = true;
+      _warrantyYear = 1;
+      _warrantyType = 'Jasa';
     });
   }
 
@@ -180,6 +172,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     // SIMPAN KE FIRESTORE (1x)
     // =========================
     final txRef = FirebaseFirestore.instance.collection('transaction').doc();
+    final transactionId = txRef.id;
 
     await txRef.set({
       'customer': {
@@ -192,6 +185,15 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       'status': 'Sudah Dibayar',
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    // =========================
+    // 🔥 AUTO CREATE WARRANTY (DI SINI)
+    // =========================
+    await _createWarrantiesFromTransaction(
+      transactionId: transactionId,
+      buyerName: _nameCtrl.text.trim(),
+      items: _cartItems,
+    );
 
     // =========================
     // OPTIONAL: KURANGI STOK
@@ -677,18 +679,39 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     }
   }
 
-  Map<String, DateTime> _calculateWarrantyDate({
-    required DateTime start,
-    required int durationYear,
-  }) {
-    final startAt = start;
-    final expireAt = DateTime(
-      start.year + durationYear,
-      start.month,
-      start.day,
-    );
+  Future<void> _createWarrantiesFromTransaction({
+    required String transactionId,
+    required String buyerName,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final now = DateTime.now();
+    final warrantyRef = FirebaseFirestore.instance.collection('warranty');
 
-    return {'startAt': startAt, 'expireAt': expireAt};
+    for (final item in items) {
+      if (item['hasWarranty'] != true) continue;
+
+      final int duration = (item['warrantyYear'] ?? 0) as int;
+      if (duration <= 0) continue;
+
+      final startAt = now;
+      final expireAt = DateTime(now.year + duration, now.month, now.day);
+
+      await warrantyRef.add({
+        'transactionId': transactionId,
+        'itemId': item['itemId'],
+        'buyerName': buyerName.trim(),
+
+        'productName': item['name'],
+        'serialNumber': item['serialNumber'] ?? '',
+        'warrantyType': item['warrantyType'],
+
+        'startAt': Timestamp.fromDate(startAt),
+        'expireAt': Timestamp.fromDate(expireAt),
+        'createdAt': Timestamp.fromDate(now),
+
+        'isActive': true,
+      });
+    }
   }
 
   String _fmt(int v) {
