@@ -116,9 +116,11 @@ class _MaintenanceFilterSheetState extends State<MaintenanceFilterSheet> {
             const Text("Waktu", style: TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             Wrap(
-              spacing: 12,
+              spacing: 12, // jarak horizontal
+              runSpacing: 12, // 🔥 jarak vertikal antar baris
               children: [
-                _timeChip("7 Hari", const Duration(days: 7)),
+                _timeChip("1 Hari", const Duration(days: 1)),
+                _timeChip("1 Minggu", const Duration(days: 7)),
                 _timeChip("1 Bulan", const Duration(days: 30)),
                 _timeChip("1 Tahun", const Duration(days: 365)),
               ],

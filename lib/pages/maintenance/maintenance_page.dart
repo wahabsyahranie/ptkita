@@ -47,7 +47,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
     super.initState();
     _appliedFilter = MaintenanceFilter(
       statuses: {'terlambat', 'terjadwal'},
-      timeRange: const Duration(days: 7),
+      timeRange: const Duration(days: 1),
     );
   }
 
