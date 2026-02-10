@@ -23,6 +23,33 @@ class _MaintenancePageState extends State<MaintenancePage> {
   String _searchQuery = '';
   Timer? _searchDebounce;
 
+  //Helper jika maintenance kosong.
+  Widget _emptyMaintenanceState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
+            SizedBox(height: 16),
+            Text(
+              'Tidak ada perawatan hari ini',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Terima kasih atas kerja keras Anda.\nSemua perawatan telah diselesaikan atau belum dijadwalkan untuk hari ini.',
+              style: TextStyle(fontSize: 14, color: Colors.black54),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // =========================
   // FILTER STATE
   // =========================
@@ -299,6 +326,9 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     return name.contains(_searchQuery) ||
                         sku.contains(_searchQuery);
                   }).toList();
+            if (filtered.isEmpty) {
+              return _emptyMaintenanceState();
+            }
 
             return ListView.separated(
               padding: const EdgeInsets.all(16),
