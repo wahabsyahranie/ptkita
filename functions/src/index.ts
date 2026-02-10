@@ -40,6 +40,11 @@ function endOfDay(date: Date): Date {
   );
 }
 
+function nowInMakassar(): Date {
+  const nowUtc = new Date();
+  return new Date(nowUtc.getTime() + 8 * 60 * 60 * 1000);
+}
+
 //CLOUD FUNCTION (MANUAL)
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
@@ -48,7 +53,12 @@ export const createDailyMaintenanceSnapshot = onRequest(
   { region: "asia-southeast2" },
   async (req, res) => {
     try {
-      const now = new Date();
+      const now = nowInMakassar();
+
+      console.log("TIME DEBUG RAW", {
+        utc: new Date().toISOString(),
+        wita: now.toISOString(),
+      });
 
       const docId = todayDocId(now);
       const snapshotRef = db
@@ -79,7 +89,7 @@ export const createDailyMaintenanceSnapshot = onRequest(
 
       await snapshotRef.set({
         totalScheduled,
-        createdAt: Timestamp.now(),
+        createdAt: Timestamp.fromDate(now),
       });
 
       logger.info(`Snapshot ${docId} created`, { totalScheduled });
