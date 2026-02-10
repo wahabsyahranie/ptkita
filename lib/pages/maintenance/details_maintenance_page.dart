@@ -66,11 +66,19 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
         now.toDate().add(Duration(days: _maintenance!.intervalDays)),
       );
 
+      final firestore = FirebaseFirestore.instance;
+
+      // 1️⃣ TULIS LOG (INI YANG KURANG)
+      await firestore.collection('maintenance_logs').add({
+        'maintenanceId': _maintenance!.id,
+        'completedAt': now,
+        'itemId': _maintenance!.itemId, // opsional tapi sangat berguna
+      });
+
       await FirebaseFirestore.instance
           .collection('maintenance')
           .doc(_maintenance!.id)
           .update({
-            'status': 'selesai',
             'lastMaintenanceAt': now, // ✅ hari ini
             'nextMaintenanceAt': nextMaintenance, // ✅ hari ini + interval
           });

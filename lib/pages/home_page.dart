@@ -15,9 +15,14 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // 👉 menambah controller search bar di sini
-  final TextEditingController _search = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    ensureTodaySnapshot();
+  }
 
   void _onTapNav(int index) {
     setState(() => _currentIndex = index);
@@ -40,7 +45,7 @@ class _HomePageState extends State<HomePage> {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  //HELPER CARD HARI INI
+  //HELPER CARD PERAWATAN HARI INI
   DateTime _todayStart() {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
@@ -51,28 +56,61 @@ class _HomePageState extends State<HomePage> {
     return DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
   }
 
+  String _todayDocId() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
   //QUERY CARD PERAWATAN HARI INI
-  Stream<int> _totalMaintenanceTodayStream() {
+  Stream<int> totalMaintenanceTodayStream() {
+    return FirebaseFirestore.instance
+        .collection('daily_maintenance_snapshot')
+        .doc(_todayDocId())
+        .snapshots()
+        .map((doc) {
+          if (!doc.exists) return 0;
+          return doc['totalScheduled'] ?? 0;
+        });
+  }
+
+  //MAKE SNAPSHOT GLOBAL
+  Future<void> ensureTodaySnapshot() async {
+    final snapshotRef = FirebaseFirestore.instance
+        .collection('daily_maintenance_snapshot')
+        .doc(_todayDocId());
+
+    final snapshotDoc = await snapshotRef.get();
+
+    // Kalau snapshot sudah ada → STOP
+    if (snapshotDoc.exists) return;
+
+    // Kalau belum ada → HITUNG
+    final start = Timestamp.fromDate(_todayStart());
+    final end = Timestamp.fromDate(_todayEnd());
+
+    final query = await FirebaseFirestore.instance
+        .collection('maintenance')
+        .where('nextMaintenanceAt', isGreaterThanOrEqualTo: start)
+        .where('nextMaintenanceAt', isLessThanOrEqualTo: end)
+        .get();
+
+    await snapshotRef.set({
+      'totalScheduled': query.docs.length,
+      'createdAt': Timestamp.now(),
+    });
+  }
+
+  //QUERY CARD PERAWATAN HARI INI (SELESAI)
+  Stream<int> completedMaintenanceTodayStream() {
     final start = Timestamp.fromDate(_todayStart());
     final end = Timestamp.fromDate(_todayEnd());
 
     return FirebaseFirestore.instance
-        .collection('maintenance')
-        .where('nextMaintenanceAt', isGreaterThanOrEqualTo: start)
-        .where('nextMaintenanceAt', isLessThanOrEqualTo: end)
+        .collection('maintenance_logs')
+        .where('completedAt', isGreaterThanOrEqualTo: start)
+        .where('completedAt', isLessThanOrEqualTo: end)
         .snapshots()
-        .map((snapshot) => snapshot.docs.length);
-  }
-
-  //QUERY CARD PERAWATAN HARI INI (SELESAI)
-  Stream<int> _completedMaintenanceStream() {
-    final start = Timestamp.fromDate(_todayStart());
-
-    return FirebaseFirestore.instance
-        .collection('maintenance')
-        .where('nextMaintenanceAt', isLessThan: start)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+        .map((s) => s.docs.length);
   }
 
   @override
@@ -200,22 +238,18 @@ class _HomePageState extends State<HomePage> {
   //WIDGET PERAWATAN HARI INI
   Widget _todayMaintenanceCard() {
     return StreamBuilder<int>(
-      stream: _totalMaintenanceTodayStream(),
-      builder: (context, totalSnapshot) {
-        if (!totalSnapshot.hasData) {
-          return _maintenanceLoadingCard();
-        }
+      stream: totalMaintenanceTodayStream(),
+      builder: (context, totalSnap) {
+        if (!totalSnap.hasData) return _maintenanceLoadingCard();
 
         return StreamBuilder<int>(
-          stream: _completedMaintenanceStream(),
-          builder: (context, completedSnapshot) {
-            if (!completedSnapshot.hasData) {
-              return _maintenanceLoadingCard();
-            }
+          stream: completedMaintenanceTodayStream(),
+          builder: (context, doneSnap) {
+            if (!doneSnap.hasData) return _maintenanceLoadingCard();
 
-            final total = totalSnapshot.data!;
-            final completed = completedSnapshot.data!;
-            final progress = total == 0 ? 1.0 : completed / total;
+            final total = totalSnap.data!;
+            final done = doneSnap.data!;
+            final progress = total == 0 ? 1.0 : done / total;
 
             return Container(
               padding: const EdgeInsets.all(20),
@@ -237,7 +271,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text('$completed / $total perawatan selesai'),
+                      Text('$done / $total perawatan selesai'),
                     ],
                   ),
                   Stack(

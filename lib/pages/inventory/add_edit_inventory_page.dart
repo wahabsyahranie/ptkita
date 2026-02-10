@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/item_model.dart';
 import 'package:flutter_kita/pages/inventory/form_inventory_page.dart';
-import 'package:flutter_kita/styles/colors.dart';
 
 class AddEditInventoryPage extends StatelessWidget {
   final Item? item; // null = add; non-null = edit
