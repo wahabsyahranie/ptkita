@@ -18,11 +18,12 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    ensureTodaySnapshot();
-  }
+  //SUDAH PAKAI CRON JOB
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   ensureTodaySnapshot();
+  // }
 
   void _onTapNav(int index) {
     setState(() => _currentIndex = index);
@@ -73,32 +74,32 @@ class _HomePageState extends State<HomePage> {
         });
   }
 
-  //MAKE SNAPSHOT GLOBAL
-  Future<void> ensureTodaySnapshot() async {
-    final snapshotRef = FirebaseFirestore.instance
-        .collection('daily_maintenance_snapshot')
-        .doc(_todayDocId());
+  //MAKE SNAPSHOT GLOBAL (SEKARANG GANTI MENGGUNAKAN CRON)
+  // Future<void> ensureTodaySnapshot() async {
+  //   final snapshotRef = FirebaseFirestore.instance
+  //       .collection('daily_maintenance_snapshot')
+  //       .doc(_todayDocId());
 
-    final snapshotDoc = await snapshotRef.get();
+  //   final snapshotDoc = await snapshotRef.get();
 
-    // Kalau snapshot sudah ada → STOP
-    if (snapshotDoc.exists) return;
+  //   // Kalau snapshot sudah ada → STOP
+  //   if (snapshotDoc.exists) return;
 
-    // Kalau belum ada → HITUNG
-    final start = Timestamp.fromDate(_todayStart());
-    final end = Timestamp.fromDate(_todayEnd());
+  //   // Kalau belum ada → HITUNG
+  //   final start = Timestamp.fromDate(_todayStart());
+  //   final end = Timestamp.fromDate(_todayEnd());
 
-    final query = await FirebaseFirestore.instance
-        .collection('maintenance')
-        .where('nextMaintenanceAt', isGreaterThanOrEqualTo: start)
-        .where('nextMaintenanceAt', isLessThanOrEqualTo: end)
-        .get();
+  //   final query = await FirebaseFirestore.instance
+  //       .collection('maintenance')
+  //       .where('nextMaintenanceAt', isGreaterThanOrEqualTo: start)
+  //       .where('nextMaintenanceAt', isLessThanOrEqualTo: end)
+  //       .get();
 
-    await snapshotRef.set({
-      'totalScheduled': query.docs.length,
-      'createdAt': Timestamp.now(),
-    });
-  }
+  //   await snapshotRef.set({
+  //     'totalScheduled': query.docs.length,
+  //     'createdAt': Timestamp.now(),
+  //   });
+  // }
 
   //QUERY CARD PERAWATAN HARI INI (SELESAI)
   Stream<int> completedMaintenanceTodayStream() {
