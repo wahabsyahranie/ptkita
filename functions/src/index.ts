@@ -45,7 +45,7 @@ function nowInMakassar(): Date {
   return new Date(nowUtc.getTime() + 8 * 60 * 60 * 1000);
 }
 
-//CLOUD FUNCTION (MANUAL)
+//CLOUD FUNCTION (SNAPSHOT DAILY ON CLOUD SCHEDULER)
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 
@@ -102,6 +102,76 @@ export const createDailyMaintenanceSnapshot = onRequest(
     } catch (error) {
       logger.error("Snapshot creation failed", error);
       res.status(500).send("Error creating snapshot");
+    }
+  },
+);
+
+//CLOUD FUNCTION (NOTIFY MAINTENANCE ON CLOUD SCHEDULER)
+import { onSchedule } from "firebase-functions/v2/scheduler";
+import * as admin from "firebase-admin";
+
+export const sendMaintenanceNotification = onSchedule(
+  {
+    schedule: "0 8 * * *",
+    timeZone: "Asia/Makassar",
+    region: "asia-southeast2",
+  },
+  async () => {
+    const now = nowInMakassar();
+    const docId = todayDocId(now);
+
+    const snapshotRef = admin
+      .firestore()
+      .collection("daily_maintenance_snapshot")
+      .doc(docId);
+
+    const doc = await snapshotRef.get();
+
+    if (!doc.exists) {
+      console.log("Snapshot not found");
+      return;
+    }
+
+    const data = doc.data();
+    const total = data?.totalScheduled ?? 0;
+    const alreadySent = data?.notificationSent ?? false;
+
+    // 🔒 Cegah kirim dua kali
+    if (alreadySent) {
+      console.log("Notification already sent today");
+      return;
+    }
+
+    if (total > 0) {
+      try {
+        await admin.messaging().send({
+          topic: "maintenance",
+          android: {
+            priority: "high", // 🔥 optional supaya tidak delay
+          },
+          notification: {
+            title: "Pengingat Perawatan Hari Ini",
+            body: `${total} item memerlukan perawatan. Silakan lakukan pengecekan.`,
+          },
+        });
+
+        await snapshotRef.update({
+          notificationSent: true,
+          notificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          notificationStatus: "success",
+        });
+
+        console.log("Notification sent successfully");
+      } catch (error) {
+        await snapshotRef.update({
+          notificationStatus: "failed",
+          notificationError: String(error),
+        });
+
+        console.error("Notification failed", error);
+      }
+    } else {
+      console.log("No maintenance today");
     }
   },
 );

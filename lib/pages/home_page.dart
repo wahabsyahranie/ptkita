@@ -20,16 +20,15 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
   //Subscribe ke topic maintenance
-  Future<void> subscribeMaintenanceTopic() async {
-    await FirebaseMessaging.instance.subscribeToTopic('maintenance');
-    debugPrint('✅ Subscribed to topic: maintenance');
-  }
-
   @override
   void initState() {
     super.initState();
-    subscribeMaintenanceTopic();
-    // ensureTodaySnapshot();
+    _initFCM();
+  }
+
+  Future<void> _initFCM() async {
+    await FirebaseMessaging.instance.requestPermission();
+    await FirebaseMessaging.instance.subscribeToTopic('maintenance');
   }
 
   void _onTapNav(int index) {
