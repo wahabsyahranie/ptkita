@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
-import 'package:flutter_kita/widget/sheets/filter_sheet.dart';
+import 'package:flutter_kita/pages/inventory/widget/filter_sheet.dart';
 
 class MenuInventoryPage extends StatefulWidget {
   const MenuInventoryPage({super.key});
@@ -26,12 +27,18 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
   String _searchQuery = '';
   Timer? _searchDebounce;
 
-  // applied filters (null = tidak ada filter)
-  Map<String, dynamic>? _appliedFilter;
+  // applied filters (default)
+  late InventoryFilter _appliedFilter;
 
   @override
   void initState() {
     super.initState();
+
+    _appliedFilter = const InventoryFilter(
+      availability: null, // semua
+      category: null,
+      brands: {},
+    );
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
@@ -75,44 +82,39 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
   /// Build Firestore query dynamically based on _appliedFilter.
   /// Always returns a Query<Item> with converter.
   Query<Item> _buildQuery() {
-    // start base query
     Query base = FirebaseFirestore.instance.collection('items');
 
-    // apply availability
-    final availability = _appliedFilter?['availability'] as String?;
-    if (availability != null) {
-      if (availability == 'tersedia') {
-        // stock > 0
-        base = base.where('stock', isGreaterThan: 0);
-      } else if (availability == 'habis') {
-        base = base.where('stock', isEqualTo: 0);
-      }
+    // =========================
+    // AVAILABILITY (tri-state)
+    // =========================
+    if (_appliedFilter.availability == 'tersedia') {
+      base = base.where('stock', isGreaterThan: 0);
+    } else if (_appliedFilter.availability == 'habis') {
+      base = base.where('stock', isEqualTo: 0);
+    }
+    // null = semua → tidak difilter
+
+    // =========================
+    // CATEGORY
+    // =========================
+    if (_appliedFilter.category != null) {
+      base = base.where('type', isEqualTo: _appliedFilter.category);
     }
 
-    // apply category/type
-    final category = _appliedFilter?['category'] as String?;
-    if (category != null && category.isNotEmpty) {
-      base = base.where('type', isEqualTo: category);
-    }
-
-    // apply brands (merk)
-    final brands =
-        _appliedFilter?['brands'] as List<dynamic>?; // dynamic from sheet
-    if (brands != null && brands.isNotEmpty) {
-      // if only one brand, it's fine to use isEqualTo,
-      // otherwise use whereIn (Firestore supports up to 10 elements for 'in')
-      final cleaned = brands.map((e) => e.toString()).toList();
-      if (cleaned.length == 1) {
-        base = base.where('merk', isEqualTo: cleaned.first);
+    // =========================
+    // BRANDS (≤ 10 aman)
+    // =========================
+    if (_appliedFilter.brands.isNotEmpty) {
+      if (_appliedFilter.brands.length == 1) {
+        base = base.where('merk', isEqualTo: _appliedFilter.brands.first);
       } else {
-        base = base.where('merk', whereIn: cleaned);
+        base = base.where('merk', whereIn: _appliedFilter.brands.toList());
       }
     }
 
-    // finally order by name for stable UI (if no inequality on name)
+    // order
     base = base.orderBy('name');
 
-    // return with converter
     return base.withConverter<Item>(
       fromFirestore: Item.fromFirestore,
       toFirestore: (Item item, _) => item.toFirestore(),
@@ -121,7 +123,7 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
 
   // open filter sheet and apply result
   Future<void> _openFilterSheet() async {
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
+    final result = await showModalBottomSheet<InventoryFilter>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -132,7 +134,7 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
           ),
-          child: const FilterSheet(),
+          child: FilterSheet(initialFilter: _appliedFilter),
         );
       },
     );
@@ -140,7 +142,7 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
     if (result != null) {
       setState(() {
         _appliedFilter = result;
-        itemsToShow = 6; // reset pagination when apply filter
+        itemsToShow = 6;
       });
     }
   }
@@ -195,7 +197,11 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
                           );
                           if (!mounted) return;
                           setState(() {
-                            _appliedFilter = null;
+                            _appliedFilter = const InventoryFilter(
+                              availability: null,
+                              category: null,
+                              brands: {},
+                            );
                             _searchQuery = '';
                             _searchCtrl.clear();
                             itemsToShow = 6;
@@ -305,7 +311,11 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
                             );
                             if (!mounted) return;
                             setState(() {
-                              _appliedFilter = null;
+                              _appliedFilter = const InventoryFilter(
+                                availability: null,
+                                category: null,
+                                brands: {},
+                              );
                               _searchQuery = '';
                               _searchCtrl.clear();
                               itemsToShow = 6;

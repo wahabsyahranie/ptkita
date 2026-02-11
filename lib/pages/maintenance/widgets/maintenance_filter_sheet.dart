@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/models/maintenance_filter_model.dart';
+import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class MaintenanceFilterSheet extends StatefulWidget {

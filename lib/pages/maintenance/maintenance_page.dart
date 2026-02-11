@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/models/maintenance_filter_model.dart';
-import 'package:flutter_kita/models/maintenance_model.dart';
+import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
+import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/pages/maintenance/details_maintenance_page.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_filter_sheet.dart';
