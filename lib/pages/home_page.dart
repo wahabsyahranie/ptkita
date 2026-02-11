@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> {
       // const CapturePage(),
 
       // index 2
-      const MenuInventoryPage(),
+      const InventoryPage(),
     ];
 
     return WillPopScope(
