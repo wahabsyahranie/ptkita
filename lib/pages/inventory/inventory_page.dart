@@ -9,6 +9,7 @@ import 'package:flutter_kita/widget/search_bar_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/pages/inventory/widget/filter_sheet.dart';
+import 'package:intl/intl.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -114,6 +115,7 @@ class _InventoryPageState extends State<InventoryPage> {
     if (value.trim().isEmpty) {
       _searchDebounce?.cancel();
       setState(() {
+        _searchQuery = '';
         _lastDocument = null;
         _items.clear();
         _hasMore = true;
@@ -171,8 +173,16 @@ class _InventoryPageState extends State<InventoryPage> {
       }
     }
 
-    // order
-    base = base.orderBy('name');
+    // =========================
+    // SEARCH (prefix search)
+    // =========================
+    if (_searchQuery.isNotEmpty) {
+      base = base.orderBy('name_lowercase').startAt([_searchQuery]).endAt([
+        _searchQuery + '\uf8ff',
+      ]);
+    } else {
+      base = base.orderBy('name_lowercase');
+    }
 
     return base.withConverter<Item>(
       fromFirestore: Item.fromFirestore,
@@ -212,143 +222,153 @@ class _InventoryPageState extends State<InventoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async {
+        // kalau keyboard terbuka → tutup dulu
+        if (FocusScope.of(context).hasFocus) {
+          FocusScope.of(context).unfocus();
+          return false; // jangan pop halaman
+        }
+        return true; // kalau tidak ada keyboard → boleh pop
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.25),
-        title: const Text("Data Barang"),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 2,
+          shadowColor: Colors.black.withOpacity(0.25),
+          title: const Text("Data Barang"),
 
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    // ← Search bar harus Expanded!
-                    Expanded(
-                      child: SearchBarWidget(
-                        controller: _searchCtrl,
-                        hintText: 'Cari nama atau SKU',
-                        onChanged: _onSearchChanged,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(70),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      // ← Search bar harus Expanded!
+                      Expanded(
+                        child: SearchBarWidget(
+                          controller: _searchCtrl,
+                          hintText: 'Cari dengan nama',
+                          onChanged: _onSearchChanged,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
+                      const SizedBox(width: 10),
 
-                    // tombol add
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: MyColors.secondary,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: IconButton(
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const AddEditInventoryPage(),
-                            ),
-                          );
-                          if (!mounted) return;
-                          setState(() {
-                            _appliedFilter = const InventoryFilter(
-                              availability: null,
-                              category: null,
-                              brands: {},
+                      // tombol add
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: MyColors.secondary,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: IconButton(
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AddEditInventoryPage(),
+                              ),
                             );
-                            _searchQuery = '';
-                            _searchCtrl.clear();
-                            _lastDocument = null;
-                            _items.clear();
-                            _hasMore = true;
-                          });
-                          _fetchItems(isRefresh: true);
-                        },
-                        icon: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 30,
+                            if (!mounted) return;
+                            setState(() {
+                              _appliedFilter = const InventoryFilter(
+                                availability: null,
+                                category: null,
+                                brands: {},
+                              );
+                              _searchQuery = '';
+                              _searchCtrl.clear();
+                              _lastDocument = null;
+                              _items.clear();
+                              _hasMore = true;
+                            });
+                            _fetchItems(isRefresh: true);
+                          },
+                          icon: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 30,
+                          ),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(width: 10),
+                      const SizedBox(width: 10),
 
-                    // tombol filter
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: MyColors.secondary,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: IconButton(
-                        onPressed: _openFilterSheet,
-                        icon: const Icon(
-                          Icons.filter_alt,
-                          color: Colors.white,
-                          size: 25,
+                      // tombol filter
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: MyColors.secondary,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: IconButton(
+                          onPressed: _openFilterSheet,
+                          icon: const Icon(
+                            Icons.filter_alt,
+                            color: Colors.white,
+                            size: 25,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                ],
+              ),
             ),
           ),
         ),
-      ),
 
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-          child: Column(
-            children: [
-              // Use stream from dynamic query
-              Expanded(
-                child: _items.isEmpty && _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: MyColors.secondary,
-                        ),
-                      )
-                    : GridView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.only(top: 8),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.7,
-                            ),
-                        itemCount: _items.length + (_isLoading ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index < _items.length) {
-                            final itm = _items[index];
-                            return _BarangBox(item: itm);
-                          } else {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16),
-                                child: CircularProgressIndicator(
-                                  color: MyColors.secondary,
-                                ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+            child: Column(
+              children: [
+                // Use stream from dynamic query
+                Expanded(
+                  child: _items.isEmpty && _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: MyColors.secondary,
+                          ),
+                        )
+                      : GridView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.only(top: 8),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.7,
                               ),
-                            );
-                          }
-                        },
-                      ),
-              ),
-            ],
+                          itemCount: _items.length + (_isLoading ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index < _items.length) {
+                              final itm = _items[index];
+                              return _BarangBox(item: itm);
+                            } else {
+                              return const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: CircularProgressIndicator(
+                                    color: MyColors.secondary,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -362,10 +382,13 @@ class _BarangBox extends StatelessWidget {
 
   const _BarangBox({required this.item});
 
+  //RUPIAH FORMATER
+  static final NumberFormat _rupiahFormatter = NumberFormat('#,###', 'id_ID');
+
   @override
   Widget build(BuildContext context) {
     final title = item.name ?? '-';
-    final sku = item.sku ?? '-';
+    final locationCode = item.locationCode ?? '-';
     final stock = item.stock ?? 0;
     final price = item.price ?? 0;
     final imageUrl = item.imageUrl;
@@ -462,7 +485,7 @@ class _BarangBox extends StatelessWidget {
                   const SizedBox(height: 4),
                   Center(
                     child: Text(
-                      'Rp $price',
+                      'Rp ${_rupiahFormatter.format(price)}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -483,7 +506,7 @@ class _BarangBox extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'SKU: $sku',
+                      'Rak: $locationCode',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
