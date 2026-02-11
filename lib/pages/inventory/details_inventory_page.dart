@@ -5,6 +5,7 @@ import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class DetailsInventoryPage extends StatefulWidget {
   final Item? item;
@@ -205,6 +206,9 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     );
   }
 
+  //RUPIAH FORMATTER
+  static final NumberFormat _rupiahFormatter = NumberFormat('#,###', 'id_ID');
+
   Widget _buildContent(
     String name,
     String sku,
@@ -288,7 +292,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("Harga", "Rp $price"),
+                _rowInfo("Harga", "Rp ${_rupiahFormatter.format(price)}"),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 

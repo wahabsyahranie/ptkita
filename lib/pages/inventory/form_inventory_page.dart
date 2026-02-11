@@ -190,6 +190,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     final stockText = _stockCtrl.text.trim();
     final desc = _descCtrl.text.trim();
     final location = _locationCtrl.text.trim();
+    final nameLower = name.toLowerCase();
 
     final priceNum =
         num.tryParse(priceText.replaceAll(',', '').replaceAll('.', '')) ?? 0;
@@ -252,6 +253,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
       final col = FirebaseFirestore.instance.collection('items');
       final payload = {
         'name': name,
+        'name_lowercase': nameLower,
         'sku': sku,
         'price': priceNum,
         'stock': stockNum,

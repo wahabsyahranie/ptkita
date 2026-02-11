@@ -212,15 +212,15 @@ class _HomePageState extends State<HomePage> {
         ),
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: MyColors.secondary,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Icon(Icons.notifications, color: MyColors.white),
-            ),
-            const SizedBox(width: 10),
+            // Container(
+            //   padding: const EdgeInsets.all(12),
+            //   decoration: BoxDecoration(
+            //     color: MyColors.secondary,
+            //     borderRadius: BorderRadius.circular(25),
+            //   ),
+            //   child: Icon(Icons.notifications, color: MyColors.white),
+            // ),
+            // const SizedBox(width: 10),
             InkWell(
               onTap: () {
                 _scaffoldKey.currentState?.openEndDrawer();
