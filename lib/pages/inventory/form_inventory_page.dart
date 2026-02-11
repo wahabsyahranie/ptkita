@@ -6,7 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:flutter_kita/models/item_model.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 
 class FormInventoryPage extends StatefulWidget {
   /// initialItem == null -> create mode

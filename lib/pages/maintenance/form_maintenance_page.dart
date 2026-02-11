@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/models/maintenance_model.dart';
+import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class FormMaintenancePage extends StatefulWidget {

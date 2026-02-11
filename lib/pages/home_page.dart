@@ -3,7 +3,7 @@ import 'package:flutter_kita/pages/capture/capture_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
-import 'package:flutter_kita/pages/inventory/menu_inventory_page.dart';
+import 'package:flutter_kita/pages/inventory/inventory_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 

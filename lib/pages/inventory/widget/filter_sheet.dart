@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 
 class FilterSheet extends StatefulWidget {
-  const FilterSheet({super.key});
+  final InventoryFilter initialFilter;
+
+  const FilterSheet({super.key, required this.initialFilter});
 
   @override
   State<FilterSheet> createState() => _FilterSheetState();
 }
 
 class _FilterSheetState extends State<FilterSheet> {
-  String? availability; // "tersedia" | "habis"
-  String? category; // "part" | "unit"
-  final Set<String> selectedBrands = {};
+  @override
+  void initState() {
+    super.initState();
+    availability = widget.initialFilter.availability;
+    category = widget.initialFilter.category;
+    selectedBrands = {...widget.initialFilter.brands};
+  }
+
+  late String? availability;
+  late String? category;
+  late Set<String> selectedBrands;
 
   final brands = ["firman", "stanley", "dewalt", "black+decker"];
 
@@ -54,15 +65,33 @@ class _FilterSheetState extends State<FilterSheet> {
             Row(
               children: [
                 _chipButton(
+                  label: "Semua",
+                  selected: availability == null,
+                  onTap: () {
+                    setState(() {
+                      availability = null;
+                    });
+                  },
+                ),
+                const SizedBox(width: 12),
+                _chipButton(
                   label: "Tersedia",
                   selected: availability == "tersedia",
-                  onTap: () => setState(() => availability = "tersedia"),
+                  onTap: () {
+                    setState(() {
+                      availability = "tersedia";
+                    });
+                  },
                 ),
                 const SizedBox(width: 12),
                 _chipButton(
                   label: "Habis",
                   selected: availability == "habis",
-                  onTap: () => setState(() => availability = "habis"),
+                  onTap: () {
+                    setState(() {
+                      availability = "habis";
+                    });
+                  },
                 ),
               ],
             ),
@@ -76,15 +105,33 @@ class _FilterSheetState extends State<FilterSheet> {
             Row(
               children: [
                 _chipButton(
+                  label: "Semua",
+                  selected: category == null,
+                  onTap: () {
+                    setState(() {
+                      category = null;
+                    });
+                  },
+                ),
+                const SizedBox(width: 12),
+                _chipButton(
                   label: "Part",
                   selected: category == "part",
-                  onTap: () => setState(() => category = "part"),
+                  onTap: () {
+                    setState(() {
+                      category = category == "part" ? null : "part";
+                    });
+                  },
                 ),
                 const SizedBox(width: 12),
                 _chipButton(
                   label: "Unit",
                   selected: category == "unit",
-                  onTap: () => setState(() => category = "unit"),
+                  onTap: () {
+                    setState(() {
+                      category = category == "unit" ? null : "unit";
+                    });
+                  },
                 ),
               ],
             ),
@@ -117,11 +164,14 @@ class _FilterSheetState extends State<FilterSheet> {
             GestureDetector(
               onTap: () {
                 // kirim hasil filter
-                Navigator.pop(context, {
-                  "availability": availability,
-                  "category": category,
-                  "brands": selectedBrands.toList(),
-                });
+                Navigator.pop(
+                  context,
+                  InventoryFilter(
+                    availability: availability,
+                    category: category,
+                    brands: selectedBrands,
+                  ),
+                );
               },
               child: Container(
                 height: 55,

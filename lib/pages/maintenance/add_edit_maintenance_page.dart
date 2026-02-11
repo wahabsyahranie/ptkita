@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/models/maintenance_model.dart';
+import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/form_maintenance_page.dart';
 
 class AddEditMaintenancePage extends StatelessWidget {
