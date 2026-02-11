@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/maintenance/maintenance_page.dart';
 import 'package:flutter_kita/pages/repair/repair_history_page.dart';
@@ -63,7 +64,33 @@ class NavigationDrawerWidget extends StatelessWidget {
             const SizedBox(height: 24),
             Divider(color: MyColors.white),
             const SizedBox(height: 24),
-            buildMenuItem(text: 'Log Out', icon: Icons.logout),
+            buildMenuItem(
+              text: 'Log Out',
+              icon: Icons.logout,
+              onClicked: () async {
+                final shouldLogout = await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text("Konfirmasi"),
+                    content: const Text("Yakin ingin keluar?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text("Batal"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text("Keluar"),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (shouldLogout == true) {
+                  await FirebaseAuth.instance.signOut();
+                }
+              },
+            ),
           ],
         ),
       ),

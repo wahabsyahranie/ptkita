@@ -6,6 +6,7 @@ import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
 import 'package:flutter_kita/pages/inventory/inventory_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -196,49 +197,67 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _header() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Selamat datang,', style: TextStyle(fontSize: 14)),
-            SizedBox(height: 8),
-            Text(
-              'Wahab Syahranie',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        Row(
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox();
+        }
+
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final name = data['name'] ?? 'Teknisi';
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Container(
-            //   padding: const EdgeInsets.all(12),
-            //   decoration: BoxDecoration(
-            //     color: MyColors.secondary,
-            //     borderRadius: BorderRadius.circular(25),
-            //   ),
-            //   child: Icon(Icons.notifications, color: MyColors.white),
-            // ),
-            // const SizedBox(width: 10),
-            InkWell(
-              onTap: () {
-                _scaffoldKey.currentState?.openEndDrawer();
-              },
-              child: Container(
-                width: 53,
-                height: 53,
-                decoration: const BoxDecoration(shape: BoxShape.circle),
-                clipBehavior: Clip.antiAlias,
-                child: Image.asset(
-                  'assets/images/person_image.jpg',
-                  fit: BoxFit.cover,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Selamat datang,', style: TextStyle(fontSize: 14)),
+                const SizedBox(height: 8),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
+              ],
+            ),
+            Row(
+              children: [
+                // Container(
+                //   padding: const EdgeInsets.all(12),
+                //   decoration: BoxDecoration(
+                //     color: MyColors.secondary,
+                //     borderRadius: BorderRadius.circular(25),
+                //   ),
+                //   child: Icon(Icons.notifications, color: MyColors.white),
+                // ),
+                // const SizedBox(width: 10),
+                InkWell(
+                  onTap: () {
+                    _scaffoldKey.currentState?.openEndDrawer();
+                  },
+                  child: Container(
+                    width: 53,
+                    height: 53,
+                    decoration: const BoxDecoration(shape: BoxShape.circle),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset(
+                      'assets/images/person_image.jpg',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 

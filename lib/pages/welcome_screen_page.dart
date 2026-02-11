@@ -55,9 +55,10 @@ class WelcomeScreenPage extends StatelessWidget {
             SizedBox(height: MediaQuery.of(context).size.height * 0.04),
             InkWell(
               onTap: () {
-                Navigator.of(
+                Navigator.push(
                   context,
-                ).push(MaterialPageRoute(builder: (context) => LoginPage()));
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                );
               },
               child: Container(
                 width: double.infinity,
