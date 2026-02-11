@@ -10,17 +10,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/pages/inventory/widget/filter_sheet.dart';
 
-class MenuInventoryPage extends StatefulWidget {
-  const MenuInventoryPage({super.key});
+class InventoryPage extends StatefulWidget {
+  const InventoryPage({super.key});
 
   @override
-  State<MenuInventoryPage> createState() => _MenuInventoryPageState();
+  State<InventoryPage> createState() => _InventoryPageState();
 }
 
-class _MenuInventoryPageState extends State<MenuInventoryPage> {
+class _InventoryPageState extends State<InventoryPage> {
   final ScrollController _scrollController = ScrollController();
-  int itemsToShow = 6; // jumlah awal yang ditampilkan
-  final int _increment = 6; // bertambah berapa tiap load more
 
   // search
   final TextEditingController _searchCtrl = TextEditingController();
@@ -40,14 +38,67 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
       brands: {},
     );
 
+    _fetchItems();
+
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 120) {
-        setState(() {
-          itemsToShow += _increment;
-        });
+              _scrollController.position.maxScrollExtent - 200 &&
+          !_isLoading &&
+          _hasMore) {
+        _fetchItems();
       }
     });
+  }
+
+  //Pagination
+  List<Item> _items = [];
+  DocumentSnapshot? _lastDocument;
+  bool _isLoading = false;
+  bool _hasMore = true;
+
+  final int _pageSize = 10;
+
+  Future<void> _fetchItems({bool isRefresh = false}) async {
+    if (_isLoading) return;
+
+    if (isRefresh) {
+      _hasMore = true; // reset saat refresh
+    }
+
+    setState(() => _isLoading = true);
+
+    Query<Item> query = _buildQuery().limit(_pageSize);
+
+    if (!isRefresh && _lastDocument != null) {
+      query = query.startAfterDocument(_lastDocument!);
+    }
+
+    final snapshot = await query.get();
+
+    if (snapshot.docs.isNotEmpty) {
+      _lastDocument = snapshot.docs.last;
+
+      final newItems = snapshot.docs.map((d) => d.data()).toList();
+
+      if (!mounted) return; // ← TARUH DI SINI
+
+      setState(() {
+        if (isRefresh) {
+          _items = newItems;
+        } else {
+          _items.addAll(newItems);
+        }
+      });
+    }
+
+    // ini penting supaya pagination berhenti
+    if (snapshot.docs.length < _pageSize) {
+      _hasMore = false;
+    }
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -63,19 +114,27 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
     if (value.trim().isEmpty) {
       _searchDebounce?.cancel();
       setState(() {
-        _searchQuery = '';
-        itemsToShow = 6;
+        _lastDocument = null;
+        _items.clear();
+        _hasMore = true;
       });
+
+      _fetchItems(isRefresh: true);
       return;
     }
 
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
+
       setState(() {
         _searchQuery = value.toLowerCase().trim();
-        itemsToShow = 6;
+        _lastDocument = null;
+        _items.clear();
+        _hasMore = true;
       });
+
+      _fetchItems(isRefresh: true); // ← pindahkan ke luar
     });
   }
 
@@ -142,15 +201,17 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
     if (result != null) {
       setState(() {
         _appliedFilter = result;
-        itemsToShow = 6;
+        _lastDocument = null;
+        _items.clear();
+        _hasMore = true;
       });
+
+      _fetchItems(isRefresh: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final query = _buildQuery();
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -204,8 +265,11 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
                             );
                             _searchQuery = '';
                             _searchCtrl.clear();
-                            itemsToShow = 6;
+                            _lastDocument = null;
+                            _items.clear();
+                            _hasMore = true;
                           });
+                          _fetchItems(isRefresh: true);
                         },
                         icon: const Icon(
                           Icons.add,
@@ -250,83 +314,39 @@ class _MenuInventoryPageState extends State<MenuInventoryPage> {
             children: [
               // Use stream from dynamic query
               Expanded(
-                child: StreamBuilder<QuerySnapshot<Item>>(
-                  stream: query.snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    }
-                    if (!snapshot.hasData) {
-                      return const Center(
+                child: _items.isEmpty && _isLoading
+                    ? const Center(
                         child: CircularProgressIndicator(
                           color: MyColors.secondary,
                         ),
-                      );
-                    }
-
-                    final docs = snapshot.data!.docs;
-                    if (docs.isEmpty) {
-                      return const Center(child: Text('Belum ada data.'));
-                    }
-
-                    // convert to model list
-                    final allItems = docs.map((d) => d.data()).toList();
-
-                    // still apply client-side search (name or sku)
-                    final filtered = _searchQuery.isEmpty
-                        ? allItems
-                        : allItems.where((item) {
-                            final name = (item.name ?? '').toLowerCase();
-                            final sku = (item.sku ?? '').toLowerCase();
-                            return name.contains(_searchQuery) ||
-                                sku.contains(_searchQuery);
-                          }).toList();
-
-                    // pagination UI-side
-                    final effectiveCount = itemsToShow > filtered.length
-                        ? filtered.length
-                        : itemsToShow;
-                    final showing = filtered.take(effectiveCount).toList();
-
-                    return GridView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.only(top: 8),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.7,
-                          ),
-                      itemCount: showing.length,
-                      itemBuilder: (context, index) {
-                        final itm = showing[index];
-                        return GestureDetector(
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DetailsInventoryPage(item: itm),
+                      )
+                    : GridView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.only(top: 8),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.7,
+                            ),
+                        itemCount: _items.length + (_isLoading ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index < _items.length) {
+                            final itm = _items[index];
+                            return _BarangBox(item: itm);
+                          } else {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: CircularProgressIndicator(
+                                  color: MyColors.secondary,
+                                ),
                               ),
                             );
-                            if (!mounted) return;
-                            setState(() {
-                              _appliedFilter = const InventoryFilter(
-                                availability: null,
-                                category: null,
-                                brands: {},
-                              );
-                              _searchQuery = '';
-                              _searchCtrl.clear();
-                              itemsToShow = 6;
-                            });
-                          },
-                          child: _BarangBox(item: itm),
-                        );
-                      },
-                    );
-                  },
-                ),
+                          }
+                        },
+                      ),
               ),
             ],
           ),
