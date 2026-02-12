@@ -4,29 +4,111 @@ import 'package:image_picker/image_picker.dart';
 
 import 'capture_page.dart';
 import 'analysis_success_page.dart';
+import 'analysis_fail_page.dart';
 import 'widget/retake_button_widget.dart';
+import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/services/detection_service.dart';
+import 'package:flutter_kita/services/firestore_service.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 
-class PreviewCapturePage extends StatelessWidget {
+class PreviewCapturePage extends StatefulWidget {
   final XFile imageFile;
 
   const PreviewCapturePage({super.key, required this.imageFile});
 
   @override
-  Widget build(BuildContext context) {
-    const Color primary = Color(0xFFD8A25E);
+  State<PreviewCapturePage> createState() => _PreviewCapturePageState();
+}
 
+class _PreviewCapturePageState extends State<PreviewCapturePage> {
+  bool isLoading = false;
+
+  // ==========================================================
+  // ANALYZE IMAGE (Flutter → Flask → Firestore)
+  // ==========================================================
+  Future<void> analyzeImage() async {
+    if (isLoading) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      final file = File(widget.imageFile.path);
+
+      // 🔥 1. Kirim ke Flask
+      final result = await DetectionService.detect(file);
+
+      if (!mounted) return;
+
+      if (result['status'] == 'success') {
+        final String label = result['label'];
+
+        // 🔥 2. Query Firestore
+        final Item? item = await FirestoreService.getItemByName(label);
+
+        if (!mounted) return;
+
+        // 🔥 3. Jika tidak ditemukan di Firestore
+        if (item == null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AnalysisFailPage(imageFile: widget.imageFile),
+            ),
+          );
+          return;
+        }
+
+        // 🔥 4. Jika ditemukan → ke success page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AnalysisSuccessPage(
+              imageFile: widget.imageFile,
+              label: result['label'],
+              confidence: (result['confidence'] as num).toDouble(),
+              box: result['box'],
+              item: item,
+            ),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AnalysisFailPage(imageFile: widget.imageFile),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Gagal menghubungi server")));
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  // ==========================================================
+  // UI
+  // ==========================================================
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: MyColors.white,
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // ======================
-            //        TOP BAR
+            // TOP BAR
             // ======================
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   GestureDetector(
@@ -34,41 +116,47 @@ class PreviewCapturePage extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: const BoxDecoration(
-                        color: primary,
+                        color: MyColors.secondary,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_back, color: Colors.white),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: MyColors.white,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
 
             // ======================
-            //        FRAME FOTO
+            // IMAGE PREVIEW
             // ======================
             Expanded(
               child: Center(
                 child: Container(
-                  width: 300,
+                  width: 325,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: primary, width: 1),
+                    border: Border.all(color: MyColors.secondary, width: 1),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-                    child: Image.file(File(imageFile.path), fit: BoxFit.cover),
+                    child: Image.file(
+                      File(widget.imageFile.path),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
 
             // ======================
-            //      AMBIL ULANG
+            // AMBIL ULANG
             // ======================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -83,45 +171,46 @@ class PreviewCapturePage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
 
             // ======================
-            //        ANALISIS
+            // ANALISIS BUTTON
             // ======================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: GestureDetector(
-                onTap: () {
-                  // 🔹 LANGSUNG KE SUCCESS PAGE (DUMMY)
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AnalysisSuccessPage(imageFile: imageFile),
-                    ),
-                  );
-                },
+                onTap: isLoading ? null : analyzeImage,
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: primary,
+                    color: MyColors.secondary,
                     borderRadius: BorderRadius.circular(28),
                   ),
-                  child: const Center(
-                    child: Text(
-                      "Analisis",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  child: Center(
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            "Analisis",
+                            style: TextStyle(
+                              color: MyColors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 26),
+            const SizedBox(height: 32),
           ],
         ),
       ),
