@@ -4,14 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'capture_page.dart';
-import 'widget/retake_button_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/models/item_model.dart';
+import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 
 class AnalysisSuccessPage extends StatefulWidget {
   final XFile imageFile;
   final String label;
   final double confidence;
   final Map<String, dynamic> box;
+  final Item item; // 🔥 cukup kirim object ini saja
 
   const AnalysisSuccessPage({
     super.key,
@@ -19,6 +21,7 @@ class AnalysisSuccessPage extends StatefulWidget {
     required this.label,
     required this.confidence,
     required this.box,
+    required this.item,
   });
 
   @override
@@ -40,6 +43,8 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
 
+    if (!mounted) return;
+
     setState(() {
       _imageInfo = frame.image;
     });
@@ -58,13 +63,20 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
             children: [
               const SizedBox(height: 16),
 
+              /// ============================
+              /// IMAGE + BOUNDING BOX
+              /// ============================
               SizedBox(
                 width: containerWidth,
                 height: containerHeight,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: _imageInfo == null
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: MyColors.secondary,
+                          ),
+                        )
                       : LayoutBuilder(
                           builder: (context, constraints) {
                             final originalWidth = _imageInfo!.width.toDouble();
@@ -89,10 +101,9 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                                 Positioned.fill(
                                   child: Image.file(
                                     File(widget.imageFile.path),
-                                    fit: BoxFit.contain, // 🔥 penting
+                                    fit: BoxFit.contain,
                                   ),
                                 ),
-
                                 Positioned(
                                   left: x1,
                                   top: y1,
@@ -116,6 +127,9 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
 
               const SizedBox(height: 20),
 
+              /// ============================
+              /// DATA RINGKAS
+              /// ============================
               Container(
                 width: 361,
                 padding: const EdgeInsets.symmetric(
@@ -129,7 +143,20 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _LabelField(label: "Hasil Deteksi", value: widget.label),
+                    _LabelField(
+                      label: "Nama Barang",
+                      value: widget.item.name ?? '-',
+                    ),
+
+                    const SizedBox(height: 12),
+                    _LabelField(label: "SKU", value: widget.item.sku ?? '-'),
+
+                    const SizedBox(height: 12),
+                    _LabelField(
+                      label: "Stok",
+                      value: (widget.item.stock ?? 0).toString(),
+                    ),
+
                     const SizedBox(height: 18),
                     _LabelField(
                       label: "Confidence",
@@ -140,22 +167,73 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                 ),
               ),
 
-              const SizedBox(height: 36),
+              const SizedBox(height: 30),
 
+              /// ============================
+              /// DETAIL BUTTON
+              /// ============================
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: PrimaryOutlineButton(
-                  text: "Ambil Ulang",
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailsInventoryPage(item: widget.item),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 55,
+                    decoration: BoxDecoration(
+                      color: MyColors.secondary,
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      "Detail Barang",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: MyColors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              /// ============================
+              /// AMBIL ULANG
+              /// ============================
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 55),
+                    side: const BorderSide(color: MyColors.secondary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                  ),
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (_) => const CapturePage()),
                     );
                   },
+                  child: const Text(
+                    "Ambil Ulang",
+                    style: TextStyle(
+                      color: MyColors.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 26),
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -164,6 +242,9 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
   }
 }
 
+/// ============================
+/// LABEL FIELD WIDGET
+/// ============================
 class _LabelField extends StatelessWidget {
   final String label;
   final String value;
@@ -179,7 +260,7 @@ class _LabelField extends StatelessWidget {
           label,
           style: const TextStyle(fontSize: 13, color: Colors.black54),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

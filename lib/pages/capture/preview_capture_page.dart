@@ -8,14 +8,13 @@ import 'analysis_fail_page.dart';
 import 'widget/retake_button_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/services/detection_service.dart';
+import 'package:flutter_kita/services/firestore_service.dart';
+import 'package:flutter_kita/models/item_model.dart';
 
 class PreviewCapturePage extends StatefulWidget {
   final XFile imageFile;
 
-  const PreviewCapturePage({
-    super.key,
-    required this.imageFile,
-  });
+  const PreviewCapturePage({super.key, required this.imageFile});
 
   @override
   State<PreviewCapturePage> createState() => _PreviewCapturePageState();
@@ -25,29 +24,50 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
   bool isLoading = false;
 
   // ==========================================================
-  // ANALYZE IMAGE (Flutter → Flask)
+  // ANALYZE IMAGE (Flutter → Flask → Firestore)
   // ==========================================================
   Future<void> analyzeImage() async {
-    if (isLoading) return; // 🔥 mencegah double tap
+    if (isLoading) return;
 
     setState(() => isLoading = true);
 
     try {
       final file = File(widget.imageFile.path);
 
+      // 🔥 1. Kirim ke Flask
       final result = await DetectionService.detect(file);
 
       if (!mounted) return;
 
       if (result['status'] == 'success') {
+        final String label = result['label'];
+
+        // 🔥 2. Query Firestore
+        final Item? item = await FirestoreService.getItemByName(label);
+
+        if (!mounted) return;
+
+        // 🔥 3. Jika tidak ditemukan di Firestore
+        if (item == null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AnalysisFailPage(imageFile: widget.imageFile),
+            ),
+          );
+          return;
+        }
+
+        // 🔥 4. Jika ditemukan → ke success page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => AnalysisSuccessPage(
               imageFile: widget.imageFile,
-              label: result['label'] ?? "",
+              label: result['label'],
               confidence: (result['confidence'] as num).toDouble(),
-              box: Map<String, dynamic>.from(result['box'] ?? {}),
+              box: result['box'],
+              item: item,
             ),
           ),
         );
@@ -55,20 +75,16 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => AnalysisFailPage(
-              imageFile: widget.imageFile,
-            ),
+            builder: (_) => AnalysisFailPage(imageFile: widget.imageFile),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Gagal menghubungi server"),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Gagal menghubungi server")));
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -124,10 +140,7 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
                   width: 325,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: MyColors.secondary,
-                      width: 1,
-                    ),
+                    border: Border.all(color: MyColors.secondary, width: 1),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
@@ -143,7 +156,7 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
             const SizedBox(height: 20),
 
             // ======================
-            // AMBIL ULANG BUTTON
+            // AMBIL ULANG
             // ======================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -152,9 +165,7 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const CapturePage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const CapturePage()),
                   );
                 },
               ),
@@ -168,7 +179,7 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: GestureDetector(
-                onTap: analyzeImage,
+                onTap: isLoading ? null : analyzeImage,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
