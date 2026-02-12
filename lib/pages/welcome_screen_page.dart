@@ -2,8 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/login_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
-class WelcomeScreenPage extends StatelessWidget {
+class WelcomeScreenPage extends StatefulWidget {
   const WelcomeScreenPage({super.key});
+
+  @override
+  State<WelcomeScreenPage> createState() => _WelcomeScreenPageState();
+}
+
+class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
+  bool _isPrecached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isPrecached) {
+      precacheImage(
+        const AssetImage('assets/images/welcome_image.jpg'),
+        context,
+      );
+      _isPrecached = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
