@@ -78,7 +78,10 @@ class _HomePageState extends State<HomePage> {
         .snapshots()
         .map((doc) {
           if (!doc.exists) return 0;
-          return doc['totalScheduled'] ?? 0;
+          final dueToday = doc.data()?['totalDueToday'] ?? 0;
+          final overdue = doc.data()?['totalOverdue'] ?? 0;
+
+          return dueToday + overdue;
         });
   }
 
