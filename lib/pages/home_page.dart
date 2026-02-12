@@ -442,26 +442,85 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<Map<String, int>> getRepairSummary(int days) async {
+    final now = DateTime.now();
+    final startDate = now.subtract(Duration(days: days));
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('repair')
+        .where(
+          'createdAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
+        )
+        .get();
+
+    int dalamPerbaikan = 0;
+    int selesai = 0;
+
+    for (var doc in snapshot.docs) {
+      final status = doc['status'].toString().toLowerCase();
+
+      if (status.contains('belum')) {
+        dalamPerbaikan++;
+      } else if (status.contains('selesai')) {
+        selesai++;
+      }
+    }
+
+    return {
+      'dalam': dalamPerbaikan,
+      'selesai': selesai,
+      'total': snapshot.docs.length,
+    };
+  }
+
   Widget _repairProgressCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: MyColors.greySoft,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Grafik Perbaikan',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return FutureBuilder<Map<String, int>>(
+      future: getRepairSummary(30), // ganti 60 jika perlu
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final data = snapshot.data!;
+        final dalam = data['dalam']!;
+        final selesai = data['selesai']!;
+        final total = data['total']!;
+
+        final dalamProgress = total == 0 ? 0.0 : dalam / total;
+        final selesaiProgress = total == 0 ? 0.0 : selesai / total;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: MyColors.greySoft,
+            borderRadius: BorderRadius.circular(20),
           ),
-          const SizedBox(height: 20),
-          _progressRow('Dalam perbaikan', 0.8, '8/10', Icons.build_outlined),
-          const SizedBox(height: 16),
-          _progressRow('Selesai', 0.97, '100/103', Icons.check_circle_outline),
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Grafik Perbaikan (30 Hari)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              _progressRow(
+                'Dalam perbaikan',
+                dalamProgress,
+                '$dalam/$total',
+                Icons.build_outlined,
+              ),
+              const SizedBox(height: 16),
+              _progressRow(
+                'Selesai',
+                selesaiProgress,
+                '$selesai/$total',
+                Icons.check_circle_outline,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

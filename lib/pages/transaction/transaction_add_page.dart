@@ -166,6 +166,32 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       (s, e) => s + (e['subtotal'] as int),
     );
 
+    // =========================
+    // CEK STOK SEBELUM SIMPAN
+    // =========================
+    for (final item in _cartItems) {
+      final doc = await FirebaseFirestore.instance
+          .collection('items')
+          .doc(item['itemId'])
+          .get();
+
+      if (!doc.exists) {
+        _showAlert('Item ${item['name']} tidak ditemukan');
+        return;
+      }
+
+      final currentStock = (doc.data()?['stock'] ?? 0) as int;
+      final qty = item['qty'] as int;
+
+      if (currentStock < qty) {
+        _showAlert(
+          'Stok tidak cukup untuk ${item['name']}. '
+          'Sisa stok: $currentStock',
+        );
+        return;
+      }
+    }
+
     final txCode = await _generateTxCode();
 
     // =========================
@@ -189,10 +215,14 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     // =========================
     // 🔥 AUTO CREATE WARRANTY (DI SINI)
     // =========================
+    final transactionDate = _transactionDate ?? DateTime.now();
+
     await _createWarrantiesFromTransaction(
       transactionId: transactionId,
       buyerName: _nameCtrl.text.trim(),
+      phone: _phoneCtrl.text,
       items: _cartItems,
+      transactionDate: transactionDate,
     );
 
     // =========================
@@ -682,9 +712,10 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   Future<void> _createWarrantiesFromTransaction({
     required String transactionId,
     required String buyerName,
+    required String phone,
     required List<Map<String, dynamic>> items,
+    required DateTime transactionDate,
   }) async {
-    final now = DateTime.now();
     final warrantyRef = FirebaseFirestore.instance.collection('warranty');
 
     for (final item in items) {
@@ -693,24 +724,34 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       final int duration = (item['warrantyYear'] ?? 0) as int;
       if (duration <= 0) continue;
 
-      final startAt = now;
-      final expireAt = DateTime(now.year + duration, now.month, now.day);
+      final int qty = (item['qty'] ?? 1) as int;
 
-      await warrantyRef.add({
-        'transactionId': transactionId,
-        'itemId': item['itemId'],
-        'buyerName': buyerName.trim(),
+      for (int i = 0; i < qty; i++) {
+        final startAt = transactionDate;
+        final expireAt = DateTime(
+          transactionDate.year + duration,
+          transactionDate.month,
+          transactionDate.day,
+        );
 
-        'productName': item['name'],
-        'serialNumber': item['serialNumber'] ?? '',
-        'warrantyType': item['warrantyType'],
+        await warrantyRef.add({
+          'transactionId': transactionId,
+          'itemId': item['itemId'],
+          'buyerName': buyerName.trim(),
+          'phone': phone.trim(),
 
-        'startAt': Timestamp.fromDate(startAt),
-        'expireAt': Timestamp.fromDate(expireAt),
-        'createdAt': Timestamp.fromDate(now),
+          'productName': item['name'],
+          'serialNumber': '',
+          'warrantyType': item['warrantyType'], // 🔥 TAMBAHKAN INI
 
-        'isActive': true,
-      });
+          'startAt': Timestamp.fromDate(startAt),
+          'expireAt': Timestamp.fromDate(expireAt),
+          'createdAt': FieldValue.serverTimestamp(),
+
+          'status': 'Active',
+          'claimCount': 0,
+        });
+      }
     }
   }
 
