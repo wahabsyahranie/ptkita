@@ -473,7 +473,7 @@ class _BarangBox extends StatelessWidget {
                   Center(
                     child: Text(
                       title,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
