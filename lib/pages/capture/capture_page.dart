@@ -1,10 +1,12 @@
-// lib/pages/capture_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'preview_capture_page.dart';
+
+import 'package:flutter_kita/pages/home_page.dart';
+import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/pages/capture/preview_capture_page.dart';
 
 class CapturePage extends StatefulWidget {
   const CapturePage({super.key});
@@ -18,18 +20,22 @@ class _CapturePageState extends State<CapturePage> {
   bool isLoading = true;
   bool hasError = false;
 
+  bool isCapturing = false;
+  bool isPicking = false;
+
   @override
   void initState() {
     super.initState();
     initCamera();
   }
 
+  // ======================
+  // CAMERA INITIALIZATION
+  // ======================
   Future<void> initCamera() async {
     try {
-      // minta izin
       final status = await Permission.camera.request();
       if (!status.isGranted) {
-        if (!mounted) return;
         setState(() {
           isLoading = false;
           hasError = true;
@@ -39,7 +45,6 @@ class _CapturePageState extends State<CapturePage> {
 
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        if (!mounted) return;
         setState(() {
           isLoading = false;
           hasError = true;
@@ -60,17 +65,73 @@ class _CapturePageState extends State<CapturePage> {
 
       await controller!.initialize();
       if (!mounted) return;
+
       setState(() {
         isLoading = false;
         hasError = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         isLoading = false;
         hasError = true;
       });
-      // optionally print(e);
+    }
+  }
+
+  // ======================
+  // NAVIGATE
+  // ======================
+  void navigateToPreview(XFile image) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PreviewCapturePage(imageFile: image)),
+    );
+  }
+
+  // ======================
+  // TAKE PHOTO (SAFE)
+  // ======================
+  Future<void> takePhoto() async {
+    if (isCapturing) return;
+    if (controller == null || !controller!.value.isInitialized) return;
+
+    isCapturing = true;
+
+    try {
+      final XFile image = await controller!.takePicture();
+      if (!mounted) return;
+
+      navigateToPreview(image);
+    } catch (_) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Gagal mengambil foto")));
+    } finally {
+      isCapturing = false;
+    }
+  }
+
+  // ======================
+  // OPEN GALLERY (SAFE)
+  // ======================
+  Future<void> openGallery() async {
+    if (isPicking) return;
+    isPicking = true;
+
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null && mounted) {
+        navigateToPreview(image);
+      }
+    } catch (_) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Gagal membuka galeri")));
+    } finally {
+      isPicking = false;
     }
   }
 
@@ -80,47 +141,16 @@ class _CapturePageState extends State<CapturePage> {
     super.dispose();
   }
 
-  // ambil foto lalu ke preview
-  Future<void> takePhoto() async {
-    try {
-      if (controller == null || !controller!.value.isInitialized) return;
-      final XFile image = await controller!.takePicture();
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => PreviewCapturePage(imageFile: image)),
-      );
-    } catch (e) {
-      // handle or show snack
-    }
-  }
-
-  // pilih dari galeri lalu ke preview
-  Future<void> openGallery() async {
-    try {
-      final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      if (image == null) return;
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => PreviewCapturePage(imageFile: image)),
-      );
-    } catch (e) {
-      // handle
-    }
-  }
-
+  // ======================
+  // UI
+  // ======================
   @override
   Widget build(BuildContext context) {
-    // warna konsisten sesuai desainmu
-    const Color primary = Color(0xFFD8A25E);
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // kamera preview / loading / error
+          // CAMERA PREVIEW
           Positioned.fill(
             child: isLoading
                 ? const Center(
@@ -136,32 +166,38 @@ class _CapturePageState extends State<CapturePage> {
                 : CameraPreview(controller!),
           ),
 
-          // top bar
+          // TOP BAR
           Positioned(
             top: 50,
             left: 20,
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomePage()),
+                      (route) => false,
+                    );
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: const BoxDecoration(
-                      color: primary,
+                      color: MyColors.secondary,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.arrow_back,
-                      color: Colors.white,
+                      color: MyColors.white,
                       size: 24,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 const Text(
-                  "Scan Foto page - foto - Abdul",
+                  "Scan Foto",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: MyColors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                   ),
@@ -170,21 +206,20 @@ class _CapturePageState extends State<CapturePage> {
             ),
           ),
 
-          // bottom bar
+          // BOTTOM BAR
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
-              // tinggi panel bawah, bisa diubah sesuai kebutuhan
               padding: const EdgeInsets.symmetric(vertical: 24),
-              decoration: const BoxDecoration(color: primary),
+              decoration: const BoxDecoration(color: MyColors.secondary),
               child: SizedBox(
                 height: 120,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // tombol kamera di CENTER (selalu tepat tengah layar)
+                    // CAMERA BUTTON
                     GestureDetector(
                       onTap: takePhoto,
                       child: Container(
@@ -192,26 +227,25 @@ class _CapturePageState extends State<CapturePage> {
                         height: 78,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.38),
-                          border: Border.all(color: Colors.white, width: 6),
+                          color: MyColors.white.withOpacity(0.38),
+                          border: Border.all(color: MyColors.white, width: 6),
                         ),
                       ),
                     ),
 
-                    // tombol galeri sedikit ke kiri dari tengah
+                    // GALLERY BUTTON
                     Positioned(
-                      left:
-                          48, // ubah angka ini untuk geser galeri lebih ke kiri/kanan
+                      left: 48,
                       child: GestureDetector(
                         onTap: openGallery,
                         child: Container(
                           width: 55,
                           height: 55,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.30),
+                            color: MyColors.white.withOpacity(0.30),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.image, color: Colors.white),
+                          child: const Icon(Icons.image, color: MyColors.white),
                         ),
                       ),
                     ),

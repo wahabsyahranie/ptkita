@@ -1,55 +1,121 @@
-// lib/pages/analysis_success_page.dart
-
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'capture_page.dart';
 import 'widget/retake_button_widget.dart';
+import 'package:flutter_kita/styles/colors.dart';
 
-const Color primaryColor = Color(0xFFD8A25E);
-
-class AnalysisSuccessPage extends StatelessWidget {
+class AnalysisSuccessPage extends StatefulWidget {
   final XFile imageFile;
+  final String label;
+  final double confidence;
+  final Map<String, dynamic> box;
 
-  // dummy data (nanti dari ML / API)
-  final String namaSparepart = "Mata Gerinda";
-  final String kodeBarang = "G-927";
-  final String stokBarang = "24";
+  const AnalysisSuccessPage({
+    super.key,
+    required this.imageFile,
+    required this.label,
+    required this.confidence,
+    required this.box,
+  });
 
-  const AnalysisSuccessPage({super.key, required this.imageFile});
+  @override
+  State<AnalysisSuccessPage> createState() => _AnalysisSuccessPageState();
+}
+
+class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
+  ui.Image? _imageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImage();
+  }
+
+  Future<void> _loadImage() async {
+    final file = File(widget.imageFile.path);
+    final bytes = await file.readAsBytes();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+
+    setState(() {
+      _imageInfo = frame.image;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    const double containerWidth = 325;
+    const double containerHeight = 280;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: MyColors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
               const SizedBox(height: 16),
 
-              // ======================
-              //        FOTO
-              // ======================
-              Container(
-                width: 325,
-                height: 280, // lebih tinggi
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: primaryColor, width: 1),
-                ),
+              SizedBox(
+                width: containerWidth,
+                height: containerHeight,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.file(File(imageFile.path), fit: BoxFit.cover),
+                  child: _imageInfo == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final originalWidth = _imageInfo!.width.toDouble();
+                            final originalHeight = _imageInfo!.height
+                                .toDouble();
+
+                            final scaleX = constraints.maxWidth / originalWidth;
+                            final scaleY =
+                                constraints.maxHeight / originalHeight;
+
+                            final x1 =
+                                (widget.box['x1'] as num).toDouble() * scaleX;
+                            final y1 =
+                                (widget.box['y1'] as num).toDouble() * scaleY;
+                            final x2 =
+                                (widget.box['x2'] as num).toDouble() * scaleX;
+                            final y2 =
+                                (widget.box['y2'] as num).toDouble() * scaleY;
+
+                            return Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: Image.file(
+                                    File(widget.imageFile.path),
+                                    fit: BoxFit.contain, // 🔥 penting
+                                  ),
+                                ),
+
+                                Positioned(
+                                  left: x1,
+                                  top: y1,
+                                  child: Container(
+                                    width: x2 - x1,
+                                    height: y2 - y1,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.red,
+                                        width: 3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // ======================
-              //     CARD DETAIL
-              // ======================
               Container(
                 width: 361,
                 padding: const EdgeInsets.symmetric(
@@ -58,28 +124,24 @@ class AnalysisSuccessPage extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: primaryColor, width: 1),
+                  border: Border.all(color: MyColors.secondary, width: 1),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _LabelField(label: "Nama sparepart", value: namaSparepart),
+                    _LabelField(label: "Hasil Deteksi", value: widget.label),
                     const SizedBox(height: 18),
-
-                    _LabelField(label: "Kode Barang", value: kodeBarang),
-                    const SizedBox(height: 18),
-
-                    // ✅ STOK BARANG (BARU)
-                    _LabelField(label: "Stok Barang", value: stokBarang),
+                    _LabelField(
+                      label: "Confidence",
+                      value:
+                          "${(widget.confidence * 100).toStringAsFixed(2)} %",
+                    ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 36),
 
-              // ======================
-              //     TOMBOL (TETAP)
-              // ======================
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: PrimaryOutlineButton(
@@ -93,30 +155,6 @@ class AnalysisSuccessPage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 14),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      "Detail Barang",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
               const SizedBox(height: 26),
             ],
           ),
@@ -126,9 +164,6 @@ class AnalysisSuccessPage extends StatelessWidget {
   }
 }
 
-// ==================================================
-//     LABEL + VALUE WIDGET
-// ==================================================
 class _LabelField extends StatelessWidget {
   final String label;
   final String value;
@@ -150,8 +185,8 @@ class _LabelField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: primaryColor.withOpacity(0.5)),
-            color: const Color(0xFFF5F5F5),
+            border: Border.all(color: MyColors.secondary.withOpacity(0.5)),
+            color: MyColors.tertiary.withOpacity(0.35),
           ),
           child: Text(
             value,

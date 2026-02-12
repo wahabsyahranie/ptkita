@@ -1,23 +1,52 @@
-// lib/pages/analysis_fail_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'capture_page.dart';
 import 'preview_capture_page.dart';
-import 'widget/retake_button_widget.dart'; // ✅ hanya ini widget
+import 'widget/retake_button_widget.dart';
+import 'package:flutter_kita/styles/colors.dart';
 
-const Color primaryColor = Color(0xFFD8A25E);
-
-class AnalysisFailPage extends StatelessWidget {
+class AnalysisFailPage extends StatefulWidget {
   final XFile imageFile;
 
   const AnalysisFailPage({super.key, required this.imageFile});
 
   @override
+  State<AnalysisFailPage> createState() => _AnalysisFailPageState();
+}
+
+class _AnalysisFailPageState extends State<AnalysisFailPage> {
+  bool isPicking = false;
+
+  Future<void> pickFromGallery() async {
+    if (isPicking) return;
+    isPicking = true;
+
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PreviewCapturePage(imageFile: image),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Gagal membuka galeri")));
+    } finally {
+      isPicking = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: MyColors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -34,7 +63,7 @@ class AnalysisFailPage extends StatelessWidget {
                       width: 150,
                       height: 150,
                       decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.25),
+                        color: MyColors.secondary.withValues(alpha: 0.25),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -42,12 +71,12 @@ class AnalysisFailPage extends StatelessWidget {
                           width: 100,
                           height: 100,
                           decoration: const BoxDecoration(
-                            color: primaryColor,
+                            color: MyColors.secondary,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.close,
-                            color: Colors.white,
+                            color: MyColors.white,
                             size: 52,
                           ),
                         ),
@@ -88,7 +117,7 @@ class AnalysisFailPage extends StatelessWidget {
             ),
 
             // ======================
-            //   AMBIL ULANG (WIDGET)
+            //   AMBIL ULANG
             // ======================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -106,38 +135,24 @@ class AnalysisFailPage extends StatelessWidget {
             const SizedBox(height: 14),
 
             // ======================
-            //   PILIH DARI GALERI (INLINE)
+            //   PILIH DARI GALERI
             // ======================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: GestureDetector(
-                onTap: () async {
-                  final picker = ImagePicker();
-                  final XFile? image = await picker.pickImage(
-                    source: ImageSource.gallery,
-                  );
-
-                  if (image != null && context.mounted) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PreviewCapturePage(imageFile: image),
-                      ),
-                    );
-                  }
-                },
+                onTap: pickFromGallery,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: primaryColor,
+                    color: MyColors.secondary,
                     borderRadius: BorderRadius.circular(28),
                   ),
                   child: const Center(
                     child: Text(
                       "Pilih dari galeri",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: MyColors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
