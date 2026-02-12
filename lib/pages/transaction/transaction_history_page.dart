@@ -171,8 +171,10 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    TransactionDetailPage(data: data),
+                                builder: (_) => TransactionDetailPage(
+                                  data: data,
+                                  transactionId: _docs[i].id,
+                                ),
                               ),
                             );
                           },

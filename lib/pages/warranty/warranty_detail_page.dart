@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/warranty_model.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/pages/repair/repair_add_page.dart';
 
 class WarrantyDetailPage extends StatelessWidget {
   const WarrantyDetailPage({super.key, required this.warranty});
@@ -105,6 +106,54 @@ class WarrantyDetailPage extends StatelessWidget {
                   _divider(),
                   _infoRow('Tanggal Berakhir', expireDate),
                 ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  if (warranty.isExpired) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Masa garansi sudah habis (Expired)'),
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RepairAddPage(
+                        warrantyId: warranty.id,
+                        warrantyData: {
+                          'buyerName': warranty.buyerName,
+                          'productName': warranty.productName,
+                          'noHp': warranty.phone,
+                        },
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.build_outlined),
+                label: Text(
+                  warranty.isExpired ? 'Garansi Expired' : 'Klaim Garansi',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: warranty.isExpired
+                      ? Colors.grey
+                      : MyColors.secondary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
             ),
           ],

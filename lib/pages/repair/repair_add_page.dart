@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class RepairAddPage extends StatefulWidget {
-  const RepairAddPage({super.key});
+  final String? warrantyId;
+  final Map<String, dynamic>? warrantyData;
+
+  const RepairAddPage({super.key, this.warrantyId, this.warrantyData});
 
   @override
   State<RepairAddPage> createState() => _RepairAddPageState();
@@ -11,6 +14,7 @@ class RepairAddPage extends StatefulWidget {
 
 class _RepairAddPageState extends State<RepairAddPage> {
   final _formKey = GlobalKey<FormState>();
+  late final bool _isFromWarranty;
 
   final TextEditingController _buyerCtrl = TextEditingController();
   final TextEditingController _itemCtrl = TextEditingController();
@@ -38,6 +42,24 @@ class _RepairAddPageState extends State<RepairAddPage> {
     _detailCtrl.dispose();
     _costCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _isFromWarranty = widget.warrantyId != null;
+
+    if (_isFromWarranty && widget.warrantyData != null) {
+      _repairCategory = 'warranty';
+      _selectedWarrantyId = widget.warrantyId;
+      _selectedWarrantyData = widget.warrantyData;
+
+      _buyerCtrl.text = widget.warrantyData!['buyerName'] ?? '';
+      _itemCtrl.text = widget.warrantyData!['productName'] ?? '';
+      _hpCtrl.text = widget.warrantyData!['noHp'] ?? '';
+      _costCtrl.text = '0';
+    }
   }
 
   Future<void> _pickDate() async {
@@ -190,12 +212,14 @@ class _RepairAddPageState extends State<RepairAddPage> {
                         title: const Text('Klaim Garansi'),
                         value: 'warranty',
                         groupValue: _repairCategory,
-                        onChanged: (v) {
-                          setState(() {
-                            _repairCategory = v!;
-                            _costCtrl.text = '0';
-                          });
-                        },
+                        onChanged: _isFromWarranty
+                            ? null
+                            : (v) {
+                                setState(() {
+                                  _repairCategory = v!;
+                                  _costCtrl.text = '0';
+                                });
+                              },
                         dense: true,
                       ),
                     ),
@@ -204,14 +228,16 @@ class _RepairAddPageState extends State<RepairAddPage> {
                         title: const Text('Non Garansi'),
                         value: 'non_warranty',
                         groupValue: _repairCategory,
-                        onChanged: (v) {
-                          setState(() {
-                            _repairCategory = v!;
-                            _selectedWarrantyId = null;
-                            _selectedWarrantyData = null;
-                            _costCtrl.clear();
-                          });
-                        },
+                        onChanged: _isFromWarranty
+                            ? null
+                            : (v) {
+                                setState(() {
+                                  _repairCategory = v!;
+                                  _selectedWarrantyId = null;
+                                  _selectedWarrantyData = null;
+                                  _costCtrl.clear();
+                                });
+                              },
                         dense: true,
                       ),
                     ),
@@ -220,7 +246,8 @@ class _RepairAddPageState extends State<RepairAddPage> {
                 const SizedBox(height: 12),
 
                 /// WARRANTY SELECTOR
-                if (_repairCategory == 'warranty') ...[
+                if (_repairCategory == 'warranty' &&
+                    _selectedWarrantyId == null) ...[
                   _label('Pilih Garansi Aktif'),
                   GestureDetector(
                     onTap: _openWarrantySelector,
@@ -257,6 +284,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
                 _label('Nama Pelanggan'),
                 TextFormField(
                   controller: _buyerCtrl,
+                  readOnly: widget.warrantyId != null,
                   validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
                   decoration: _inputDecoration(),
                 ),
