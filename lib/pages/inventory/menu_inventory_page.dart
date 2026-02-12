@@ -6,7 +6,7 @@ import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_kita/models/item_model.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/widget/sheets/filter_sheet.dart';
 
 class MenuInventoryPage extends StatefulWidget {

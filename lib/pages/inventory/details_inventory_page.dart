@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:flutter_kita/models/item_model.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DetailsInventoryPage extends StatefulWidget {

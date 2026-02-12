@@ -9,7 +9,7 @@ import 'widget/retake_button_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/services/detection_service.dart';
 import 'package:flutter_kita/services/firestore_service.dart';
-import 'package:flutter_kita/models/item_model.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 
 class PreviewCapturePage extends StatefulWidget {
   final XFile imageFile;
