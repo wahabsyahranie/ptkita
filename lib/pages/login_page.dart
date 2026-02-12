@@ -10,6 +10,18 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  bool _isPrecached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isPrecached) {
+      precacheImage(const AssetImage('assets/images/login_image.jpg'), context);
+      _isPrecached = true;
+    }
+  }
+
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -45,12 +57,12 @@ class _LoginPageState extends State<LoginPage> {
       final email = "$phone@ptkita.com";
 
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+
+      // ✅ HANYA pop jika sukses
       if (!mounted) return;
       Navigator.of(context).pop();
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-
-      Navigator.of(context).pop();
 
       setState(() {
         if (e.code == 'user-not-found') {
@@ -92,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
             alignment: AlignmentDirectional.bottomCenter,
             children: [
               Container(
-                height: 450,
+                height: 420,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: MyColors.white,
@@ -216,7 +228,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 50),
                     InkWell(
                       onTap: _isLoading ? null : _login,
                       child: Container(

@@ -3,40 +3,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/maintenance/maintenance_page.dart';
 import 'package:flutter_kita/pages/repair/repair_history_page.dart';
 import 'package:flutter_kita/pages/transaction/transaction_history_page.dart';
-import 'package:flutter_kita/pages/user_page.dart';
 import 'package:flutter_kita/pages/warranty/warranty_history_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class NavigationDrawerWidget extends StatelessWidget {
   const NavigationDrawerWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final name = 'Wahab Syahranie';
-    final email = 'wahabschools@gmail.com';
-    final position = 'CEO';
-    final urlImage =
-        'https://plus.unsplash.com/premium_photo-1760876475958-680bc9c45d2b?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1470';
-
     return Drawer(
       child: Material(
         color: MyColors.secondary,
         child: ListView(
           padding: EdgeInsets.symmetric(horizontal: 10, vertical: 40),
           children: <Widget>[
-            buildHeader(
-              urlImage: urlImage,
-              name: name,
-              email: email,
-              position: position,
-              // onClicked: () {},
-              onClicked: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) =>
-                      UserPage(name: name, urlImage: urlImage),
-                ),
-              ),
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const SizedBox(height: 120);
+                }
+
+                final data = snapshot.data!.data() as Map<String, dynamic>;
+
+                final name = data['name'] ?? 'User';
+                final photoUrl = data['photoUrl'];
+                final phone = data['phone'] ?? '-';
+
+                return buildHeader(
+                  photoUrl: photoUrl,
+                  name: name,
+                  phone: phone,
+                );
+              },
             ),
+
             const SizedBox(height: 20),
             buildMenuItem(
               text: 'Perawatan',
@@ -139,66 +144,47 @@ class NavigationDrawerWidget extends StatelessWidget {
   }
 
   Widget buildHeader({
-    required String urlImage,
+    required String? photoUrl,
     required String name,
-    required String email,
-    required String position,
-    required VoidCallback onClicked,
-  }) => InkWell(
-    onTap: onClicked,
-    child: Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 20,
-      ).add(EdgeInsets.symmetric(vertical: 40)),
+    required String phone,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       child: Row(
         children: [
-          CircleAvatar(radius: 30, backgroundImage: NetworkImage(urlImage)),
+          CircleAvatar(
+            radius: 35,
+            backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+                ? NetworkImage(photoUrl)
+                : const AssetImage('assets/images/person_image.jpg')
+                      as ImageProvider,
+          ),
           const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   name,
-                  style: TextStyle(fontSize: 20, color: MyColors.white),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                   overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
-                  email,
-                  style: TextStyle(fontSize: 14, color: MyColors.white),
+                  phone,
+                  style: const TextStyle(fontSize: 14, color: Colors.white70),
                   overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: MyColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    position,
-                    style: TextStyle(fontSize: 10, color: MyColors.white),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: MyColors.white,
-            child: Icon(Icons.add_comment_outlined, color: MyColors.secondary),
-          ),
         ],
       ),
-    ),
-  );
+    );
+  }
 }

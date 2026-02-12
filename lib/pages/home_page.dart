@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/capture/capture_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
@@ -80,33 +81,6 @@ class _HomePageState extends State<HomePage> {
           return doc['totalScheduled'] ?? 0;
         });
   }
-
-  //MAKE SNAPSHOT GLOBAL (SEKARANG GANTI MENGGUNAKAN CRON)
-  // Future<void> ensureTodaySnapshot() async {
-  //   final snapshotRef = FirebaseFirestore.instance
-  //       .collection('daily_maintenance_snapshot')
-  //       .doc(_todayDocId());
-
-  //   final snapshotDoc = await snapshotRef.get();
-
-  //   // Kalau snapshot sudah ada → STOP
-  //   if (snapshotDoc.exists) return;
-
-  //   // Kalau belum ada → HITUNG
-  //   final start = Timestamp.fromDate(_todayStart());
-  //   final end = Timestamp.fromDate(_todayEnd());
-
-  //   final query = await FirebaseFirestore.instance
-  //       .collection('maintenance')
-  //       .where('nextMaintenanceAt', isGreaterThanOrEqualTo: start)
-  //       .where('nextMaintenanceAt', isLessThanOrEqualTo: end)
-  //       .get();
-
-  //   await snapshotRef.set({
-  //     'totalScheduled': query.docs.length,
-  //     'createdAt': Timestamp.now(),
-  //   });
-  // }
 
   //QUERY CARD PERAWATAN HARI INI (SELESAI)
   Stream<int> completedMaintenanceTodayStream() {
@@ -242,14 +216,19 @@ class _HomePageState extends State<HomePage> {
                   onTap: () {
                     _scaffoldKey.currentState?.openEndDrawer();
                   },
-                  child: Container(
-                    width: 53,
-                    height: 53,
-                    decoration: const BoxDecoration(shape: BoxShape.circle),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.asset(
-                      'assets/images/person_image.jpg',
-                      fit: BoxFit.cover,
+                  child: CachedNetworkImage(
+                    imageUrl: data['photoUrl'] ?? '',
+                    imageBuilder: (context, imageProvider) => CircleAvatar(
+                      radius: 26,
+                      backgroundImage: imageProvider,
+                    ),
+                    placeholder: (context, url) =>
+                        const CircleAvatar(radius: 26),
+                    errorWidget: (context, url, error) => const CircleAvatar(
+                      radius: 26,
+                      backgroundImage: AssetImage(
+                        'assets/images/person_image.jpg',
+                      ),
                     ),
                   ),
                 ),
