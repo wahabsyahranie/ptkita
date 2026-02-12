@@ -41,6 +41,7 @@ dependencies:
   firebase_storage: ^13.0.4
   firebase_crashlytics: ^5.0.5
   firebase_analytics: ^12.0.4
+  firebase_messaging: ^16.0.4
 
   # Wajib untuk capture_page.dart
   http: ^1.2.0

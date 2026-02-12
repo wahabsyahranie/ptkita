@@ -5,12 +5,18 @@
     <!-- Izin baca file untuk Android < 13 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
+    <!-- Izin untuk push notification -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <!-- Izin baca media untuk Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <application
         android:label="flutter_kita"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
