@@ -18,13 +18,10 @@ class WarrantyDetailPage extends StatelessWidget {
 
     if (warranty.isExpired) {
       statusText = 'Expired';
-      statusColor = Colors.red;
-    } else if (warranty.isReallyActive) {
-      statusText = 'Aktif';
-      statusColor = Colors.green;
+      statusColor = MyColors.primary;
     } else {
-      statusText = 'Non-Aktif';
-      statusColor = Colors.orange;
+      statusText = 'Aktif';
+      statusColor = MyColors.green;
     }
 
     return Scaffold(
@@ -96,6 +93,13 @@ class WarrantyDetailPage extends StatelessWidget {
                   _infoRow('Serial Number', warranty.serialNumber),
                   _divider(),
                   _infoRow('Jenis Garansi', warranty.warrantyTypeLabel),
+                  _divider(),
+                  _infoRow(
+                    'Jumlah Klaim',
+                    warranty.claimCount == 0
+                        ? 'Belum pernah diklaim'
+                        : '${warranty.claimCount} kali',
+                  ),
                   _divider(),
                   _infoRow('Tanggal Mulai', startDate),
                   _divider(),

@@ -220,6 +220,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     await _createWarrantiesFromTransaction(
       transactionId: transactionId,
       buyerName: _nameCtrl.text.trim(),
+      phone: _phoneCtrl.text,
       items: _cartItems,
       transactionDate: transactionDate,
     );
@@ -711,6 +712,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   Future<void> _createWarrantiesFromTransaction({
     required String transactionId,
     required String buyerName,
+    required String phone,
     required List<Map<String, dynamic>> items,
     required DateTime transactionDate,
   }) async {
@@ -736,16 +738,18 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
           'transactionId': transactionId,
           'itemId': item['itemId'],
           'buyerName': buyerName.trim(),
+          'phone': phone.trim(),
 
           'productName': item['name'],
-          'serialNumber': '', // nanti kita isi kalau mau auto generate
-          'warrantyType': item['warrantyType'],
+          'serialNumber': '',
+          'warrantyType': item['warrantyType'], // 🔥 TAMBAHKAN INI
 
           'startAt': Timestamp.fromDate(startAt),
           'expireAt': Timestamp.fromDate(expireAt),
           'createdAt': FieldValue.serverTimestamp(),
 
-          'isActive': true,
+          'status': 'Active',
+          'claimCount': 0,
         });
       }
     }

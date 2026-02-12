@@ -22,6 +22,26 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _autoUpdateExpiredWarranty();
+  }
+
+  Future<void> _autoUpdateExpiredWarranty() async {
+    final now = Timestamp.fromDate(DateTime.now());
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('warranty')
+        .where('status', isEqualTo: 'Active')
+        .where('expireAt', isLessThan: now)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      await doc.reference.update({'status': 'Expired'});
+    }
+  }
+
   Widget _buildFilterOption({
     required String label,
     required String value,
@@ -97,12 +117,6 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
                       _buildFilterOption(
                         label: 'Aktif',
                         value: 'active',
-                        groupValue: tempFilter,
-                        onChanged: (v) => setModalState(() => tempFilter = v),
-                      ),
-                      _buildFilterOption(
-                        label: 'Non-Aktif',
-                        value: 'non',
                         groupValue: tempFilter,
                         onChanged: (v) => setModalState(() => tempFilter = v),
                       ),
@@ -236,7 +250,6 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
 
                         if (_statusFilter == 'active') return w.isReallyActive;
                         if (_statusFilter == 'expired') return w.isExpired;
-                        if (_statusFilter == 'non') return !w.isActive;
 
                         return true;
                       })
