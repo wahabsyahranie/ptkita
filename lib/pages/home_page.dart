@@ -98,6 +98,11 @@ class _HomePageState extends State<HomePage> {
         .map((s) => s.docs.length);
   }
 
+  //HELPER LIMIT TEXT
+  String limitText(String text, int max) {
+    return text.length <= max ? text : "${text.substring(0, max)}...";
+  }
+
   @override
   Widget build(BuildContext context) {
     // Buat pages tanpa endDrawer di inner scaffold
@@ -196,7 +201,8 @@ class _HomePageState extends State<HomePage> {
                 const Text('Selamat datang,', style: TextStyle(fontSize: 14)),
                 const SizedBox(height: 8),
                 Text(
-                  name,
+                  limitText(name, 25),
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -336,7 +342,7 @@ class _HomePageState extends State<HomePage> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return _statCard(
-                title: 'Jenis Barang',
+                title: 'Total Item',
                 value: '...',
                 subtitle: 'Memuat data',
                 icon: Icons.inventory_2_outlined,
@@ -345,7 +351,7 @@ class _HomePageState extends State<HomePage> {
 
             if (snapshot.hasError) {
               return _statCard(
-                title: 'Jenis Barang',
+                title: 'Total Item',
                 value: '-',
                 subtitle: 'Gagal memuat data',
                 icon: Icons.inventory_2_outlined,
@@ -355,9 +361,9 @@ class _HomePageState extends State<HomePage> {
             final totalItems = snapshot.data ?? 0;
 
             return _statCard(
-              title: 'Jenis Barang',
-              value: '$totalItems pcs.',
-              subtitle: 'Jumlah jenis barang tersedia',
+              title: 'Total Item',
+              value: '$totalItems',
+              subtitle: 'Jenis barang terdaftar',
               icon: Icons.inventory_2_outlined,
             );
           },
@@ -389,8 +395,8 @@ class _HomePageState extends State<HomePage> {
 
             return _statCard(
               title: 'Stok Habis',
-              value: '$totalOutOfStock pcs.',
-              subtitle: 'Cek barang dengan stok kosong',
+              value: '$totalOutOfStock',
+              subtitle: 'Stok yang kosong saat ini',
               icon: Icons.production_quantity_limits_outlined,
             );
           },
@@ -430,12 +436,12 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            // const SizedBox(height: 10),
             Text(
               value,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 15),
             Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text(subtitle, style: const TextStyle(fontSize: 12)),
