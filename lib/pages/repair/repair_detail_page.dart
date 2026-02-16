@@ -115,6 +115,31 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
       return;
     }
 
+    // ================= KONFIRMASI =================
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi Penyelesaian"),
+        content: const Text(
+          "Setelah perbaikan ditandai selesai, data tidak dapat diedit kembali.\n\nApakah Anda yakin ingin melanjutkan?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Ya, Selesaikan"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // ================= PROSES UPDATE =================
     final user = FirebaseAuth.instance.currentUser;
     final uid = user?.uid;
 
@@ -152,6 +177,10 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         _current['completedAt'] = Timestamp.now();
         _showForm = false;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perbaikan berhasil diselesaikan')),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }

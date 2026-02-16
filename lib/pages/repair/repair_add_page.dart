@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RepairAddPage extends StatefulWidget {
   final String? warrantyId;
@@ -23,6 +24,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
   final TextEditingController _completenessCtrl = TextEditingController();
   final TextEditingController _detailCtrl = TextEditingController();
   final TextEditingController _costCtrl = TextEditingController();
+  final TextEditingController _technicianController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
   String _status = 'Belum Selesai';
@@ -48,6 +50,8 @@ class _RepairAddPageState extends State<RepairAddPage> {
   void initState() {
     super.initState();
 
+    _autoFillTechnician();
+
     _isFromWarranty = widget.warrantyId != null;
 
     if (_isFromWarranty && widget.warrantyData != null) {
@@ -60,6 +64,22 @@ class _RepairAddPageState extends State<RepairAddPage> {
       _hpCtrl.text = widget.warrantyData!['noHp'] ?? '';
       _costCtrl.text = '0';
     }
+  }
+
+  Future<void> _autoFillTechnician() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final name = userDoc.data()?['name'] ?? '';
+
+    setState(() {
+      _technicianController.text = name;
+    });
   }
 
   Future<void> _pickDate() async {
@@ -103,21 +123,48 @@ class _RepairAddPageState extends State<RepairAddPage> {
     setState(() => _saving = true);
 
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      final uid = user?.uid;
+
+      if (uid == null) {
+        throw Exception('User tidak ditemukan');
+      }
+
+      // Ambil nama user dari collection users
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      final userData = userDoc.data() ?? {};
+      final String userName = userData['name'] ?? 'Unknown';
+
       final isWarranty = _repairCategory == 'warranty';
 
       final payload = {
         'repairCategory': _repairCategory,
         'warrantyId': isWarranty ? _selectedWarrantyId : null,
+
         'buyerName': _buyerCtrl.text.trim(),
         'itemName': _itemCtrl.text.trim(),
-        'techName': _techCtrl.text.trim(),
+
+        // 🔥 Auto assign technician
+        'techName': userName,
+        'technicianUid': uid,
+
+        // 🔥 Metadata pembuat
+        'createdByUid': uid,
+        'createdByName': userName,
+
         'noHp': _hpCtrl.text.trim(),
         'status': _status,
         'completeness': _completenessCtrl.text.trim(),
         'date': Timestamp.fromDate(_selectedDate),
 
-        // SAFE COST
-        'cost': isWarranty ? 0 : int.tryParse(_costCtrl.text.trim()) ?? 0,
+        'cost': isWarranty
+            ? 0
+            : int.tryParse(_costCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
+                  0,
 
         if (_detailCtrl.text.trim().isNotEmpty)
           'detailPart': _detailCtrl.text.trim(),
@@ -125,7 +172,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      // Snapshot warranty
+      // ================= WARRANTY SNAPSHOT =================
       if (isWarranty && _selectedWarrantyId != null) {
         final warrantyDoc = await FirebaseFirestore.instance
             .collection('warranty')
@@ -151,7 +198,6 @@ class _RepairAddPageState extends State<RepairAddPage> {
           return;
         }
 
-        // lanjut snapshot kalau aman
         payload['warrantySnapshot'] = {
           'startAt': warrantyData['startAt'],
           'expireAt': warrantyData['expireAt'],
@@ -164,7 +210,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
           .collection('repair')
           .add(payload);
 
-      // Update claimCount
+      // Update claimCount kalau warranty
       if (isWarranty && _selectedWarrantyId != null) {
         await FirebaseFirestore.instance
             .collection('warranty')
@@ -299,9 +345,12 @@ class _RepairAddPageState extends State<RepairAddPage> {
                 const SizedBox(height: 12),
 
                 _label('Teknisi'),
-                TextFormField(
-                  controller: _techCtrl,
-                  decoration: _inputDecoration(),
+                TextField(
+                  controller: _technicianController,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 12),
 
