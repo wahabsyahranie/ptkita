@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RepairDetailPage extends StatefulWidget {
   const RepairDetailPage({Key? key, required this.data, this.docId})
@@ -24,6 +25,7 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
   final TextEditingController _costCtrl = TextEditingController();
 
   bool _saving = false;
+  bool _showForm = false;
 
   @override
   void initState() {
@@ -90,6 +92,14 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
     return 'Rp ${parts.reversed.join('.')}';
   }
 
+  String _formatRupiahInput(String value) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return '';
+
+    final number = int.parse(digits);
+    return _fmtRupiah(number).replaceFirst('Rp ', '');
+  }
+
   // ================= UPDATE STATUS =================
 
   Future<void> _markSelesaiWithRincian() async {
@@ -105,6 +115,45 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
       return;
     }
 
+    // ================= KONFIRMASI =================
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi Penyelesaian"),
+        content: const Text(
+          "Setelah perbaikan ditandai selesai, data tidak dapat diedit kembali.\n\nApakah Anda yakin ingin melanjutkan?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Ya, Selesaikan"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // ================= PROSES UPDATE =================
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid;
+
+    String completedByName = 'Unknown';
+
+    if (uid != null) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      completedByName = userDoc.data()?['name'] ?? 'Unknown';
+    }
+
     final digits = costRaw.replaceAll(RegExp(r'[^0-9]'), '');
     final costVal = int.tryParse(digits) ?? 0;
 
@@ -116,44 +165,22 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         'detailPart': detail,
         'cost': costVal,
         'completedAt': FieldValue.serverTimestamp(),
+        'completedByName': completedByName,
+        'completedByUid': uid,
       });
 
       setState(() {
         _current['status'] = 'Selesai';
         _current['detailPart'] = detail;
         _current['cost'] = costVal;
+        _current['completedByName'] = completedByName;
+        _current['completedAt'] = Timestamp.now();
+        _showForm = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perbaikan ditandai selesai')),
+        const SnackBar(content: Text('Perbaikan berhasil diselesaikan')),
       );
-    } catch (_) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal menyimpan')));
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  Future<void> _markBelumSelesai() async {
-    if (_docId == null) return;
-
-    setState(() => _saving = true);
-
-    try {
-      await FirebaseFirestore.instance.collection('repair').doc(_docId).update({
-        'status': 'Belum Selesai',
-        'detailPart': FieldValue.delete(),
-        'cost': FieldValue.delete(),
-        'completedAt': FieldValue.delete(),
-      });
-
-      setState(() {
-        _current['status'] = 'Belum Selesai';
-        _current.remove('detailPart');
-        _current.remove('cost');
-      });
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -243,8 +270,20 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
 
                   // ================= SELESAI INFO =================
                   if (_isSelesai) ...[
+                    const SizedBox(height: 16),
+
+                    _row(
+                      'Diselesaikan Oleh',
+                      _current['completedByName'] ?? '-',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _row('Tanggal Selesai', _fmtDate(_current['completedAt'])),
+                    const SizedBox(height: 8),
+
                     _row('Rincian', detailPart),
                     const SizedBox(height: 8),
+
                     _row(
                       'Biaya',
                       _isWarranty
@@ -252,6 +291,95 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
                           : cost == null
                           ? '-'
                           : _fmtRupiah(cost),
+                    ),
+                  ],
+
+                  if (!_isSelesai && !_showForm) ...[
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _showForm = true;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: MyColors.secondary,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          "Tandai Selesai",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600, // sedikit bold
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  if (!_isSelesai && _showForm) ...[
+                    const SizedBox(height: 16),
+
+                    TextField(
+                      controller: _detailCtrl,
+                      decoration: const InputDecoration(
+                        labelText: "Rincian Perbaikan",
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    if (!_isWarranty)
+                      TextField(
+                        controller: _costCtrl,
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          final formatted = _formatRupiahInput(value);
+                          _costCtrl.value = TextEditingValue(
+                            text: formatted,
+                            selection: TextSelection.collapsed(
+                              offset: formatted.length,
+                            ),
+                          );
+                        },
+                        decoration: const InputDecoration(
+                          labelText: "Biaya",
+                          prefixText: "Rp ",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _saving ? null : _markSelesaiWithRincian,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: MyColors.secondary,
+                        ),
+                        child: const Text(
+                          "Simpan & Tandai Selesai",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600, // sedikit bold
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showForm = false;
+                        });
+                      },
+                      child: const Text("Batal"),
                     ),
                   ],
                 ],

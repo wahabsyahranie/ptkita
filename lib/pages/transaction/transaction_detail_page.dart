@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/models/warranty_model.dart';
+import '../warranty/warranty_detail_page.dart';
 
 class TransactionDetailPage extends StatelessWidget {
-  const TransactionDetailPage({super.key, required this.data});
+  const TransactionDetailPage({
+    super.key,
+    required this.data,
+    required this.transactionId,
+  });
 
   final Map<String, dynamic> data;
+  final String transactionId;
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +23,45 @@ class TransactionDetailPage extends StatelessWidget {
     final status = data['status'] ?? '—';
 
     final hasWarranty = items.any((i) => i['hasWarranty'] == true);
+
+    Future<void> _openWarrantyList() async {
+      final snap = await FirebaseFirestore.instance
+          .collection('warranty')
+          .where('transactionId', isEqualTo: transactionId)
+          .get();
+
+      if (snap.docs.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Tidak ada data garansi')));
+        return;
+      }
+
+      final warranties = snap.docs
+          .map((d) => WarrantyModel.fromFirestore(d))
+          .toList();
+
+      // Jika cuma 1 → langsung buka detail
+      if (warranties.length == 1) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => WarrantyDetailPage(warranty: warranties.first),
+          ),
+        );
+        return;
+      }
+
+      // Jika lebih dari 1 → buka bottom sheet list
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (_) => _WarrantySelectionSheet(warranties: warranties),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F6F3),
@@ -73,9 +119,7 @@ class TransactionDetailPage extends StatelessWidget {
           if (hasWarranty) ...[
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () {
-                // TODO: navigasi ke Riwayat Garansi
-              },
+              onPressed: _openWarrantyList,
               icon: const Icon(Icons.verified_outlined),
               label: const Text('Lihat Detail Garansi'),
               style: ElevatedButton.styleFrom(
@@ -226,10 +270,10 @@ class _ItemRow extends StatelessWidget {
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
                 if (hasWarranty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
                     child: Row(
-                      children: const [
+                      children: [
                         Icon(Icons.verified, size: 14, color: Colors.green),
                         SizedBox(width: 4),
                         Text(
@@ -245,6 +289,62 @@ class _ItemRow extends StatelessWidget {
           Text(
             'Rp ${item['subtotal']}',
             style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WarrantySelectionSheet extends StatelessWidget {
+  const _WarrantySelectionSheet({required this.warranties});
+
+  final List<WarrantyModel> warranties;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(width: 40, child: Divider(thickness: 4)),
+          const SizedBox(height: 16),
+          const Text(
+            "Pilih Garansi",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          ListView.separated(
+            shrinkWrap: true,
+            itemCount: warranties.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              final w = warranties[i];
+
+              return ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                tileColor: Colors.grey.shade100,
+                title: Text(
+                  w.productName,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(w.buyerName),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => WarrantyDetailPage(warranty: w),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
