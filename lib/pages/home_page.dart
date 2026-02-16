@@ -133,13 +133,12 @@ class _HomePageState extends State<HomePage> {
       const InventoryPage(),
     ];
 
-    return WillPopScope(
-      onWillPop: () async {
-        if (_currentIndex != 0) {
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _currentIndex != 0) {
           setState(() => _currentIndex = 0);
-          return false;
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -171,7 +170,7 @@ class _HomePageState extends State<HomePage> {
 
                   backgroundColor: MyColors.secondary,
                   elevation: 4,
-                  child: Icon(Icons.qr_code, color: MyColors.white),
+                  child: const Icon(Icons.qr_code, color: MyColors.white),
                 ),
               ),
       ),
@@ -298,7 +297,7 @@ class _HomePageState extends State<HomePage> {
                           value: progress,
                           strokeWidth: 6,
                           backgroundColor: Colors.white,
-                          valueColor: AlwaysStoppedAnimation(
+                          valueColor: const AlwaysStoppedAnimation(
                             MyColors.secondary,
                           ),
                         ),
@@ -429,7 +428,7 @@ class _HomePageState extends State<HomePage> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: MyColors.secondary.withOpacity(0.15),
+                    color: MyColors.secondary.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, size: 20, color: MyColors.secondary),
@@ -551,7 +550,7 @@ class _HomePageState extends State<HomePage> {
                 value: value,
                 minHeight: 8,
                 backgroundColor: Colors.white,
-                valueColor: AlwaysStoppedAnimation(MyColors.secondary),
+                valueColor: const AlwaysStoppedAnimation(MyColors.secondary),
               ),
             ],
           ),

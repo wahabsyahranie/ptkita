@@ -27,7 +27,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
   final TextEditingController _technicianController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
-  String _status = 'Belum Selesai';
+  final _status = 'Belum Selesai';
   bool _saving = false;
 
   String _repairCategory = 'non_warranty';

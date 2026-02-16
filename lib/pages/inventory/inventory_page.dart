@@ -178,7 +178,7 @@ class _InventoryPageState extends State<InventoryPage> {
     // =========================
     if (_searchQuery.isNotEmpty) {
       base = base.orderBy('name_lowercase').startAt([_searchQuery]).endAt([
-        _searchQuery + '\uf8ff',
+        '$_searchQuery\uf8ff',
       ]);
     } else {
       base = base.orderBy('name_lowercase');
@@ -222,14 +222,19 @@ class _InventoryPageState extends State<InventoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // kalau keyboard terbuka → tutup dulu
-        if (FocusScope.of(context).hasFocus) {
-          FocusScope.of(context).unfocus();
-          return false; // jangan pop halaman
+    return PopScope(
+      canPop: false, // kita kontrol manual
+      onPopInvokedWithResult: (didPop, result) {
+        final focus = FocusScope.of(context);
+
+        // kalau keyboard sedang terbuka
+        if (focus.hasFocus) {
+          focus.unfocus(); // tutup keyboard
+          return; // jangan pop
         }
-        return true; // kalau tidak ada keyboard → boleh pop
+
+        // kalau tidak ada keyboard → pop manual
+        Navigator.of(context).pop();
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -237,7 +242,7 @@ class _InventoryPageState extends State<InventoryPage> {
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
           elevation: 2,
-          shadowColor: Colors.black.withOpacity(0.25),
+          shadowColor: Colors.black.withValues(alpha: 0.25),
           title: const Text("Data Barang"),
 
           bottom: PreferredSize(
@@ -408,7 +413,7 @@ class _BarangBox extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
@@ -499,7 +504,7 @@ class _BarangBox extends StatelessWidget {
                       'Stok: $stock',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -511,7 +516,7 @@ class _BarangBox extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                       ),
                     ),
                   ),

@@ -48,10 +48,6 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // =========================
   DateTime? _transactionDate;
 
-  DateTime _addYears(DateTime date, int years) {
-    return DateTime(date.year + years, date.month, date.day);
-  }
-
   // =========================
   // CART
   // =========================
@@ -85,10 +81,10 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // TOTAL (AUTO)
   // =========================
   int get _total {
-    return _cartItems.fold<int>(0, (sum, item) {
+    return _cartItems.fold<int>(0, (accumulator, item) {
       final int price = item['price'] as int;
       final int qty = item['qty'] as int;
-      return sum + (price * qty);
+      return accumulator + (price * qty);
     });
   }
 
@@ -304,7 +300,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                     _label('Pilih Item / Barang'),
                     DropdownButtonFormField<String>(
                       isExpanded: true,
-                      value: _selectedItemId,
+                      initialValue: _selectedItemId,
                       items: _items.map<DropdownMenuItem<String>>((e) {
                         return DropdownMenuItem<String>(
                           value: e['id'] as String,
@@ -330,11 +326,11 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                     const SizedBox(height: 12),
                     TextButton.icon(
                       onPressed: _selectedItem == null ? null : _addToCart,
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.add_circle_outline,
                         color: MyColors.secondary,
                       ),
-                      label: Text(
+                      label: const Text(
                         'Tambah Item ke Transaksi',
                         style: TextStyle(
                           color: MyColors.secondary,
@@ -528,7 +524,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
             const SizedBox(height: 14),
             _subLabel('Jenis Garansi'),
             DropdownButtonFormField<String>(
-              value: _warrantyType,
+              initialValue: _warrantyType,
               items: const [
                 DropdownMenuItem(value: 'Jasa', child: Text('Jasa')),
                 DropdownMenuItem(value: 'SparePart', child: Text('SparePart')),
@@ -641,7 +637,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       // FOCUS (saat disentuh)
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: MyColors.secondary, width: 1.5),
+        borderSide: const BorderSide(color: MyColors.secondary, width: 1.5),
       ),
 
       // OPTIONAL (biar konsisten)

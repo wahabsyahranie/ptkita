@@ -7,8 +7,7 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class RepairDetailPage extends StatefulWidget {
-  const RepairDetailPage({Key? key, required this.data, this.docId})
-    : super(key: key);
+  const RepairDetailPage({super.key, required this.data, this.docId});
 
   final Map<String, dynamic> data;
   final String? docId;

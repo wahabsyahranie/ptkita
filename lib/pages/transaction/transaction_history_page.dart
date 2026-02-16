@@ -104,7 +104,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           // buka page add (kamu bisa pakai const RepairAddPage() kalau ctor const)
           final res = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => TransactionAddPage()),
+            MaterialPageRoute(builder: (_) => const TransactionAddPage()),
           );
 
           // widget mungkin sudah di-unmount setelah await -> aman cek mounted
@@ -223,11 +223,11 @@ class _SearchBarState extends State<_SearchBar> {
       decoration: BoxDecoration(
         color: MyColors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: MyColors.secondary.withOpacity(0.22)),
+        border: Border.all(color: MyColors.secondary.withValues(alpha: 0.22)),
       ),
       child: Row(
         children: [
-          Icon(Icons.search_rounded, color: MyColors.secondary),
+          const Icon(Icons.search_rounded, color: MyColors.secondary),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -236,7 +236,7 @@ class _SearchBarState extends State<_SearchBar> {
               decoration: InputDecoration(
                 hintText: 'Cari sesuatu',
                 hintStyle: TextStyle(
-                  color: MyColors.secondary.withOpacity(0.6),
+                  color: MyColors.secondary.withValues(alpha: 0.6),
                 ),
                 border: InputBorder.none,
                 isDense: true,
@@ -251,7 +251,7 @@ class _SearchBarState extends State<_SearchBar> {
               },
               child: Icon(
                 Icons.close_rounded,
-                color: MyColors.secondary.withOpacity(0.7),
+                color: MyColors.secondary.withValues(alpha: 0.7),
               ),
             ),
         ],
@@ -289,9 +289,9 @@ class _TransactionCardFirestore extends StatelessWidget {
               Container(
                 width: 6,
                 height: 120,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: MyColors.secondary,
-                  borderRadius: const BorderRadius.only(
+                  borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(16),
                     bottomLeft: Radius.circular(16),
                   ),
@@ -344,7 +344,7 @@ class _TransactionCardFirestore extends StatelessWidget {
                           ),
                           Text(
                             'Rp ${_fmt(summary['subtotal'])}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
                               color: MyColors.secondary,
