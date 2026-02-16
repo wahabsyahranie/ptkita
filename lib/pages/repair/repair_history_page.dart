@@ -209,7 +209,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
           // buka page add (kamu bisa pakai const RepairAddPage() kalau ctor const)
           final res = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => RepairAddPage()),
+            MaterialPageRoute(builder: (_) => const RepairAddPage()),
           );
 
           // widget mungkin sudah di-unmount setelah await -> aman cek mounted
@@ -259,11 +259,11 @@ class _SearchBarState extends State<_SearchBar> {
       decoration: BoxDecoration(
         color: MyColors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: MyColors.secondary.withOpacity(0.22)),
+        border: Border.all(color: MyColors.secondary.withValues(alpha: 0.22)),
       ),
       child: Row(
         children: [
-          Icon(Icons.search_rounded, color: MyColors.secondary),
+          const Icon(Icons.search_rounded, color: MyColors.secondary),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -272,7 +272,7 @@ class _SearchBarState extends State<_SearchBar> {
               decoration: InputDecoration(
                 hintText: 'Cari sesuatu',
                 hintStyle: TextStyle(
-                  color: MyColors.secondary.withOpacity(0.6),
+                  color: MyColors.secondary.withValues(alpha: 0.6),
                 ),
                 border: InputBorder.none,
                 isDense: true,
@@ -287,7 +287,7 @@ class _SearchBarState extends State<_SearchBar> {
               },
               child: Icon(
                 Icons.close_rounded,
-                color: MyColors.secondary.withOpacity(0.7),
+                color: MyColors.secondary.withValues(alpha: 0.7),
               ),
             ),
         ],
@@ -343,7 +343,7 @@ class _RepairCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -393,7 +393,7 @@ class _RepairCard extends StatelessWidget {
                             color: MyColors.green, // warna hijau terang
                           ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Garansi',
                           style: TextStyle(
                             fontSize: 12,
@@ -408,7 +408,7 @@ class _RepairCard extends StatelessWidget {
                       dateText,
                       style: TextStyle(
                         fontSize: 12,
-                        color: MyColors.secondary.withOpacity(0.9),
+                        color: MyColors.secondary.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -435,7 +435,7 @@ class _RepairCard extends StatelessWidget {
                   'Diperbaiki Oleh $tech',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                   ),
                 ),
               ],

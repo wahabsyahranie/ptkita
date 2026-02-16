@@ -33,7 +33,7 @@ class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
         child: Column(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(45),
                 topRight: Radius.circular(45),
                 bottomLeft: Radius.circular(24),
@@ -42,7 +42,7 @@ class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
               child: Container(
                 width: double.infinity,
                 height: MediaQuery.of(context).size.height * 0.6,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage('assets/images/welcome_image.jpg'),
                     fit: BoxFit.cover,
@@ -51,7 +51,7 @@ class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
               ),
             ),
             SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-            SizedBox(
+            const SizedBox(
               width: 333,
               child: Text(
                 'Monitoring Stok Unit, dimanapun.',
@@ -64,7 +64,7 @@ class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
               ),
             ),
             SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-            SizedBox(
+            const SizedBox(
               width: 333,
               child: Text(
                 'Lupakan cara konvensional, gunakan sistem digital dan jadikan pengalaman lebih baik.',
@@ -88,7 +88,7 @@ class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
                   borderRadius: BorderRadius.circular(40),
                 ),
                 alignment: Alignment.center,
-                child: Text(
+                child: const Text(
                   "Selanjutnya",
                   style: TextStyle(
                     fontSize: 18,

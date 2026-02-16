@@ -16,7 +16,7 @@ class NavigationDrawerWidget extends StatelessWidget {
       child: Material(
         color: MyColors.secondary,
         child: ListView(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 40),
           children: <Widget>[
             StreamBuilder<DocumentSnapshot>(
               stream: FirebaseFirestore.instance
@@ -67,7 +67,7 @@ class NavigationDrawerWidget extends StatelessWidget {
               onClicked: () => selectedItem(context, 3),
             ),
             const SizedBox(height: 24),
-            Divider(color: MyColors.white),
+            const Divider(color: MyColors.white),
             const SizedBox(height: 24),
             buildMenuItem(
               text: 'Log Out',
@@ -107,12 +107,12 @@ class NavigationDrawerWidget extends StatelessWidget {
     required IconData icon,
     VoidCallback? onClicked,
   }) {
-    final color = Colors.white;
-    final hoverColor = Colors.white70;
+    const color = Colors.white;
+    const hoverColor = Colors.white70;
 
     return ListTile(
       leading: Icon(icon, color: color),
-      title: Text(text, style: TextStyle(color: color)),
+      title: Text(text, style: const TextStyle(color: color)),
       hoverColor: hoverColor,
       onTap: onClicked,
     );
@@ -121,24 +121,26 @@ class NavigationDrawerWidget extends StatelessWidget {
   void selectedItem(BuildContext context, int index) {
     switch (index) {
       case 0:
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => MaintenancePage()));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const MaintenancePage()),
+        );
         break;
       case 1:
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => TransactionHistoryPage()),
+          MaterialPageRoute(
+            builder: (context) => const TransactionHistoryPage(),
+          ),
         );
         break;
       case 2:
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => RepairHistoryPage()));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const RepairHistoryPage()),
+        );
         break;
       case 3:
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => WarrantyHistoryPage()));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const WarrantyHistoryPage()),
+        );
         break;
     }
   }

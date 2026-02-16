@@ -266,8 +266,10 @@ class _LabelField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: MyColors.secondary.withOpacity(0.5)),
-            color: MyColors.tertiary.withOpacity(0.35),
+            border: Border.all(
+              color: MyColors.secondary.withValues(alpha: 0.5),
+            ),
+            color: MyColors.tertiary.withValues(alpha: 0.35),
           ),
           child: Text(
             value,

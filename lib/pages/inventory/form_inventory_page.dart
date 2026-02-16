@@ -157,23 +157,28 @@ class _InventoryFormState extends State<FormInventoryPage> {
       final uploadTask = ref.putFile(file);
 
       uploadTask.snapshotEvents.listen((snap) {
-        final total = snap.totalBytes ?? 1;
-        final progress = snap.bytesTransferred / total;
-        setState(() => _uploadProgress = progress);
+        final total = snap.totalBytes;
+        final progress = total > 0 ? snap.bytesTransferred / total : 0.0;
+
+        if (mounted) {
+          setState(() => _uploadProgress = progress.toDouble());
+        }
       });
 
-      final snapshot = await uploadTask.whenComplete(() {});
+      final snapshot = await uploadTask;
       if (snapshot.state == TaskState.success) {
-        final url = await snapshot.ref.getDownloadURL();
-        return url;
+        return await snapshot.ref.getDownloadURL();
       }
+
       return null;
     } catch (e, st) {
       debugPrint('uploadImage error: $e\n$st');
       rethrow;
     } finally {
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) setState(() => _uploadProgress = 0.0);
+        if (mounted) {
+          setState(() => _uploadProgress = 0.0);
+        }
       });
     }
   }
@@ -204,35 +209,44 @@ class _InventoryFormState extends State<FormInventoryPage> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => WillPopScope(
-          onWillPop: () async => false,
+        builder: (_) => PopScope(
+          canPop: false,
           child: Dialog(
             backgroundColor: MyColors.white,
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: MyColors.secondary,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
+                  Row(
+                    children: [
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: MyColors.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
                           widget.initialItem == null
                               ? 'Menyimpan...'
                               : 'Memperbarui...',
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                  if (_uploadProgress > 0 && _uploadProgress < 1)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: LinearProgressIndicator(
+                        value: _uploadProgress,
+                        color: MyColors.secondary,
+                        backgroundColor: Colors.grey.shade200,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -244,6 +258,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
       if (_imageFile != null) {
         final uploaded = await _uploadImageFile(_imageFile!);
         if (uploaded == null) {
+          if (!mounted) return;
           Navigator.of(context).pop();
           throw Exception('Upload gambar gagal');
         }
@@ -280,29 +295,30 @@ class _InventoryFormState extends State<FormInventoryPage> {
       }
 
       // success
-      Navigator.of(context).pop(); // close dialog
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.initialItem == null
-                  ? 'Item berhasil disimpan'
-                  : 'Item berhasil diperbarui',
-            ),
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.initialItem == null
+                ? 'Item berhasil disimpan'
+                : 'Item berhasil diperbarui',
           ),
-        );
-        widget.onSaved?.call();
-      }
+        ),
+      );
+      widget.onSaved?.call();
     } catch (e, st) {
       debugPrint('save error: $e\n$st');
       try {
-        Navigator.of(context).pop();
+        if (mounted) Navigator.of(context).pop();
       } catch (_) {}
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
-      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -372,13 +388,14 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 controller: _nameCtrl,
                 autofocus: widget.initialItem == null,
                 cursorColor: MyColors.background,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: "Masukkan nama barang",
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: MyColors.secondary, width: 2),
                   ),
                 ),
+
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Nama wajib diisi";
@@ -392,7 +409,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
               TextFormField(
                 controller: _skuCtrl,
                 cursorColor: MyColors.background,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: "Masukkan SKU barang",
                   focusedBorder: OutlineInputBorder(
@@ -413,7 +430,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 controller: _priceCtrl,
                 cursorColor: MyColors.background,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: "Harga barang",
                   focusedBorder: OutlineInputBorder(
@@ -438,7 +455,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 controller: _stockCtrl,
                 cursorColor: MyColors.background,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: "Masukkan jumlah stok",
                   focusedBorder: OutlineInputBorder(
@@ -462,7 +479,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
               TextFormField(
                 controller: _locationCtrl,
                 cursorColor: MyColors.background,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: "Masukkan kode rak",
                   focusedBorder: OutlineInputBorder(
@@ -490,7 +507,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                     _selectedType = value;
                   });
                 },
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Pilih tipe barang",
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: MyColors.secondary, width: 2),
@@ -525,7 +542,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                     _selectedMerk = value;
                   });
                 },
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Pilih merk barang",
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: MyColors.secondary, width: 2),
@@ -549,7 +566,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 minLines: 4,
                 maxLines: 8,
                 cursorColor: MyColors.background,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Jelaskan deskripsi produk",
                   border: OutlineInputBorder(),
                   focusedBorder: OutlineInputBorder(

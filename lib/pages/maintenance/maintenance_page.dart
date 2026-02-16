@@ -25,12 +25,12 @@ class _MaintenancePageState extends State<MaintenancePage> {
 
   //Helper jika maintenance kosong.
   Widget _emptyMaintenanceState() {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
             SizedBox(height: 16),
             Text(
@@ -72,9 +72,9 @@ class _MaintenancePageState extends State<MaintenancePage> {
   @override
   void initState() {
     super.initState();
-    _appliedFilter = MaintenanceFilter(
+    _appliedFilter = const MaintenanceFilter(
       statuses: {'terlambat', 'terjadwal'},
-      timeRange: const Duration(days: 1),
+      timeRange: Duration(days: 1),
     );
   }
 
@@ -213,7 +213,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.25),
+        shadowColor: Colors.black.withValues(alpha: 0.25),
         title: const Text("Daftar Perawatan"),
 
         bottom: PreferredSize(
@@ -321,7 +321,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
             final filtered = _searchQuery.isEmpty
                 ? filteredByFilter
                 : filteredByFilter.where((main) {
-                    final name = (main.itemName ?? '').toLowerCase();
+                    final name = (main.itemName).toLowerCase();
                     final sku = (main.sku ?? '').toLowerCase();
                     return name.contains(_searchQuery) ||
                         sku.contains(_searchQuery);
@@ -381,14 +381,14 @@ class _MaintenanceBox extends StatelessWidget {
     final priority = main.priority;
 
     // helper build qlient status
-    String _computedStatus() {
+    String computedStatus() {
       final now = DateTime.now();
       final next = main.nextMaintenanceAt!.toDate();
 
       return next.isBefore(now) ? 'terlambat' : 'terjadwal';
     }
 
-    final status = _computedStatus();
+    final status = computedStatus();
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -445,13 +445,16 @@ class _MaintenanceBox extends StatelessWidget {
                 ],
               ),
               // const SizedBox(height: 6),
-              Text(sku, style: TextStyle(color: Colors.black.withOpacity(0.7))),
+              Text(
+                sku,
+                style: TextStyle(color: Colors.black.withValues(alpha: 0.7)),
+              ),
               const SizedBox(height: 12),
 
               // row icons date + interval + status
               Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.calendar_today_outlined,
                     size: 18,
                     color: Colors.grey,
@@ -459,7 +462,7 @@ class _MaintenanceBox extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(nextMaintenanceAt),
                   const SizedBox(width: 16),
-                  Icon(Icons.schedule, size: 18, color: Colors.grey),
+                  const Icon(Icons.schedule, size: 18, color: Colors.grey),
                   const SizedBox(width: 6),
                   Text('Setiap $intervalDays hari'),
                   const Spacer(),
