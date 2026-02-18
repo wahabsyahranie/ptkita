@@ -83,18 +83,35 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                             final originalHeight = _imageInfo!.height
                                 .toDouble();
 
-                            final scaleX = constraints.maxWidth / originalWidth;
-                            final scaleY =
-                                constraints.maxHeight / originalHeight;
+                            final containerWidth = constraints.maxWidth;
+                            final containerHeight = constraints.maxHeight;
 
-                            final x1 =
-                                (widget.box['x1'] as num).toDouble() * scaleX;
-                            final y1 =
-                                (widget.box['y1'] as num).toDouble() * scaleY;
-                            final x2 =
-                                (widget.box['x2'] as num).toDouble() * scaleX;
-                            final y2 =
-                                (widget.box['y2'] as num).toDouble() * scaleY;
+                            // Rasio asli gambar
+                            final imageRatio = originalWidth / originalHeight;
+                            final containerRatio =
+                                containerWidth / containerHeight;
+
+                            double displayWidth;
+                            double displayHeight;
+
+                            if (imageRatio > containerRatio) {
+                              displayWidth = containerWidth;
+                              displayHeight = containerWidth / imageRatio;
+                            } else {
+                              displayHeight = containerHeight;
+                              displayWidth = containerHeight * imageRatio;
+                            }
+
+                            final offsetX = (containerWidth - displayWidth) / 2;
+                            final offsetY =
+                                (containerHeight - displayHeight) / 2;
+
+                            final scale = displayWidth / originalWidth;
+
+                            final x1 = widget.box['x1'] * scale + offsetX;
+                            final y1 = widget.box['y1'] * scale + offsetY;
+                            final x2 = widget.box['x2'] * scale + offsetX;
+                            final y2 = widget.box['y2'] * scale + offsetY;
 
                             return Stack(
                               children: [
