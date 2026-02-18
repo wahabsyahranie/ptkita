@@ -6,7 +6,6 @@ import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
 import 'package:flutter_kita/pages/inventory/inventory_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
@@ -20,18 +19,6 @@ class _HomePageState extends State<HomePage> {
   //menambah controller search bar di sini
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
-
-  //Subscribe ke topic maintenance
-  @override
-  void initState() {
-    super.initState();
-    _initFCM();
-  }
-
-  Future<void> _initFCM() async {
-    await FirebaseMessaging.instance.requestPermission();
-    await FirebaseMessaging.instance.subscribeToTopic('maintenance');
-  }
 
   void _onTapNav(int index) {
     setState(() => _currentIndex = index);

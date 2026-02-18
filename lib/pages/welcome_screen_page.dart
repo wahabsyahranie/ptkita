@@ -18,7 +18,7 @@ class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
 
     if (!_isPrecached) {
       precacheImage(
-        const AssetImage('assets/images/welcome_image.jpg'),
+        const AssetImage('assets/images/welcome_image.jpeg'),
         context,
       );
       _isPrecached = true;
@@ -44,7 +44,7 @@ class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
                 height: MediaQuery.of(context).size.height * 0.6,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage('assets/images/welcome_image.jpg'),
+                    image: AssetImage('assets/images/welcome_image.jpeg'),
                     fit: BoxFit.cover,
                   ),
                 ),
