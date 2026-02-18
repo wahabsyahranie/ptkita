@@ -17,7 +17,10 @@ class _LoginPageState extends State<LoginPage> {
     super.didChangeDependencies();
 
     if (!_isPrecached) {
-      precacheImage(const AssetImage('assets/images/login_image.jpg'), context);
+      precacheImage(
+        const AssetImage('assets/images/login_image.jpeg'),
+        context,
+      );
       _isPrecached = true;
     }
   }
@@ -100,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
           height: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/images/login_image.jpg'),
+              image: AssetImage('assets/images/login_image.jpeg'),
               fit: BoxFit.cover,
             ),
           ),

@@ -7,6 +7,7 @@ import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { setGlobalOptions } from "firebase-functions";
+import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 
 initializeApp();
 const db = getFirestore();
@@ -186,6 +187,45 @@ export const sendMaintenanceNotification = onSchedule(
       console.log("Notification sent successfully");
     } catch (error) {
       console.error("Notification failed", error);
+    }
+  },
+);
+
+/* ===============================
+   3️⃣ NOTIFY OUT OF STOCK
+   Triggered when stock becomes 0
+================================ */
+
+export const notifyOutOfStock = onDocumentUpdated(
+  {
+    document: "items/{itemId}",
+    region: "asia-southeast2",
+  },
+  async (event) => {
+    try {
+      const before = event.data?.before.data();
+      const after = event.data?.after.data();
+
+      if (!before || !after) return;
+
+      const beforeStock = before.stock ?? 0;
+      const afterStock = after.stock ?? 0;
+
+      // 🔒 Trigger hanya jika berubah dari >0 menjadi 0
+      if (beforeStock > 0 && afterStock === 0) {
+        await admin.messaging().send({
+          topic: "stock",
+          android: { priority: "high" },
+          notification: {
+            title: "Stok Habis",
+            body: `${after.name} telah habis.`,
+          },
+        });
+
+        console.log(`Out of stock notification sent for ${after.name}`);
+      }
+    } catch (error) {
+      console.error("Out of stock notification failed", error);
     }
   },
 );
