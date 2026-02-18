@@ -23,9 +23,6 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   String? _selectedPriority;
   String? _selectedItemSku;
   bool _isSaving = false;
-  double _uploadProgress = 0.0;
-
-  static const String _storageBucket = 'gs://ptkita-44a19.firebasestorage.app';
 
   @override
   void initState() {
@@ -148,28 +145,32 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       if (widget.initialItem == null) {
         await col.add({...payload, 'createdAt': FieldValue.serverTimestamp()});
       } else {
-        await col.doc(widget.initialItem!.id!).update({
+        await col.doc(widget.initialItem!.id).update({
           ...payload,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
 
+      if (!mounted) return;
       Navigator.of(context).pop();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.initialItem == null
-                  ? 'Maintenance berhasil disimpan'
-                  : 'Maintenance berhasil diperbarui',
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.initialItem == null
+                ? 'Maintenance berhasil disimpan'
+                : 'Maintenance berhasil diperbarui',
           ),
-        );
-        widget.onSaved?.call();
-      }
+        ),
+      );
+      widget.onSaved?.call();
     } catch (e) {
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
@@ -211,7 +212,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                   final items = snapshot.data!.docs;
 
                   return DropdownButtonFormField<String>(
-                    value: _selectedItemId,
+                    initialValue: _selectedItemId,
                     isExpanded: true,
 
                     items: items.map((doc) {
@@ -243,16 +244,16 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                     icon: const Icon(Icons.arrow_drop_down), // ⬅️ override icon
                     iconSize: 20,
 
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: "Pilih Barang",
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
+                      contentPadding: EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 14,
                       ),
 
                       // 🔥 INI KUNCI OVERFLOW
-                      suffixIconConstraints: const BoxConstraints(
+                      suffixIconConstraints: BoxConstraints(
                         minWidth: 32,
                         minHeight: 32,
                       ),
@@ -263,7 +264,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                           width: 2,
                         ),
                       ),
-                      border: const OutlineInputBorder(),
+                      border: OutlineInputBorder(),
                     ),
                   );
                 },
@@ -276,7 +277,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                 controller: _intervalCtrl,
                 cursorColor: MyColors.background,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: "Masukkan jumlah hari",
                   focusedBorder: OutlineInputBorder(
@@ -309,7 +310,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                     _selectedPriority = value;
                   });
                 },
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Pilih Prioritas",
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: MyColors.secondary, width: 2),
@@ -336,7 +337,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                 ),
                 child: Column(
                   children: [
-                    ..._tasks.map(_buildTaskItem).toList(),
+                    ..._tasks.map(_buildTaskItem),
 
                     TextButton.icon(
                       onPressed: _addTask,

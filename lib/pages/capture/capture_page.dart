@@ -227,7 +227,7 @@ class _CapturePageState extends State<CapturePage> {
                         height: 78,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: MyColors.white.withOpacity(0.38),
+                          color: MyColors.white.withValues(alpha: 0.38),
                           border: Border.all(color: MyColors.white, width: 6),
                         ),
                       ),
@@ -242,7 +242,7 @@ class _CapturePageState extends State<CapturePage> {
                           width: 55,
                           height: 55,
                           decoration: BoxDecoration(
-                            color: MyColors.white.withOpacity(0.30),
+                            color: MyColors.white.withValues(alpha: 0.30),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.image, color: MyColors.white),

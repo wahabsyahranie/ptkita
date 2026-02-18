@@ -25,13 +25,13 @@ class SearchBarWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.search, color: MyColors.secondary),
+          const Icon(Icons.search, color: MyColors.secondary),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller, // ← DITAMBAHKAN
               onChanged: onChanged, // ← DITAMBAHKAN
-              style: TextStyle(
+              style: const TextStyle(
                 color: MyColors.secondary,
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
@@ -40,7 +40,7 @@ class SearchBarWidget extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: TextStyle(
-                  color: MyColors.secondary.withOpacity(0.7),
+                  color: MyColors.secondary.withValues(alpha: 0.7),
                   fontSize: 16,
                 ),
                 border: InputBorder.none,

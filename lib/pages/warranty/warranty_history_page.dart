@@ -373,7 +373,7 @@ class _WarrantyCard extends StatelessWidget {
                   // TANGGAL EXPIRE
                   Text(
                     dateText,
-                    style: TextStyle(fontSize: 12, color: MyColors.secondary),
+                    style: const TextStyle(fontSize: 12, color: MyColors.secondary),
                   ),
                 ],
               ),

@@ -141,7 +141,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
 
   //FUNGSI REFRESH HALAMAN SETELAH EDIT
   Future<void> _refreshItem() async {
-    if (_maintenance == null || _maintenance!.id == null) return;
+    if (_maintenance == null) return;
 
     try {
       final snap = await FirebaseFirestore.instance
@@ -172,9 +172,8 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
   @override
   Widget build(BuildContext context) {
     final itemName = _maintenance?.itemName ?? '-';
-    final lastMaintenance = _maintenance?.lastMaintenanceAt == null
-        ? 'belum pernah'
-        : _maintenance!.lastMaintenanceAt!.toDate().toString();
+    final lastMaintenance =
+        _maintenance?.lastMaintenanceAt?.toDate().toString() ?? 'belum pernah';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -207,19 +206,20 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
               child: const Icon(Icons.edit, color: MyColors.white),
             ),
           ),
+
           //DELETE BUTTON
           IconButton(
-            padding: EdgeInsets.only(right: 20),
+            padding: const EdgeInsets.only(right: 20),
             onPressed: () async {
-              final ok = await showDialog(
+              final result = await showDialog<bool>(
                 context: context,
-                builder: (ctx) => AlertDialog(
+                builder: (dialogContext) => AlertDialog(
                   backgroundColor: MyColors.white,
                   title: const Text('Hapus Data?'),
                   content: const Text('Item akan dihapus permanen.'),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
                       child: const Text(
                         'Batal',
                         style: TextStyle(
@@ -229,7 +229,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
                       child: const Text(
                         'Hapus',
                         style: TextStyle(
@@ -241,18 +241,23 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
                   ],
                 ),
               );
+
+              if (result != true) return;
+
               await FirebaseFirestore.instance
                   .collection('maintenance')
                   .doc(_maintenance!.id)
                   .delete();
 
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('Item dihapus')));
-                Navigator.of(context).pop();
-              }
+              if (!mounted) return;
+
+              ScaffoldMessenger.of(
+                this.context,
+              ).showSnackBar(const SnackBar(content: Text('Item dihapus')));
+
+              Navigator.of(this.context).pop();
             },
+
             icon: Container(
               decoration: BoxDecoration(
                 color: MyColors.secondary,

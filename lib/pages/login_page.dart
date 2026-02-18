@@ -17,7 +17,10 @@ class _LoginPageState extends State<LoginPage> {
     super.didChangeDependencies();
 
     if (!_isPrecached) {
-      precacheImage(const AssetImage('assets/images/login_image.jpg'), context);
+      precacheImage(
+        const AssetImage('assets/images/login_image.jpeg'),
+        context,
+      );
       _isPrecached = true;
     }
   }
@@ -82,13 +85,17 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (FocusScope.of(context).hasFocus) {
-          FocusScope.of(context).unfocus();
-          return false;
+    return PopScope(
+      canPop: false, // kita kontrol manual
+      onPopInvokedWithResult: (didPop, result) {
+        // kalau keyboard terbuka
+        if (MediaQuery.of(context).viewInsets.bottom > 0) {
+          FocusManager.instance.primaryFocus?.unfocus();
+          return; // jangan pop
         }
-        return true;
+
+        // kalau tidak ada keyboard → pop manual
+        Navigator.of(context).pop();
       },
       child: Scaffold(
         body: Container(
@@ -96,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
           height: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/images/login_image.jpg'),
+              image: AssetImage('assets/images/login_image.jpeg'),
               fit: BoxFit.cover,
             ),
           ),
@@ -106,9 +113,9 @@ class _LoginPageState extends State<LoginPage> {
               Container(
                 height: 420,
                 width: double.infinity,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: MyColors.white,
-                  borderRadius: const BorderRadius.only(
+                  borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(40),
                     topRight: Radius.circular(40),
                   ),
@@ -145,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
 
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(40),
-                          borderSide: BorderSide(
+                          borderSide: const BorderSide(
                             color: MyColors.secondary,
                             width: 2,
                           ),
@@ -153,12 +160,18 @@ class _LoginPageState extends State<LoginPage> {
 
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(40),
-                          borderSide: BorderSide(color: Colors.red, width: 1.5),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1.5,
+                          ),
                         ),
 
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(40),
-                          borderSide: BorderSide(color: Colors.red, width: 2),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),
@@ -204,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
 
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(40),
-                          borderSide: BorderSide(
+                          borderSide: const BorderSide(
                             color: MyColors.secondary,
                             width: 2,
                           ),

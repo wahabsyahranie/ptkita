@@ -24,11 +24,13 @@ class TransactionDetailPage extends StatelessWidget {
 
     final hasWarranty = items.any((i) => i['hasWarranty'] == true);
 
-    Future<void> _openWarrantyList() async {
+    Future<void> openWarrantyList() async {
       final snap = await FirebaseFirestore.instance
           .collection('warranty')
           .where('transactionId', isEqualTo: transactionId)
           .get();
+
+      if (!context.mounted) return;
 
       if (snap.docs.isEmpty) {
         ScaffoldMessenger.of(
@@ -119,7 +121,7 @@ class TransactionDetailPage extends StatelessWidget {
           if (hasWarranty) ...[
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: _openWarrantyList,
+              onPressed: openWarrantyList,
               icon: const Icon(Icons.verified_outlined),
               label: const Text('Lihat Detail Garansi'),
               style: ElevatedButton.styleFrom(

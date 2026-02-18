@@ -6,7 +6,6 @@ import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
 import 'package:flutter_kita/pages/inventory/inventory_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -24,19 +23,7 @@ class _HomePageState extends State<HomePage> {
 
   // for line chart filter
   String _chartMode = 'weekly'; // weekly / monthly
-
-  //Subscribe ke topic maintenance
-  @override
-  void initState() {
-    super.initState();
-    _initFCM();
-  }
-
-  Future<void> _initFCM() async {
-    await FirebaseMessaging.instance.requestPermission();
-    await FirebaseMessaging.instance.subscribeToTopic('maintenance');
-  }
-
+  
   void _onTapNav(int index) {
     setState(() => _currentIndex = index);
   }
@@ -101,7 +88,10 @@ class _HomePageState extends State<HomePage> {
         .snapshots()
         .map((doc) {
           if (!doc.exists) return 0;
-          return doc['totalScheduled'] ?? 0;
+          final dueToday = doc.data()?['totalDueToday'] ?? 0;
+          final overdue = doc.data()?['totalOverdue'] ?? 0;
+
+          return dueToday + overdue;
         });
   }
 
@@ -116,6 +106,11 @@ class _HomePageState extends State<HomePage> {
         .where('completedAt', isLessThanOrEqualTo: end)
         .snapshots()
         .map((s) => s.docs.length);
+  }
+
+  //HELPER LIMIT TEXT
+  String limitText(String text, int max) {
+    return text.length <= max ? text : "${text.substring(0, max)}...";
   }
 
   @override
@@ -150,13 +145,12 @@ class _HomePageState extends State<HomePage> {
       const InventoryPage(),
     ];
 
-    return WillPopScope(
-      onWillPop: () async {
-        if (_currentIndex != 0) {
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _currentIndex != 0) {
           setState(() => _currentIndex = 0);
-          return false;
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -188,7 +182,7 @@ class _HomePageState extends State<HomePage> {
 
                   backgroundColor: MyColors.secondary,
                   elevation: 4,
-                  child: Icon(Icons.qr_code, color: MyColors.white),
+                  child: const Icon(Icons.qr_code, color: MyColors.white),
                 ),
               ),
       ),
@@ -218,7 +212,8 @@ class _HomePageState extends State<HomePage> {
                 const Text('Selamat datang,', style: TextStyle(fontSize: 14)),
                 const SizedBox(height: 8),
                 Text(
-                  name,
+                  limitText(name, 25),
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -314,7 +309,7 @@ class _HomePageState extends State<HomePage> {
                           value: progress,
                           strokeWidth: 6,
                           backgroundColor: Colors.white,
-                          valueColor: AlwaysStoppedAnimation(
+                          valueColor: const AlwaysStoppedAnimation(
                             MyColors.secondary,
                           ),
                         ),
@@ -358,7 +353,7 @@ class _HomePageState extends State<HomePage> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return _statCard(
-                title: 'Jenis Barang',
+                title: 'Total Item',
                 value: '...',
                 subtitle: 'Memuat data',
                 icon: Icons.inventory_2_outlined,
@@ -367,7 +362,7 @@ class _HomePageState extends State<HomePage> {
 
             if (snapshot.hasError) {
               return _statCard(
-                title: 'Jenis Barang',
+                title: 'Total Item',
                 value: '-',
                 subtitle: 'Gagal memuat data',
                 icon: Icons.inventory_2_outlined,
@@ -377,9 +372,9 @@ class _HomePageState extends State<HomePage> {
             final totalItems = snapshot.data ?? 0;
 
             return _statCard(
-              title: 'Jenis Barang',
-              value: '$totalItems pcs.',
-              subtitle: 'Jumlah jenis barang tersedia',
+              title: 'Total Item',
+              value: '$totalItems',
+              subtitle: 'Jenis barang terdaftar',
               icon: Icons.inventory_2_outlined,
             );
           },
@@ -411,8 +406,8 @@ class _HomePageState extends State<HomePage> {
 
             return _statCard(
               title: 'Stok Habis',
-              value: '$totalOutOfStock pcs.',
-              subtitle: 'Cek barang dengan stok kosong',
+              value: '$totalOutOfStock',
+              subtitle: 'Stok yang kosong saat ini',
               icon: Icons.production_quantity_limits_outlined,
             );
           },
@@ -445,19 +440,19 @@ class _HomePageState extends State<HomePage> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: MyColors.secondary.withOpacity(0.15),
+                    color: MyColors.secondary.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, size: 20, color: MyColors.secondary),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            // const SizedBox(height: 10),
             Text(
               value,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 15),
             Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text(subtitle, style: const TextStyle(fontSize: 12)),
@@ -629,7 +624,7 @@ class _HomePageState extends State<HomePage> {
                 value: value,
                 minHeight: 8,
                 backgroundColor: Colors.white,
-                valueColor: AlwaysStoppedAnimation(MyColors.secondary),
+                valueColor: const AlwaysStoppedAnimation(MyColors.secondary),
               ),
             ],
           ),

@@ -146,7 +146,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 return FilterChip(
                   backgroundColor: Colors.white,
                   selected: selectedBrands.contains(b),
-                  selectedColor: MyColors.secondary.withOpacity(0.2),
+                  selectedColor: MyColors.secondary.withValues(alpha: 0.2),
                   checkmarkColor: MyColors.secondary,
                   label: Text(b),
                   onSelected: (isSelected) {
