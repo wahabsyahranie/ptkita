@@ -23,7 +23,7 @@ class _HomePageState extends State<HomePage> {
 
   // for line chart filter
   String _chartMode = 'weekly'; // weekly / monthly
-  
+
   void _onTapNav(int index) {
     setState(() => _currentIndex = index);
   }
@@ -567,9 +567,9 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Ringkasan Perbaikan',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -589,14 +589,14 @@ class _HomePageState extends State<HomePage> {
               _progressRow(
                 'Dalam perbaikan',
                 dalamProgress,
-                '$dalam/$total',
+                '$dalam',
                 Icons.build_outlined,
               ),
               const SizedBox(height: 16),
               _progressRow(
                 'Selesai',
                 selesaiProgress,
-                '$selesai/$total',
+                '$selesai',
                 Icons.check_circle_outline,
               ),
             ],
@@ -670,11 +670,11 @@ class _HomePageState extends State<HomePage> {
 
           Row(
             children: [
-              _LegendDot(color: Colors.orange, text: "Garansi"),
+              _legendDot(color: Colors.orange, text: "Garansi"),
               const SizedBox(width: 16),
-              _LegendDot(color: Colors.blue, text: "Non Garansi"),
+              _legendDot(color: Colors.blue, text: "Non Garansi"),
               const SizedBox(width: 16),
-              _LegendDot(color: Colors.green, text: "Total"),
+              _legendDot(color: Colors.green, text: "Total"),
             ],
           ),
 
@@ -707,13 +707,7 @@ class _HomePageState extends State<HomePage> {
     List<int> nonWarranty,
     List<int> total,
   ) {
-    final maxY =
-        [
-          ...warranty,
-          ...nonWarranty,
-          ...total,
-        ].reduce((a, b) => a > b ? a : b).toDouble() +
-        2;
+    final maxY = _calculateMaxY([warranty, nonWarranty, total]);
 
     final interval = (maxY / 5).ceilToDouble();
 
@@ -726,7 +720,7 @@ class _HomePageState extends State<HomePage> {
           minY: 0,
           maxY: maxY,
 
-          gridData: FlGridData(
+          gridData: const FlGridData(
             show: true,
             horizontalInterval: 2,
             drawVerticalLine: true,
@@ -735,8 +729,12 @@ class _HomePageState extends State<HomePage> {
           borderData: FlBorderData(show: false),
 
           titlesData: FlTitlesData(
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
 
             // Label bawah (M1–M4)
             bottomTitles: AxisTitles(
@@ -785,7 +783,7 @@ class _HomePageState extends State<HomePage> {
               isCurved: true,
               color: Colors.orange,
               barWidth: 3,
-              dotData: FlDotData(show: true),
+              dotData: const FlDotData(show: true),
             ),
 
             // Line 2 - Non Garansi
@@ -797,7 +795,7 @@ class _HomePageState extends State<HomePage> {
               isCurved: true,
               color: Colors.blue,
               barWidth: 3,
-              dotData: FlDotData(show: true),
+              dotData: const FlDotData(show: true),
             ),
 
             // Line 3 - Selesai
@@ -809,7 +807,7 @@ class _HomePageState extends State<HomePage> {
               isCurved: true,
               color: Colors.green,
               barWidth: 3,
-              dotData: FlDotData(show: true),
+              dotData: const FlDotData(show: true),
             ),
           ],
         ),
@@ -817,7 +815,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _LegendDot({required Color color, required String text}) {
+  Widget _legendDot({required Color color, required String text}) {
     return Row(
       children: [
         Container(
