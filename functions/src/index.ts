@@ -8,6 +8,7 @@ import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { setGlobalOptions } from "firebase-functions";
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { DateTime } from "luxon";
 
 initializeApp();
 const db = getFirestore();
@@ -17,29 +18,6 @@ setGlobalOptions({ maxInstances: 10 });
 /* ===============================
    HELPER FUNCTIONS
 ================================ */
-
-function todayDocId(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
-}
-
-function endOfDay(date: Date): Date {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    23,
-    59,
-    59,
-    999,
-  );
-}
 
 /* ===============================
    1️⃣ CREATE DAILY SNAPSHOT
@@ -55,28 +33,34 @@ export const createDailyMaintenanceSnapshot = onSchedule(
   },
   async () => {
     try {
-      const now = new Date();
-      const docId = todayDocId(now);
+      // 🔒 Gunakan timezone eksplisit
+      const now = DateTime.now().setZone("Asia/Makassar");
+
+      const docId = now.toFormat("yyyy-MM-dd");
 
       const snapshotRef = db
         .collection("daily_maintenance_snapshot")
         .doc(docId);
 
-      // 🔒 Prevent duplicate snapshot
+      // Prevent duplicate snapshot
       const existing = await snapshotRef.get();
       if (existing.exists) {
         console.log(`Snapshot ${docId} already exists`);
         return;
       }
 
-      const start = Timestamp.fromDate(startOfDay(now));
-      const end = Timestamp.fromDate(endOfDay(now));
+      // 🔥 Start & End of day berdasarkan Asia/Makassar
+      const start = now.startOf("day").toJSDate();
+      const end = now.endOf("day").toJSDate();
+
+      const startTimestamp = Timestamp.fromDate(start);
+      const endTimestamp = Timestamp.fromDate(end);
 
       // 1️⃣ Due Today
       const dueTodaySnap = await db
         .collection("maintenance")
-        .where("nextMaintenanceAt", ">=", start)
-        .where("nextMaintenanceAt", "<=", end)
+        .where("nextMaintenanceAt", ">=", startTimestamp)
+        .where("nextMaintenanceAt", "<=", endTimestamp)
         .get();
 
       const totalDueToday = dueTodaySnap.size;
@@ -84,7 +68,7 @@ export const createDailyMaintenanceSnapshot = onSchedule(
       // 2️⃣ Overdue
       const overdueSnap = await db
         .collection("maintenance")
-        .where("nextMaintenanceAt", "<", start)
+        .where("nextMaintenanceAt", "<", startTimestamp)
         .get();
 
       const totalOverdue = overdueSnap.size;
@@ -92,8 +76,9 @@ export const createDailyMaintenanceSnapshot = onSchedule(
       await snapshotRef.set({
         totalDueToday,
         totalOverdue,
-        createdAt: Timestamp.fromDate(now),
+        createdAt: Timestamp.now(), // lebih aman
         notificationSent: false,
+        timezone: "Asia/Makassar", // optional untuk audit
       });
 
       console.log(`Snapshot ${docId} created`, {
@@ -120,11 +105,11 @@ export const sendMaintenanceNotification = onSchedule(
   },
   async () => {
     try {
-      const now = new Date();
-      const docId = todayDocId(now);
+      // ✅ Timezone-safe
+      const now = DateTime.now().setZone("Asia/Makassar");
+      const docId = now.toFormat("yyyy-MM-dd");
 
-      const snapshotRef = admin
-        .firestore()
+      const snapshotRef = db
         .collection("daily_maintenance_snapshot")
         .doc(docId);
 
@@ -140,19 +125,16 @@ export const sendMaintenanceNotification = onSchedule(
       const totalOverdue = data?.totalOverdue ?? 0;
       const alreadySent = data?.notificationSent ?? false;
 
-      // 🔒 Prevent duplicate notification
       if (alreadySent) {
         console.log("Notification already sent today");
         return;
       }
 
-      // If nothing to notify
       if (totalDueToday === 0 && totalOverdue === 0) {
         console.log("No maintenance today");
         return;
       }
 
-      // 🔥 Build dynamic message
       let messageBody = "";
 
       if (totalDueToday > 0) {
@@ -166,12 +148,9 @@ export const sendMaintenanceNotification = onSchedule(
 
       messageBody += ". Silakan lakukan pengecekan.";
 
-      // 🚀 Send FCM
       await admin.messaging().send({
         topic: "maintenance",
-        android: {
-          priority: "high",
-        },
+        android: { priority: "high" },
         notification: {
           title: "Pengingat Maintenance",
           body: messageBody,
