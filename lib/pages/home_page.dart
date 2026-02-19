@@ -289,13 +289,29 @@ class _HomePageState extends State<HomePage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Perawatan Hari Ini',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          const Text(
+                            'Perawatan Hari Ini',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (hasPending) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: MyColors.secondary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
+
                       const SizedBox(height: 8),
                       // Text('$done / $total perawatan selesai'),
                       Text(
@@ -326,7 +342,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                       Text(
                         '${(progress * 100).round()}%',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: hasPending ? MyColors.secondary : Colors.black,
+                        ),
                       ),
                     ],
                   ),
