@@ -275,6 +275,7 @@ class _HomePageState extends State<HomePage> {
             final total = totalSnap.data!;
             final done = doneSnap.data!;
             final progress = total == 0 ? 1.0 : done / total;
+            final hasPending = total > 0 && done < total;
 
             return Container(
               padding: const EdgeInsets.all(20),
@@ -296,7 +297,16 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text('$done / $total perawatan selesai'),
+                      // Text('$done / $total perawatan selesai'),
+                      Text(
+                        '$done / $total perawatan selesai',
+                        style: TextStyle(
+                          color: hasPending ? MyColors.secondary : Colors.black,
+                          fontWeight: hasPending
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ],
                   ),
                   Stack(
@@ -376,6 +386,7 @@ class _HomePageState extends State<HomePage> {
               value: '$totalItems',
               subtitle: 'Jenis barang terdaftar',
               icon: Icons.inventory_2_outlined,
+              isAlert: totalItems < 0,
             );
           },
         ),
@@ -409,6 +420,7 @@ class _HomePageState extends State<HomePage> {
               value: '$totalOutOfStock',
               subtitle: 'Stok yang kosong saat ini',
               icon: Icons.production_quantity_limits_outlined,
+              isAlert: totalOutOfStock > 0,
             );
           },
         ),
@@ -421,6 +433,7 @@ class _HomePageState extends State<HomePage> {
     required String value,
     required String subtitle,
     required IconData icon,
+    bool isAlert = false,
   }) {
     return Expanded(
       child: Container(
@@ -432,11 +445,23 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: Align(
-                alignment: Alignment.topRight,
-                child: Container(
+            // ROW ICON + BADGE
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (isAlert)
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                else
+                  const SizedBox(width: 10),
+
+                Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
@@ -445,12 +470,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                   child: Icon(icon, size: 20, color: MyColors.secondary),
                 ),
-              ),
+              ],
             ),
-            // const SizedBox(height: 10),
             Text(
               value,
-              style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+                color: isAlert ? Colors.red : Colors.black,
+              ),
             ),
             const SizedBox(height: 15),
             Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
