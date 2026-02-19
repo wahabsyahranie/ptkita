@@ -62,44 +62,46 @@ class _InventoryPageState extends State<InventoryPage> {
   Future<void> _fetchItems({bool isRefresh = false}) async {
     if (_isLoading) return;
 
-    if (isRefresh) {
-      _hasMore = true; // reset saat refresh
-    }
-
     setState(() => _isLoading = true);
 
-    Query<Item> query = _buildQuery().limit(_pageSize);
-
-    if (!isRefresh && _lastDocument != null) {
-      query = query.startAfterDocument(_lastDocument!);
+    if (isRefresh) {
+      _items.clear();
+      _lastDocument = null;
+      _hasMore = true;
     }
 
-    final snapshot = await query.get();
+    try {
+      Query<Item> query = _buildQuery().limit(_pageSize);
 
-    if (snapshot.docs.isNotEmpty) {
-      _lastDocument = snapshot.docs.last;
+      if (!isRefresh && _lastDocument != null) {
+        query = query.startAfterDocument(_lastDocument!);
+      }
+
+      final snapshot = await query.get();
 
       final newItems = snapshot.docs.map((d) => d.data()).toList();
 
-      if (!mounted) return; // ← TARUH DI SINI
+      if (!mounted) return;
 
       setState(() {
-        if (isRefresh) {
-          _items = newItems;
-        } else {
-          _items.addAll(newItems);
+        _items.addAll(newItems);
+
+        if (snapshot.docs.isNotEmpty) {
+          _lastDocument = snapshot.docs.last;
         }
+
+        if (snapshot.docs.length < _pageSize) {
+          _hasMore = false;
+        }
+
+        _isLoading = false;
       });
+    } catch (e) {
+      debugPrint("FETCH ERROR: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-
-    // ini penting supaya pagination berhenti
-    if (snapshot.docs.length < _pageSize) {
-      _hasMore = false;
-    }
-
-    if (!mounted) return;
-
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -145,25 +147,27 @@ class _InventoryPageState extends State<InventoryPage> {
   Query<Item> _buildQuery() {
     Query base = FirebaseFirestore.instance.collection('items');
 
+    final bool isRangeStock = _appliedFilter.availability == 'tersedia';
+
     // =========================
-    // AVAILABILITY (tri-state)
+    // FILTER AVAILABILITY
     // =========================
     if (_appliedFilter.availability == 'tersedia') {
       base = base.where('stock', isGreaterThan: 0);
     } else if (_appliedFilter.availability == 'habis') {
       base = base.where('stock', isEqualTo: 0);
     }
-    // null = semua → tidak difilter
 
     // =========================
-    // CATEGORY
+    // FILTER CATEGORY
     // =========================
     if (_appliedFilter.category != null) {
       base = base.where('type', isEqualTo: _appliedFilter.category);
+      print("CATEGORY FILTER: ${_appliedFilter.category}");
     }
 
     // =========================
-    // BRANDS (≤ 10 aman)
+    // FILTER BRAND
     // =========================
     if (_appliedFilter.brands.isNotEmpty) {
       if (_appliedFilter.brands.length == 1) {
@@ -174,14 +178,22 @@ class _InventoryPageState extends State<InventoryPage> {
     }
 
     // =========================
-    // SEARCH (prefix search)
+    // ORDERING (WAJIB STABIL)
+    // =========================
+
+    // Jika ada range (stock > 0)
+    if (isRangeStock) {
+      base = base.orderBy('stock');
+    }
+
+    // Selalu order by name untuk stabil pagination
+    base = base.orderBy('name_lowercase');
+
+    // =========================
+    // SEARCH (PREFIX)
     // =========================
     if (_searchQuery.isNotEmpty) {
-      base = base.orderBy('name_lowercase').startAt([_searchQuery]).endAt([
-        '$_searchQuery\uf8ff',
-      ]);
-    } else {
-      base = base.orderBy('name_lowercase');
+      base = base.startAt([_searchQuery]).endAt(['$_searchQuery\uf8ff']);
     }
 
     return base.withConverter<Item>(
@@ -338,10 +350,17 @@ class _InventoryPageState extends State<InventoryPage> {
               children: [
                 // Use stream from dynamic query
                 Expanded(
-                  child: _items.isEmpty && _isLoading
+                  child: _isLoading && _items.isEmpty
                       ? const Center(
                           child: CircularProgressIndicator(
                             color: MyColors.secondary,
+                          ),
+                        )
+                      : _items.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "Data tidak ditemukan",
+                            style: TextStyle(fontSize: 16),
                           ),
                         )
                       : GridView.builder(
