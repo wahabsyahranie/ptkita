@@ -177,7 +177,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
         ],
       ),
 
-      backgroundColor: Colors.white,
+      backgroundColor: MyColors.white,
 
       /// Loading indicator kecil di bawah AppBar
       body: Stack(
@@ -196,7 +196,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
 
           if (_loading)
             Container(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: MyColors.white.withValues(alpha: 0.4),
               child: const Center(
                 child: CircularProgressIndicator(color: MyColors.secondary),
               ),
@@ -238,7 +238,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: MyColors.black.withValues(alpha: 0.2),
                       blurRadius: 6,
                       spreadRadius: 1,
                       offset: const Offset(0, 2),
@@ -372,9 +372,9 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     return Container(
       width: 230,
       height: 230,
-      color: Colors.grey[200],
+      color: MyColors.greySoft,
       child: const Center(
-        child: Icon(Icons.image, size: 60, color: Colors.black26),
+        child: Icon(Icons.image, size: 60, color: MyColors.black),
       ),
     );
   }

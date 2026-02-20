@@ -176,7 +176,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
         _maintenance?.lastMaintenanceAt?.toDate().toString() ?? 'belum pernah';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: MyColors.white,
       appBar: AppBar(
         backgroundColor: MyColors.white,
         surfaceTintColor: Colors.transparent,
@@ -288,7 +288,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
                         height: 18,
                         width: 18,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: MyColors.white,
                           strokeWidth: 2,
                         ),
                       )
@@ -297,7 +297,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: MyColors.white,
                         ),
                       ),
               ),
@@ -371,7 +371,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: MyColors.green, width: 2),
+        border: Border.all(color: MyColors.success, width: 2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -382,11 +382,11 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _titleRow(task.title, 'Selesai', MyColors.green),
+                _titleRow(task.title, 'Selesai', MyColors.success),
                 const SizedBox(height: 8),
                 Text(
                   task.description,
-                  style: const TextStyle(color: MyColors.green),
+                  style: const TextStyle(color: MyColors.success),
                 ),
               ],
             ),
@@ -431,7 +431,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
       width: 40,
       height: 40,
       decoration: const BoxDecoration(
-        color: MyColors.green,
+        color: MyColors.success,
         shape: BoxShape.circle,
       ),
       child: const Icon(Icons.check, color: MyColors.white),
@@ -488,7 +488,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
       return const Icon(
         Icons.image_not_supported,
         size: 100,
-        color: Colors.grey,
+        color: MyColors.greySoft,
       );
     }
 
@@ -500,7 +500,11 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
         width: 140,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) {
-          return const Icon(Icons.broken_image, size: 100, color: Colors.grey);
+          return const Icon(
+            Icons.broken_image,
+            size: 100,
+            color: MyColors.greySoft,
+          );
         },
       ),
     );

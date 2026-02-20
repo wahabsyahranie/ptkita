@@ -31,7 +31,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
+            Icon(Icons.check_circle_outline, size: 64, color: MyColors.success),
             SizedBox(height: 16),
             Text(
               'Tidak ada perawatan hari ini',
@@ -41,7 +41,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
             SizedBox(height: 8),
             Text(
               'Terima kasih atas kerja keras Anda.\nSemua perawatan telah diselesaikan atau belum dijadwalkan untuk hari ini.',
-              style: TextStyle(fontSize: 14, color: Colors.black54),
+              style: TextStyle(fontSize: 14, color: MyColors.black),
               textAlign: TextAlign.center,
             ),
           ],
@@ -208,12 +208,12 @@ class _MaintenancePageState extends State<MaintenancePage> {
     final query = _buildQuery();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: MyColors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: MyColors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.25),
+        shadowColor: MyColors.black.withValues(alpha: 0.25),
         title: const Text("Daftar Perawatan"),
 
         bottom: PreferredSize(
@@ -254,7 +254,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                         },
                         icon: const Icon(
                           Icons.add,
-                          color: Colors.white,
+                          color: MyColors.white,
                           size: 30,
                         ),
                       ),
@@ -275,7 +275,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                         onPressed: _openFilterSheet,
                         icon: const Icon(
                           Icons.filter_alt,
-                          color: Colors.white,
+                          color: MyColors.white,
                           size: 25,
                         ),
                       ),
@@ -360,16 +360,16 @@ class _MaintenanceBox extends StatelessWidget {
   Color _priorityColor(String p) {
     switch (p) {
       case 'tinggi':
-        return Colors.red.shade200;
+        return MyColors.error;
       case 'sedang':
-        return Colors.amber.shade200;
+        return MyColors.warning;
       default:
-        return Colors.blue.shade200;
+        return MyColors.info;
     }
   }
 
   Color _statusColor(String status) {
-    return status == 'terlambat' ? Colors.red.shade100 : Colors.green.shade100;
+    return status == 'terlambat' ? MyColors.error : MyColors.success;
   }
 
   @override
@@ -406,7 +406,7 @@ class _MaintenanceBox extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: MyColors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -447,7 +447,7 @@ class _MaintenanceBox extends StatelessWidget {
               // const SizedBox(height: 6),
               Text(
                 sku,
-                style: TextStyle(color: Colors.black.withValues(alpha: 0.7)),
+                style: TextStyle(color: MyColors.black.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 12),
 
@@ -457,12 +457,16 @@ class _MaintenanceBox extends StatelessWidget {
                   const Icon(
                     Icons.calendar_today_outlined,
                     size: 18,
-                    color: Colors.grey,
+                    color: MyColors.greySoft,
                   ),
                   const SizedBox(width: 6),
                   Text(nextMaintenanceAt),
                   const SizedBox(width: 16),
-                  const Icon(Icons.schedule, size: 18, color: Colors.grey),
+                  const Icon(
+                    Icons.schedule,
+                    size: 18,
+                    color: MyColors.greySoft,
+                  ),
                   const SizedBox(width: 6),
                   Text('Setiap $intervalDays hari'),
                   const Spacer(),

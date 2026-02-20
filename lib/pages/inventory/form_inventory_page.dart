@@ -244,7 +244,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                       child: LinearProgressIndicator(
                         value: _uploadProgress,
                         color: MyColors.secondary,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: MyColors.greySoft,
                       ),
                     ),
                 ],
@@ -348,9 +348,9 @@ class _InventoryFormState extends State<FormInventoryPage> {
                   width: double.infinity,
                   height: 160,
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: MyColors.greySoft,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: MyColors.greySoft),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Stack(
@@ -360,7 +360,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                         top: 8,
                         right: 8,
                         child: Material(
-                          color: Colors.black26,
+                          color: MyColors.black,
                           shape: const CircleBorder(),
                           child: InkWell(
                             customBorder: const CircleBorder(),
@@ -370,7 +370,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                               child: Icon(
                                 Icons.edit,
                                 size: 18,
-                                color: Colors.white,
+                                color: MyColors.white,
                               ),
                             ),
                           ),
@@ -521,7 +521,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                   return null;
                 },
                 iconEnabledColor: MyColors.background,
-                dropdownColor: Colors.white,
+                dropdownColor: MyColors.white,
               ),
               const SizedBox(height: 15),
               const Text("Merk"),
@@ -556,7 +556,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                   return null;
                 },
                 iconEnabledColor: MyColors.background,
-                dropdownColor: Colors.white,
+                dropdownColor: MyColors.white,
               ),
               const SizedBox(height: 15),
               const Text("Deskripsi"),
@@ -592,7 +592,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                         height: 18,
                         width: 18,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: MyColors.white,
                           strokeWidth: 2,
                         ),
                       )
@@ -600,7 +600,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                         widget.initialItem == null ? "Simpan" : "Update",
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.white,
+                          color: MyColors.white,
                         ),
                       ),
               ),

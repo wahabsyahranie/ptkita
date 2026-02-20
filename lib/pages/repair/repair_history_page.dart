@@ -314,7 +314,9 @@ class _RepairCard extends StatelessWidget {
     final repairTypeHasGaransi = repairType.toLowerCase().contains('garansi');
     final hasGaransi = repairTypeHasGaransi;
 
-    final statusBg = status == 'Selesai' ? MyColors.green : MyColors.secondary;
+    final statusBg = status == 'Selesai'
+        ? MyColors.success
+        : MyColors.secondary;
     final statusFg = status == 'Selesai' ? MyColors.white : MyColors.white;
 
     return Material(
@@ -390,7 +392,7 @@ class _RepairCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             width: 1.8,
-                            color: MyColors.green, // warna hijau terang
+                            color: MyColors.success, // warna hijau terang
                           ),
                         ),
                         child: const Text(
@@ -398,7 +400,7 @@ class _RepairCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: MyColors.green,
+                            color: MyColors.success,
                           ),
                         ),
                       ),

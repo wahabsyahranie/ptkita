@@ -12,7 +12,14 @@ import 'package:flutter_kita/pages/inventory/widget/filter_sheet.dart';
 import 'package:intl/intl.dart';
 
 class InventoryPage extends StatefulWidget {
-  const InventoryPage({super.key});
+  final String? initialAvailability;
+  final bool fromPush;
+
+  const InventoryPage({
+    super.key,
+    this.initialAvailability,
+    this.fromPush = false,
+  });
 
   @override
   State<InventoryPage> createState() => _InventoryPageState();
@@ -33,10 +40,10 @@ class _InventoryPageState extends State<InventoryPage> {
   void initState() {
     super.initState();
 
-    _appliedFilter = const InventoryFilter(
-      availability: null, // semua
+    _appliedFilter = InventoryFilter(
+      availability: widget.initialAvailability, // semua
       category: null,
-      brands: {},
+      brands: const {},
     );
 
     _fetchItems();
@@ -212,7 +219,7 @@ class _InventoryPageState extends State<InventoryPage> {
         // wrap to give rounded white background
         return Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: MyColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
           ),
           child: FilterSheet(initialFilter: _appliedFilter),
@@ -235,26 +242,29 @@ class _InventoryPageState extends State<InventoryPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // kita kontrol manual
+      // canPop: false, // kita kontrol manual
+      canPop: widget.fromPush,
       onPopInvokedWithResult: (didPop, result) {
-        final focus = FocusScope.of(context);
-
-        // kalau keyboard sedang terbuka
-        if (focus.hasFocus) {
-          focus.unfocus(); // tutup keyboard
-          return; // jangan pop
+        if (widget.fromPush) {
+          return; // biarkan pop normal
         }
 
-        // kalau tidak ada keyboard → pop manual
+        final focus = FocusScope.of(context);
+
+        if (focus.hasFocus) {
+          focus.unfocus();
+          return;
+        }
+
         Navigator.of(context).pop();
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: MyColors.white,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: MyColors.white,
           surfaceTintColor: Colors.transparent,
           elevation: 2,
-          shadowColor: Colors.black.withValues(alpha: 0.25),
+          shadowColor: MyColors.black.withValues(alpha: 0.25),
           title: const Text("Data Barang"),
 
           bottom: PreferredSize(
@@ -309,7 +319,7 @@ class _InventoryPageState extends State<InventoryPage> {
                           },
                           icon: const Icon(
                             Icons.add,
-                            color: Colors.white,
+                            color: MyColors.white,
                             size: 30,
                           ),
                         ),
@@ -329,7 +339,7 @@ class _InventoryPageState extends State<InventoryPage> {
                           onPressed: _openFilterSheet,
                           icon: const Icon(
                             Icons.filter_alt,
-                            color: Colors.white,
+                            color: MyColors.white,
                             size: 25,
                           ),
                         ),
@@ -428,11 +438,11 @@ class _BarangBox extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(0),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: MyColors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: MyColors.black.withValues(alpha: 0.08),
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
@@ -478,7 +488,7 @@ class _BarangBox extends StatelessWidget {
                                   },
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
-                                  color: Colors.grey[200],
+                                  color: MyColors.greySoft,
                                   child: const Center(
                                     child: Icon(Icons.broken_image, size: 40),
                                   ),
@@ -486,7 +496,7 @@ class _BarangBox extends StatelessWidget {
                               },
                             )
                           : Container(
-                              color: Colors.grey[100],
+                              color: MyColors.greySoft,
                               child: const Center(
                                 child: Icon(Icons.image, size: 40),
                               ),
@@ -523,7 +533,7 @@ class _BarangBox extends StatelessWidget {
                       'Stok: $stock',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: MyColors.black.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -535,7 +545,7 @@ class _BarangBox extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: MyColors.black.withValues(alpha: 0.6),
                       ),
                     ),
                   ),

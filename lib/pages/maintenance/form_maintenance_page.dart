@@ -324,7 +324,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                   return null;
                 },
                 iconEnabledColor: MyColors.background,
-                dropdownColor: Colors.white,
+                dropdownColor: MyColors.white,
               ),
               const SizedBox(height: 15),
               const Text("Jenis Perawatan"),
@@ -362,7 +362,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                         height: 18,
                         width: 18,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: MyColors.white,
                           strokeWidth: 2,
                         ),
                       )
@@ -370,7 +370,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                         widget.initialItem == null ? "Simpan" : "Update",
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.white,
+                          color: MyColors.white,
                         ),
                       ),
               ),

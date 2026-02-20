@@ -41,7 +41,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 width: 40,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: MyColors.greySoft,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -144,7 +144,7 @@ class _FilterSheetState extends State<FilterSheet> {
               runSpacing: 10,
               children: brands.map((b) {
                 return FilterChip(
-                  backgroundColor: Colors.white,
+                  backgroundColor: MyColors.white,
                   selected: selectedBrands.contains(b),
                   selectedColor: MyColors.secondary.withValues(alpha: 0.2),
                   checkmarkColor: MyColors.secondary,
@@ -210,15 +210,15 @@ class _FilterSheetState extends State<FilterSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
-          color: selected ? MyColors.secondary : Colors.white,
+          color: selected ? MyColors.secondary : MyColors.white,
           border: Border.all(
-            color: selected ? MyColors.secondary : Colors.grey.shade300,
+            color: selected ? MyColors.secondary : MyColors.greySoft,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.black,
+            color: selected ? MyColors.white : MyColors.black,
             fontWeight: FontWeight.w600,
           ),
         ),

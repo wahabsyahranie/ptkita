@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/styles/colors.dart';
 
 class DottedlineWidget extends StatelessWidget {
   const DottedlineWidget({super.key});
@@ -14,7 +15,7 @@ class DottedlineWidget extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.clip,
           style: const TextStyle(
-            color: Colors.black26,
+            color: MyColors.black,
             fontSize: 12,
             letterSpacing: 2,
           ),

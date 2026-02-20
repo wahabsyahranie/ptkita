@@ -4,7 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'package:flutter_kita/pages/home_page.dart';
+import 'package:flutter_kita/pages/home/home_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/capture/preview_capture_page.dart';
 

@@ -22,7 +22,7 @@ class WarrantyDetailPage extends StatelessWidget {
       statusColor = MyColors.primary;
     } else {
       statusText = 'Aktif';
-      statusColor = MyColors.green;
+      statusColor = MyColors.success;
     }
 
     return Scaffold(
