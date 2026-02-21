@@ -14,8 +14,8 @@ class DottedlineWidget extends StatelessWidget {
           dot * (width ~/ 8), // tiap 8px satu titik
           maxLines: 1,
           overflow: TextOverflow.clip,
-          style: const TextStyle(
-            color: MyColors.black,
+          style: TextStyle(
+            color: MyColors.black.withValues(alpha: 0.3),
             fontSize: 12,
             letterSpacing: 2,
           ),

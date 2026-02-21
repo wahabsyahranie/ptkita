@@ -78,7 +78,7 @@ class MaintenanceBox extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _priorityColor(priority),
+                      color: _priorityColor(priority).withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -104,16 +104,12 @@ class MaintenanceBox extends StatelessWidget {
                   const Icon(
                     Icons.calendar_today_outlined,
                     size: 18,
-                    color: MyColors.greySoft,
+                    color: MyColors.black,
                   ),
                   const SizedBox(width: 6),
                   Text(formattedDate),
                   const SizedBox(width: 16),
-                  const Icon(
-                    Icons.schedule,
-                    size: 18,
-                    color: MyColors.greySoft,
-                  ),
+                  const Icon(Icons.schedule, size: 18, color: MyColors.black),
                   const SizedBox(width: 6),
                   Text('Setiap $intervalDays hari'),
                   const Spacer(),
@@ -127,7 +123,7 @@ class MaintenanceBox extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: _statusColor(status),
+                  color: _statusColor(status).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(status, style: const TextStyle(fontSize: 12)),
