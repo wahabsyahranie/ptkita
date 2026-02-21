@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const InventoryPage(
+                      builder: (_) => InventoryPage(
                         initialAvailability: 'habis',
                         fromPush: true,
                       ),
@@ -106,7 +106,7 @@ class _HomePageState extends State<HomePage> {
       // const CapturePage(),
 
       // index 2
-      const InventoryPage(),
+      InventoryPage(),
     ];
 
     return PopScope(
