@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
 import 'package:flutter_kita/services/maintenance/maintenance_service.dart';
@@ -93,22 +94,26 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
 
     final intervalDays = int.parse(_intervalCtrl.text.trim());
 
-    final tasksPayload = _tasks.map((t) {
-      return {
-        'id': t.id,
-        'title': t.titleCtrl.text.trim(),
-        'description': t.descCtrl.text.trim(),
-      };
+    final tasks = _tasks.map((t) {
+      return MaintenanceTask(
+        id: t.id,
+        title: t.titleCtrl.text.trim(),
+        description: t.descCtrl.text.trim(),
+        completed: false,
+      );
     }).toList();
 
-    final payload = _service.buildPayload(
+    final maintenance = Maintenance(
+      id: widget.initialItem?.id ?? '',
       itemId: _selectedItemId!,
       itemName: _selectedItemName!,
       sku: _selectedItemSku,
       intervalDays: intervalDays,
       priority: _selectedPriority!,
-      lastMaintenance: _service.extractLastMaintenance(widget.initialItem),
-      tasks: tasksPayload,
+      status: widget.initialItem?.status ?? 'pending',
+      lastMaintenanceAt: widget.initialItem?.lastMaintenanceAt,
+      nextMaintenanceAt: widget.initialItem?.nextMaintenanceAt,
+      tasks: tasks,
     );
 
     try {
@@ -120,10 +125,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
         ),
       );
 
-      await _service.saveMaintenance(
-        payload: payload,
-        id: widget.initialItem?.id,
-      );
+      await _service.saveMaintenance(maintenance: maintenance);
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -165,18 +167,11 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
             children: [
               const Text('Pilih Barang'),
               const SizedBox(height: 8),
-              StreamBuilder<List<Map<String, dynamic>>>(
+              StreamBuilder<List<Item>>(
                 stream: _service.streamItems(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SizedBox(
-                      height: 40,
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Text('Tidak ada barang');
+                  if (!snapshot.hasData) {
+                    return const SizedBox();
                   }
 
                   final items = snapshot.data!;
@@ -186,9 +181,9 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                     isExpanded: true,
                     items: items.map((item) {
                       return DropdownMenuItem<String>(
-                        value: item['id'] as String,
+                        value: item.id,
                         child: Text(
-                          item['name'] ?? '-',
+                          item.name ?? '-',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -196,13 +191,13 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                     }).toList(),
                     onChanged: (value) {
                       final selectedItem = items.firstWhere(
-                        (i) => i['id'] == value,
+                        (i) => i.id == value,
                       );
 
                       setState(() {
                         _selectedItemId = value;
-                        _selectedItemName = selectedItem['name'];
-                        _selectedItemSku = selectedItem['sku'];
+                        _selectedItemName = selectedItem.name;
+                        _selectedItemSku = selectedItem.sku;
                       });
                     },
                     decoration: const InputDecoration(

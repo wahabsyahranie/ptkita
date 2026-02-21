@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
 import 'package:flutter_kita/repositories/maintenance/maintenance_repository.dart';
@@ -16,8 +17,12 @@ class MaintenanceService {
     return _repository.streamMaintenance();
   }
 
-  Stream<List<Map<String, dynamic>>> streamItems() {
+  Stream<List<Item>> streamItems() {
     return _repository.streamItems();
+  }
+
+  Stream<MaintenanceDetail?> streamMaintenanceDetail(String id) {
+    return _repository.streamMaintenanceDetail(id);
   }
 
   // =========================================================
@@ -97,15 +102,26 @@ class MaintenanceService {
   // ?? SAVE (CREATE / UPDATE) ??
   // =========================================================
 
-  Future<void> saveMaintenance({
-    required Map<String, dynamic> payload,
-    String? id,
-  }) async {
-    if (id == null) {
-      await _repository.addMaintenance(payload);
-    } else {
-      await _repository.updateMaintenance(id, payload);
-    }
+  Future<void> saveMaintenance({required Maintenance maintenance}) async {
+    final nextMaintenance = calculateNextMaintenance(
+      lastMaintenance: maintenance.lastMaintenanceAt?.toDate(),
+      intervalDays: maintenance.intervalDays,
+    );
+
+    final updatedMaintenance = Maintenance(
+      id: maintenance.id,
+      itemId: maintenance.itemId,
+      itemName: maintenance.itemName,
+      sku: maintenance.sku,
+      intervalDays: maintenance.intervalDays,
+      priority: maintenance.priority,
+      status: maintenance.status,
+      lastMaintenanceAt: maintenance.lastMaintenanceAt,
+      nextMaintenanceAt: nextMaintenance,
+      tasks: maintenance.tasks,
+    );
+
+    await _repository.save(updatedMaintenance);
   }
 
   // =========================================================
@@ -157,41 +173,14 @@ class MaintenanceService {
       return 'belum pernah';
     }
 
-    final date = maintenance!.lastMaintenanceAt!.toDate();
+    return formatDate(maintenance!.lastMaintenanceAt!.toDate());
+  }
+
+  String formatDate(DateTime? date) {
+    if (date == null) return '-';
 
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
         '${date.year}';
-  }
-
-  // =========================================================
-  // ?? PAYLOAD BUILDER ??
-  // =========================================================
-
-  Map<String, dynamic> buildPayload({
-    required String itemId,
-    required String itemName,
-    required String? sku,
-    required int intervalDays,
-    required String priority,
-    required DateTime? lastMaintenance,
-    required List<Map<String, dynamic>> tasks,
-  }) {
-    final nextMaintenance = calculateNextMaintenance(
-      lastMaintenance: lastMaintenance,
-      intervalDays: intervalDays,
-    );
-
-    return {
-      'active': true,
-      'itemId': itemId,
-      'itemName': itemName,
-      'sku': sku,
-      'intervalDays': intervalDays,
-      'lastMaintenanceAt': lastMaintenance,
-      'nextMaintenanceAt': nextMaintenance,
-      'priority': priority,
-      'tasks': tasks,
-    };
   }
 }

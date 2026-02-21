@@ -226,7 +226,15 @@ class _MaintenancePageState extends State<MaintenancePage> {
                 final main = filtered[idx];
                 final status = _service.computeStatus(main);
 
-                return MaintenanceBox(main: main, status: status);
+                final formattedDate = _service.formatDate(
+                  main.nextMaintenanceAt?.toDate(),
+                );
+
+                return MaintenanceBox(
+                  main: main,
+                  status: status,
+                  formattedDate: formattedDate,
+                );
               },
             );
           },

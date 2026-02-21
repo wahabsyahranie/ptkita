@@ -1,13 +1,12 @@
+import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 
 abstract class MaintenanceRepository {
   Stream<List<Maintenance>> streamMaintenance();
 
-  Stream<List<Map<String, dynamic>>> streamItems();
+  Stream<List<Item>> streamItems();
 
-  Future<void> addMaintenance(Map<String, dynamic> payload);
-
-  Future<void> updateMaintenance(String id, Map<String, dynamic> payload);
+  Future<void> save(Maintenance maintenance);
 
   Future<void> deleteMaintenance(String id);
 
@@ -17,4 +16,6 @@ abstract class MaintenanceRepository {
   });
 
   Future<String?> getItemImageUrl(String itemId);
+
+  Stream<MaintenanceDetail?> streamMaintenanceDetail(String id);
 }

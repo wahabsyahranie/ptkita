@@ -6,16 +6,14 @@ import 'package:flutter_kita/styles/colors.dart';
 class MaintenanceBox extends StatelessWidget {
   final Maintenance main;
   final String status;
+  final String formattedDate;
 
-  const MaintenanceBox({super.key, required this.main, required this.status});
-
-  String _formatDate(DateTime? dt) {
-    if (dt == null) return '-';
-
-    return '${dt.day.toString().padLeft(2, '0')}/'
-        '${dt.month.toString().padLeft(2, '0')}/'
-        '${dt.year}';
-  }
+  const MaintenanceBox({
+    super.key,
+    required this.main,
+    required this.status,
+    required this.formattedDate,
+  });
 
   Color _priorityColor(String p) {
     switch (p) {
@@ -36,7 +34,6 @@ class MaintenanceBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = main.itemName;
     final sku = main.sku ?? '-';
-    final nextMaintenanceAt = _formatDate(main.nextMaintenanceAt?.toDate());
     final intervalDays = main.intervalDays;
     final priority = main.priority;
 
@@ -46,7 +43,7 @@ class MaintenanceBox extends StatelessWidget {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => DetailsMaintenancePage(maintenance: main),
+            builder: (_) => DetailsMaintenancePage(maintenanceId: main.id),
           ),
         );
       },
@@ -110,7 +107,7 @@ class MaintenanceBox extends StatelessWidget {
                     color: MyColors.greySoft,
                   ),
                   const SizedBox(width: 6),
-                  Text(nextMaintenanceAt),
+                  Text(formattedDate),
                   const SizedBox(width: 16),
                   const Icon(
                     Icons.schedule,

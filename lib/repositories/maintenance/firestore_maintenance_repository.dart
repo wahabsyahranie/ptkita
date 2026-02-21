@@ -1,9 +1,45 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'maintenance_repository.dart';
 
 class FirestoreMaintenanceRepository implements MaintenanceRepository {
   final FirebaseFirestore _firestore;
+  final _collection = FirebaseFirestore.instance
+      .collection('maintenance')
+      .withConverter<Maintenance>(
+        fromFirestore: Maintenance.fromFirestore,
+        toFirestore: (m, _) => m.toFirestore(),
+      );
+
+  @override
+  Stream<MaintenanceDetail?> streamMaintenanceDetail(String id) {
+    return _firestore
+        .collection('maintenance')
+        .doc(id)
+        .withConverter<Maintenance>(
+          fromFirestore: Maintenance.fromFirestore,
+          toFirestore: (m, _) => m.toFirestore(),
+        )
+        .snapshots()
+        .asyncMap((doc) async {
+          if (!doc.exists) return null;
+
+          final maintenance = doc.data()!;
+
+          final itemSnap = await _firestore
+              .collection('items')
+              .doc(maintenance.itemId)
+              .get();
+
+          final imageUrl = itemSnap.data()?['imageUrl'] as String?;
+
+          return MaintenanceDetail(
+            maintenance: maintenance,
+            imageUrl: imageUrl,
+          );
+        });
+  }
 
   FirestoreMaintenanceRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -22,22 +58,12 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
   }
 
   @override
-  Future<void> addMaintenance(Map<String, dynamic> payload) async {
-    await _firestore.collection('maintenance').add({
-      ...payload,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  @override
-  Future<void> updateMaintenance(
-    String id,
-    Map<String, dynamic> payload,
-  ) async {
-    await _firestore.collection('maintenance').doc(id).update({
-      ...payload,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+  Future<void> save(Maintenance maintenance) async {
+    if (maintenance.id.isEmpty) {
+      await _collection.add(maintenance);
+    } else {
+      await _collection.doc(maintenance.id).set(maintenance);
+    }
   }
 
   @override
@@ -91,17 +117,17 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     return data?['imageUrl'] as String?;
   }
 
+  final _itemCollection = FirebaseFirestore.instance
+      .collection('items')
+      .withConverter<Item>(
+        fromFirestore: Item.fromFirestore,
+        toFirestore: (i, _) => i.toFirestore(),
+      );
+
   @override
-  Stream<List<Map<String, dynamic>>> streamItems() {
-    return _firestore
-        .collection('items')
-        .orderBy('name')
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs.map((doc) {
-            final data = doc.data();
-            return {'id': doc.id, 'name': data['name'], 'sku': data['sku']};
-          }).toList(),
-        );
+  Stream<List<Item>> streamItems() {
+    return _itemCollection.snapshots().map(
+      (snapshot) => snapshot.docs.map((doc) => doc.data()).toList(),
+    );
   }
 }
