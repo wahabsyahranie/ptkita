@@ -8,6 +8,10 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 
+//MODIFIED WAHAB
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
+import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+
 class AnalysisSuccessPage extends StatefulWidget {
   final XFile imageFile;
   final String label;
@@ -30,11 +34,16 @@ class AnalysisSuccessPage extends StatefulWidget {
 
 class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
   ui.Image? _imageInfo;
+  //MODIFIEL BY WAHAB
+  late final InventoryService _inventoryService;
 
   @override
   void initState() {
     super.initState();
     _loadImage();
+
+    //MODIFIEL BY WAHAB
+    _inventoryService = InventoryService(FirestoreInventoryRepository());
   }
 
   Future<void> _loadImage() async {
@@ -196,7 +205,12 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => DetailsInventoryPage(item: widget.item),
+                        builder: (_) =>
+                            // DetailsInventoryPage(itemId: widget.item.id!),
+                            DetailsInventoryPage(
+                              itemId: widget.item.id!,
+                              service: _inventoryService,
+                            ),
                       ),
                     );
                   },

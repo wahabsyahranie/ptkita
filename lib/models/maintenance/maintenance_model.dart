@@ -112,3 +112,13 @@ class MaintenanceTask {
     );
   }
 }
+
+class MaintenanceDetail {
+  final Maintenance maintenance;
+  final String? imageUrl;
+
+  MaintenanceDetail({
+    required this.maintenance,
+    required this.imageUrl,
+  });
+}
