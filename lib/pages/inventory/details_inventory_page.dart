@@ -1,47 +1,30 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 
 class DetailsInventoryPage extends StatefulWidget {
-  final Item? item;
-  const DetailsInventoryPage({super.key, required this.item});
+  final String itemId;
+  final InventoryService service;
+
+  const DetailsInventoryPage({
+    super.key,
+    required this.itemId,
+    required this.service,
+  });
 
   @override
   State<DetailsInventoryPage> createState() => _DetailsInventoryPageState();
 }
 
 class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
-  Item? _item;
-  bool _loading = false;
-  late final InventoryService _service;
-
   @override
   void initState() {
     super.initState();
-    _item = widget.item;
-
-    _service = InventoryService(FirestoreInventoryRepository());
-  }
-
-  /// 🔄 Fetch ulang data terbaru dari Firestore
-  Future<void> _refreshItem() async {
-    if (_item == null || _item!.id == null) return;
-
-    setState(() => _loading = true);
-
-    final fresh = await _service.getItemById(_item!.id!);
-
-    if (!mounted) return;
-
-    setState(() {
-      _item = fresh;
-      _loading = false;
-    });
   }
 
   /// Membatasi text
@@ -51,155 +34,102 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    // data Firestore setelah refresh
-    final name = _item?.name ?? '-';
-    final sku = _item?.sku ?? '-';
-    final price = _item?.price ?? 0;
-    final stock = _item?.stock ?? 0;
-    final type = _item?.type ?? '-';
-    final desc = _item?.description ?? '-';
-    final imageUrl = _item?.imageUrl;
-    final merk = _item?.merk ?? '-';
-    final locationCode = _item?.locationCode ?? '-';
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail Barang'),
-        backgroundColor: MyColors.secondary,
-        surfaceTintColor: Colors.transparent,
-        actions: [
-          /// ============================
-          ///          EDIT BUTTON
-          /// ============================
-          IconButton(
-            onPressed: () async {
-              final result = await Navigator.push<bool>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AddEditInventoryPage(item: _item),
-                ),
-              );
-
-              // jika halaman AddEdit return true → refresh
-              if (result == true) {
-                await _refreshItem();
-              }
-            },
-            icon: Container(
-              decoration: BoxDecoration(
-                color: MyColors.white,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.edit, color: MyColors.secondary),
+    return StreamBuilder<Item?>(
+      stream: widget.service.streamItemById(widget.itemId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(color: MyColors.secondary),
             ),
-          ),
+          );
+        }
 
-          /// ============================
-          ///          DELETE BUTTON
-          /// ============================
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: IconButton(
-              onPressed: () async {
-                final ok = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    backgroundColor: MyColors.white,
-                    title: const Text('Hapus item?'),
-                    content: const Text('Item akan dihapus permanen.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text(
-                          'Batal',
-                          style: TextStyle(
-                            color: MyColors.secondary,
-                            fontWeight: FontWeight.w600,
-                          ),
+        if (snapshot.hasError) {
+          return const Scaffold(body: Center(child: Text("Terjadi kesalahan")));
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const Scaffold(
+            body: Center(child: Text("Item tidak ditemukan")),
+          );
+        }
+
+        final item = snapshot.data!;
+
+        return Scaffold(
+          backgroundColor: MyColors.white,
+
+          appBar: AppBar(
+            title: const Text('Detail Barang'),
+            backgroundColor: MyColors.secondary,
+            surfaceTintColor: Colors.transparent,
+            actions: [
+              /// EDIT
+              IconButton(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AddEditInventoryPage(item: item),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.edit),
+              ),
+
+              /// DELETE
+              IconButton(
+                onPressed: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: MyColors.white,
+                      title: const Text('Hapus item?'),
+                      content: const Text('Item akan dihapus permanen.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Batal'),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text(
-                          'Hapus',
-                          style: TextStyle(
-                            color: MyColors.secondary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Hapus'),
                         ),
-                      ),
-                    ],
-                  ),
-                );
+                      ],
+                    ),
+                  );
 
-                if (ok == true && _item?.id != null) {
-                  await _service.deleteItem(_item!);
+                  if (ok == true) {
+                    await widget.service.deleteItem(item);
 
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Item dihapus')),
-                    );
-                    Navigator.of(context).pop();
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
                   }
-                }
-              },
-              icon: Container(
-                decoration: BoxDecoration(
-                  color: MyColors.white,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                padding: const EdgeInsets.all(8),
-                child: const Icon(Icons.delete, color: MyColors.secondary),
+                },
+                icon: const Icon(Icons.delete),
               ),
-            ),
-          ),
-        ],
-      ),
-
-      backgroundColor: MyColors.white,
-
-      /// Loading indicator kecil di bawah AppBar
-      body: Stack(
-        children: [
-          _buildContent(
-            name,
-            sku,
-            price,
-            stock,
-            type,
-            desc,
-            imageUrl,
-            merk,
-            locationCode,
+            ],
           ),
 
-          if (_loading)
-            Container(
-              color: MyColors.white.withValues(alpha: 0.4),
-              child: const Center(
-                child: CircularProgressIndicator(color: MyColors.secondary),
-              ),
-            ),
-        ],
-      ),
+          body: _buildContent(item),
+        );
+      },
     );
   }
 
-  //RUPIAH FORMATTER
-  static final NumberFormat _rupiahFormatter = NumberFormat('#,###', 'id_ID');
-
-  Widget _buildContent(
-    String name,
-    String sku,
-    num price,
-    int stock,
-    String type,
-    String desc,
-    String? imageUrl,
-    String merk,
-    String locationCode,
-  ) {
+  Widget _buildContent(Item item) {
+    final service = InventoryService(FirestoreInventoryRepository());
+    final name = item.name ?? '-';
+    final sku = item.sku ?? '-';
+    final price = item.price ?? 0;
+    final stock = item.stock ?? 0;
+    final type = item.type ?? '-';
+    final desc = item.description ?? '-';
+    final imageUrl = item.imageUrl;
+    final merk = item.merk ?? '-';
+    final locationCode = item.locationCode ?? '-';
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -234,11 +164,16 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(
-                            imageUrl,
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
                             width: 230,
                             height: 230,
                             fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.broken_image),
                           )
                         : _placeholder(),
                   ),
@@ -272,7 +207,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("Harga", "Rp ${_rupiahFormatter.format(price)}"),
+                _rowInfo("Harga", service.formatCurrency(price)),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class InventoryCard extends StatelessWidget {
   final Item item;
+  final InventoryService service;
 
-  const InventoryCard({super.key, required this.item});
-
-  static final NumberFormat _rupiahFormatter = NumberFormat('#,###', 'id_ID');
+  const InventoryCard({super.key, required this.item, required this.service});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,10 @@ class InventoryCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => DetailsInventoryPage(item: item)),
+          MaterialPageRoute(
+            builder: (_) =>
+                DetailsInventoryPage(itemId: item.id!, service: service),
+          ),
         );
       },
       child: Container(
@@ -44,7 +47,14 @@ class InventoryCard extends StatelessWidget {
               AspectRatio(
                 aspectRatio: 3 / 2,
                 child: imageUrl != null && imageUrl.isNotEmpty
-                    ? Image.network(imageUrl, fit: BoxFit.cover)
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.broken_image),
+                      )
                     : Container(
                         color: MyColors.greySoft,
                         child: const Center(child: Icon(Icons.image)),
@@ -58,7 +68,7 @@ class InventoryCard extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              Text("Rp ${_rupiahFormatter.format(price)}"),
+              Text(service.formatCurrency(price)),
               const SizedBox(height: 6),
               Align(
                 alignment: Alignment.centerLeft,

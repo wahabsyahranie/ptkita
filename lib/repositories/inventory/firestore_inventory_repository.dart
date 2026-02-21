@@ -24,15 +24,11 @@ class FirestoreInventoryRepository implements InventoryRepository {
       );
 
   @override
-  Future<InventoryPageResult> fetchItems({
+  Stream<List<Item>> streamItems({
     required InventoryFilter filter,
     required String searchQuery,
-    DocumentSnapshot? lastDocument,
-    required int limit,
-  }) async {
+  }) {
     Query<Item> query = _collection;
-
-    final bool isRangeStock = filter.availability == 'tersedia';
 
     // Availability
     if (filter.availability == 'tersedia') {
@@ -55,34 +51,23 @@ class FirestoreInventoryRepository implements InventoryRepository {
       }
     }
 
-    // Ordering
-    if (isRangeStock) {
-      query = query.orderBy('stock');
-    }
-
     query = query.orderBy('name_lowercase');
 
-    // Search prefix
     if (searchQuery.isNotEmpty) {
       query = query.startAt([searchQuery]).endAt(['$searchQuery\uf8ff']);
     }
 
-    query = query.limit(limit);
-
-    if (lastDocument != null) {
-      query = query.startAfterDocument(lastDocument);
-    }
-
-    final snapshot = await query.get();
-    final items = snapshot.docs.map((e) => e.data()).toList();
-
-    return InventoryPageResult(
-      items: items,
-      lastDocument: snapshot.docs.isNotEmpty
-          ? snapshot.docs.last
-          : lastDocument,
-      hasMore: snapshot.docs.length == limit,
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs.map((e) => e.data()).toList(),
     );
+  }
+
+  @override
+  Stream<Item?> streamItemById(String id) {
+    return _collection
+        .doc(id)
+        .snapshots()
+        .map((snap) => snap.exists ? snap.data() : null);
   }
 
   @override
@@ -101,7 +86,6 @@ class FirestoreInventoryRepository implements InventoryRepository {
     await _collection.add(newItem);
   }
 
-  @override
   @override
   Future<void> updateItem(Item item, {File? imageFile}) async {
     if (item.id == null) {
@@ -132,13 +116,6 @@ class FirestoreInventoryRepository implements InventoryRepository {
     }
 
     await _collection.doc(id).delete();
-  }
-
-  @override
-  Future<Item?> getItemById(String id) async {
-    final snap = await _collection.doc(id).get();
-    if (!snap.exists) return null;
-    return snap.data();
   }
 
   Future<String?> _uploadImage(File file) async {

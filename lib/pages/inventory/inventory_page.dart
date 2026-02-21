@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
@@ -36,13 +35,6 @@ class _InventoryPageState extends State<InventoryPage> {
 
   late InventoryFilter _appliedFilter;
 
-  final List<Item> _items = [];
-  DocumentSnapshot? _lastDocument;
-  bool _isLoading = false;
-  bool _hasMore = true;
-
-  final int _pageSize = 10;
-
   @override
   void initState() {
     super.initState();
@@ -54,56 +46,17 @@ class _InventoryPageState extends State<InventoryPage> {
       category: null,
       brands: const {},
     );
-
-    _fetchItems();
-
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-              _scrollController.position.maxScrollExtent - 200 &&
-          !_isLoading &&
-          _hasMore) {
-        _fetchItems();
-      }
-    });
-  }
-
-  Future<void> _fetchItems({bool isRefresh = false}) async {
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
-
-    if (isRefresh) {
-      _items.clear();
-      _lastDocument = null;
-      _hasMore = true;
-    }
-
-    final result = await _service.getItems(
-      filter: _appliedFilter,
-      searchQuery: _searchQuery,
-      limit: _pageSize,
-      lastDocument: _lastDocument,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      _items.addAll(result.items);
-      _lastDocument = result.lastDocument;
-      _hasMore = result.hasMore;
-      _isLoading = false;
-    });
   }
 
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
 
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-      setState(() {
-        _searchQuery = value.toLowerCase().trim();
-      });
+      if (!mounted) return;
 
-      _fetchItems(isRefresh: true);
+      setState(() {
+        _searchQuery = value;
+      });
     });
   }
 
@@ -125,8 +78,6 @@ class _InventoryPageState extends State<InventoryPage> {
       setState(() {
         _appliedFilter = result;
       });
-
-      _fetchItems(isRefresh: true);
     }
   }
 
@@ -143,8 +94,6 @@ class _InventoryPageState extends State<InventoryPage> {
       category: null,
       brands: {},
     );
-
-    _fetchItems(isRefresh: true);
   }
 
   @override
@@ -167,10 +116,30 @@ class _InventoryPageState extends State<InventoryPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-        child: InventoryGrid(
-          items: _items,
-          isLoading: _isLoading,
-          controller: _scrollController,
+        child: StreamBuilder<List<Item>>(
+          stream: _service.streamItems(
+            filter: _appliedFilter,
+            searchQuery: _searchQuery,
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: MyColors.secondary),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return const Center(child: Text("Terjadi kesalahan memuat data"));
+            }
+
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text("Data tidak ditemukan"));
+            }
+
+            final items = snapshot.data!;
+
+            return InventoryGrid(items: items, service: _service);
+          },
         ),
       ),
     );
