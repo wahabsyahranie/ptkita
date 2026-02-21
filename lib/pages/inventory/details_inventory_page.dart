@@ -1,11 +1,11 @@
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
+import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 
 class DetailsInventoryPage extends StatefulWidget {
   final Item? item;
@@ -18,11 +18,14 @@ class DetailsInventoryPage extends StatefulWidget {
 class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
   Item? _item;
   bool _loading = false;
+  late final InventoryService _service;
 
   @override
   void initState() {
     super.initState();
     _item = widget.item;
+
+    _service = InventoryService(FirestoreInventoryRepository());
   }
 
   /// 🔄 Fetch ulang data terbaru dari Firestore
@@ -31,14 +34,8 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
 
     setState(() => _loading = true);
 
-    final snap = await FirebaseFirestore.instance
-        .collection('items')
-        .doc(_item!.id)
-        .get();
+    final fresh = await _service.getItemById(_item!.id!);
 
-    if (!snap.exists) return;
-
-    final fresh = Item.fromFirestore(snap, null);
     if (!mounted) return;
 
     setState(() {
@@ -137,24 +134,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 );
 
                 if (ok == true && _item?.id != null) {
-                  // 1. Ambil URL gambar
-                  final imageUrl = _item?.imageUrl;
-
-                  // 2. Jika ada gambar, hapus dari Storage
-                  if (imageUrl != null && imageUrl.isNotEmpty) {
-                    try {
-                      final ref = FirebaseStorage.instance.refFromURL(imageUrl);
-                      await ref.delete();
-                    } catch (e) {
-                      debugPrint("Gagal hapus file di storage: $e");
-                    }
-                  }
-
-                  // 3. Hapus dokumen dari Firestore
-                  await FirebaseFirestore.instance
-                      .collection('items')
-                      .doc(_item!.id)
-                      .delete();
+                  await _service.deleteItem(_item!);
 
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

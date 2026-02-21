@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
+import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_appbar.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_grid.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
@@ -130,7 +131,10 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   Future<void> _handleAdd() async {
-    await Navigator.pushNamed(context, '/addInventory');
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddEditInventoryPage()),
+    );
 
     _searchCtrl.clear();
     _searchQuery = '';
