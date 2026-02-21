@@ -36,7 +36,7 @@ class _InventoryPageState extends State<InventoryPage> {
 
   late InventoryFilter _appliedFilter;
 
-  List<Item> _items = [];
+  final List<Item> _items = [];
   DocumentSnapshot? _lastDocument;
   bool _isLoading = false;
   bool _hasMore = true;

@@ -1,7 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
+import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
+import 'package:flutter_kita/services/maintenance/maintenance_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/maintenance_task_form_section.dart';
 
 class FormMaintenancePage extends StatefulWidget {
   final Maintenance? initialItem;
@@ -13,6 +15,7 @@ class FormMaintenancePage extends StatefulWidget {
 }
 
 class _FormMaintenancePageState extends State<FormMaintenancePage> {
+  late final MaintenanceService _service;
   //form
   final _formKey = GlobalKey<FormState>();
   final List<TaskForm> _tasks = [];
@@ -28,6 +31,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   void initState() {
     super.initState();
     final it = widget.initialItem;
+    _service = MaintenanceService(FirestoreMaintenanceRepository());
 
     _nameCtrl = TextEditingController(text: it?.itemName ?? '');
     _intervalCtrl = TextEditingController(
@@ -97,39 +101,15 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       };
     }).toList();
 
-    final now = DateTime.now();
-
-    // ✅ last maintenance (ambil dari data lama kalau edit)
-    final DateTime? lastMaintenanceAt =
-        widget.initialItem?.lastMaintenanceAt != null
-        ? (widget.initialItem!.lastMaintenanceAt as Timestamp).toDate()
-        : null;
-
-    // ✅ hitung next maintenance
-    final DateTime nextMaintenanceAt = (lastMaintenanceAt ?? now).add(
-      Duration(days: intervalDays),
+    final payload = _service.buildPayload(
+      itemId: _selectedItemId!,
+      itemName: _selectedItemName!,
+      sku: _selectedItemSku,
+      intervalDays: intervalDays,
+      priority: _selectedPriority!,
+      lastMaintenance: _service.extractLastMaintenance(widget.initialItem),
+      tasks: tasksPayload,
     );
-
-    final payload = {
-      'active': true,
-
-      // 🔗 reference ke item
-      'itemId': FirebaseFirestore.instance
-          .collection('items')
-          .doc(_selectedItemId),
-
-      // 📸 snapshot
-      'itemName': _selectedItemName,
-      'sku': _selectedItemSku,
-
-      // ⏱ interval & jadwal
-      'intervalDays': intervalDays,
-      'lastMaintenanceAt': lastMaintenanceAt,
-      'nextMaintenanceAt': nextMaintenanceAt,
-
-      // 🧩 tasks
-      'tasks': tasksPayload,
-    };
 
     try {
       showDialog(
@@ -140,16 +120,10 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
         ),
       );
 
-      final col = FirebaseFirestore.instance.collection('maintenance');
-
-      if (widget.initialItem == null) {
-        await col.add({...payload, 'createdAt': FieldValue.serverTimestamp()});
-      } else {
-        await col.doc(widget.initialItem!.id).update({
-          ...payload,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
+      await _service.saveMaintenance(
+        payload: payload,
+        id: widget.initialItem?.id,
+      );
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -191,12 +165,8 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
             children: [
               const Text('Pilih Barang'),
               const SizedBox(height: 8),
-
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('items')
-                    .orderBy('name')
-                    .snapshots(),
+              StreamBuilder<List<Map<String, dynamic>>>(
+                stream: _service.streamItems(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const SizedBox(
@@ -205,71 +175,43 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                     );
                   }
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Text('Tidak ada barang');
                   }
 
-                  final items = snapshot.data!.docs;
+                  final items = snapshot.data!;
 
                   return DropdownButtonFormField<String>(
                     initialValue: _selectedItemId,
                     isExpanded: true,
-
-                    items: items.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
+                    items: items.map((item) {
                       return DropdownMenuItem<String>(
-                        value: doc.id,
+                        value: item['id'] as String,
                         child: Text(
-                          data['name'] ?? '-',
+                          item['name'] ?? '-',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       );
                     }).toList(),
-
                     onChanged: (value) {
-                      final selectedDoc = items.firstWhere(
-                        (d) => d.id == value,
+                      final selectedItem = items.firstWhere(
+                        (i) => i['id'] == value,
                       );
-                      final data = selectedDoc.data() as Map<String, dynamic>;
 
                       setState(() {
                         _selectedItemId = value;
-                        _selectedItemName = data['name'];
-                        _selectedItemSku = data['sku']; // 🔥 AMBIL SKU
+                        _selectedItemName = selectedItem['name'];
+                        _selectedItemSku = selectedItem['sku'];
                       });
                     },
-
-                    dropdownColor: MyColors.secondary,
-                    icon: const Icon(Icons.arrow_drop_down), // ⬅️ override icon
-                    iconSize: 20,
-
                     decoration: const InputDecoration(
                       hintText: "Pilih Barang",
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 14,
-                      ),
-
-                      // 🔥 INI KUNCI OVERFLOW
-                      suffixIconConstraints: BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: MyColors.secondary,
-                          width: 2,
-                        ),
-                      ),
                       border: OutlineInputBorder(),
                     ),
                   );
                 },
               ),
-
               const SizedBox(height: 15),
               const Text("Interval Perawatan (hari)"),
               const SizedBox(height: 8),
@@ -329,27 +271,8 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
               const SizedBox(height: 15),
               const Text("Jenis Perawatan"),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: MyColors.background),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    ..._tasks.map(_buildTaskItem),
 
-                    TextButton.icon(
-                      onPressed: _addTask,
-                      icon: const Icon(Icons.add, color: MyColors.secondary),
-                      label: const Text(
-                        "Tambah Jenis Perawatan Lain",
-                        style: TextStyle(color: MyColors.secondary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              MaintenanceTaskFormSection(tasks: _tasks, onAddTask: _addTask),
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
@@ -380,48 +303,4 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       ),
     );
   }
-
-  Widget _buildTaskItem(TaskForm task) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        children: [
-          TextFormField(
-            controller: task.titleCtrl,
-            cursorColor: MyColors.background,
-            decoration: const InputDecoration(
-              hintText: 'Judul',
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: MyColors.secondary, width: 2),
-              ),
-              border: OutlineInputBorder(),
-            ),
-            validator: (v) =>
-                v == null || v.isEmpty ? 'Judul wajib diisi' : null,
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: task.descCtrl,
-            cursorColor: MyColors.background,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              hintText: 'Deskripsi',
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: MyColors.secondary, width: 2),
-              ),
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class TaskForm {
-  final String id;
-  final TextEditingController titleCtrl = TextEditingController();
-  final TextEditingController descCtrl = TextEditingController();
-
-  TaskForm(this.id);
 }

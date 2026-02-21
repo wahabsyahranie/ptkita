@@ -141,7 +141,6 @@ class FirestoreInventoryRepository implements InventoryRepository {
     return snap.data();
   }
 
-  @override
   Future<String?> _uploadImage(File file) async {
     final fileName =
         'items/${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';

@@ -3,6 +3,8 @@ import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 abstract class MaintenanceRepository {
   Stream<List<Maintenance>> streamMaintenance();
 
+  Stream<List<Map<String, dynamic>>> streamItems();
+
   Future<void> addMaintenance(Map<String, dynamic> payload);
 
   Future<void> updateMaintenance(String id, Map<String, dynamic> payload);

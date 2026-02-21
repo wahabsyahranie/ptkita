@@ -90,4 +90,18 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     final data = snap.data();
     return data?['imageUrl'] as String?;
   }
+
+  @override
+  Stream<List<Map<String, dynamic>>> streamItems() {
+    return _firestore
+        .collection('items')
+        .orderBy('name')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {'id': doc.id, 'name': data['name'], 'sku': data['sku']};
+          }).toList(),
+        );
+  }
 }
