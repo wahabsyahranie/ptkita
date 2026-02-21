@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_kita/pages/maintenance/details_maintenance_page.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_filter_sheet.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
+import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
 
 class MaintenancePage extends StatefulWidget {
   const MaintenancePage({super.key});
@@ -18,6 +18,8 @@ class MaintenancePage extends StatefulWidget {
 }
 
 class _MaintenancePageState extends State<MaintenancePage> {
+  final _repository = FirestoreMaintenanceRepository();
+
   // search
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -56,18 +58,6 @@ class _MaintenancePageState extends State<MaintenancePage> {
   // Menyimpan filter yang sedang aktif di halaman Maintenance.
   // Filter ini TIDAK disimpan ke Firestore, hanya untuk kebutuhan UI (client-side).
   MaintenanceFilter? _appliedFilter;
-
-  // =========================
-  // DEFAULT FILTER (INIT STATE)
-  // =========================
-  // Default tampilan halaman Maintenance:
-  // - Menampilkan perawatan yang:
-  //   1. Status-nya TERLAMBAT atau TERJADWAL
-  //   2. Waktu perawatan berikutnya dalam 7 hari ke depan
-  //
-  // Tujuan:
-  // - Fokus ke perawatan yang perlu segera ditangani
-  // - Fokus pada perawatan yang perlu ditangani (terlambat & terjadwal)
 
   @override
   void initState() {
@@ -192,21 +182,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
     }
   }
 
-  Query<Maintenance> _buildQuery() {
-    Query base = FirebaseFirestore.instance.collection('maintenance');
-
-    base = base.orderBy('nextMaintenanceAt');
-
-    return base.withConverter<Maintenance>(
-      fromFirestore: Maintenance.fromFirestore,
-      toFirestore: (Maintenance main, _) => main.toFirestore(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final query = _buildQuery();
-
     return Scaffold(
       backgroundColor: MyColors.white,
       appBar: AppBar(
@@ -289,8 +266,8 @@ class _MaintenancePageState extends State<MaintenancePage> {
         ),
       ),
       body: SafeArea(
-        child: StreamBuilder<QuerySnapshot<Maintenance>>(
-          stream: query.snapshots(),
+        child: StreamBuilder<List<Maintenance>>(
+          stream: _repository.streamMaintenance(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
@@ -301,12 +278,10 @@ class _MaintenancePageState extends State<MaintenancePage> {
               );
             }
 
-            final docs = snapshot.data!.docs;
-            if (docs.isEmpty) {
+            final allItems = snapshot.data!;
+            if (allItems.isEmpty) {
               return const Center(child: Text('Belum ada perawatan.'));
             }
-
-            final allItems = docs.map((d) => d.data()).toList();
 
             // =========================
             // FILTER BERDASARKAN MAINTENANCE FILTER
@@ -351,10 +326,12 @@ class _MaintenanceBox extends StatelessWidget {
 
   const _MaintenanceBox({required this.main});
 
-  String _formatDate(Timestamp? ts) {
-    if (ts == null) return '-';
-    final dt = ts.toDate();
-    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  String _formatDate(DateTime? dt) {
+    if (dt == null) return '-';
+
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/'
+        '${dt.year}';
   }
 
   Color _priorityColor(String p) {
@@ -376,7 +353,7 @@ class _MaintenanceBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = main.itemName;
     final sku = main.sku ?? '-';
-    final nextMaintenanceAt = _formatDate(main.nextMaintenanceAt);
+    final nextMaintenanceAt = _formatDate(main.nextMaintenanceAt?.toDate());
     final intervalDays = main.intervalDays;
     final priority = main.priority;
 
