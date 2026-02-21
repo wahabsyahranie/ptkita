@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
@@ -21,11 +23,11 @@ class InventoryService {
     );
   }
 
-  Future<void> saveItem(Item item) async {
+  Future<void> saveItem(Item item, {File? imageFile}) async {
     if (item.id == null) {
-      await _repository.addItem(item);
+      await _repository.addItem(item, imageFile: imageFile);
     } else {
-      await _repository.updateItem(item);
+      await _repository.updateItem(item, imageFile: imageFile);
     }
   }
 

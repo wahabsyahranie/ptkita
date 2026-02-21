@@ -11,6 +11,7 @@ class Item {
   final String? imageUrl;
   final String? merk;
   final String? locationCode;
+  final String? nameLowercase;
 
   Item({
     this.id,
@@ -23,6 +24,7 @@ class Item {
     this.imageUrl,
     this.merk,
     this.locationCode,
+    this.nameLowercase,
   });
 
   // factory sesuai contoh FlutterFire docs
@@ -46,6 +48,7 @@ class Item {
       imageUrl: data?['imageUrl'] as String?,
       merk: data?['merk'] as String?,
       locationCode: data?['locationCode'] as String?,
+      nameLowercase: data?['name_lowercase'] as String?,
     );
   }
 
@@ -60,6 +63,35 @@ class Item {
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (merk != null) 'merk': merk,
       if (locationCode != null) 'locationCode': locationCode,
+      if (nameLowercase != null) 'name_lowercase': nameLowercase,
     };
+  }
+
+  Item copyWith({
+    String? id,
+    String? name,
+    String? sku,
+    int? price,
+    int? stock,
+    String? description,
+    String? locationCode,
+    String? type,
+    String? merk,
+    String? imageUrl,
+    String? nameLowercase,
+  }) {
+    return Item(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      sku: sku ?? this.sku,
+      price: price ?? this.price,
+      stock: stock ?? this.stock,
+      description: description ?? this.description,
+      locationCode: locationCode ?? this.locationCode,
+      type: type ?? this.type,
+      merk: merk ?? this.merk,
+      imageUrl: imageUrl ?? this.imageUrl,
+      nameLowercase: nameLowercase ?? this.nameLowercase,
+    );
   }
 }

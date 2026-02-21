@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
@@ -84,17 +86,40 @@ class FirestoreInventoryRepository implements InventoryRepository {
   }
 
   @override
-  Future<void> addItem(Item item) async {
-    await _collection.add(item);
+  Future<void> addItem(Item item, {File? imageFile}) async {
+    String? imageUrl = item.imageUrl;
+
+    if (imageFile != null) {
+      imageUrl = await _uploadImage(imageFile);
+    }
+
+    final newItem = item.copyWith(
+      imageUrl: imageUrl,
+      nameLowercase: item.name?.toLowerCase(),
+    );
+
+    await _collection.add(newItem);
   }
 
   @override
-  Future<void> updateItem(Item item) async {
+  @override
+  Future<void> updateItem(Item item, {File? imageFile}) async {
     if (item.id == null) {
       throw Exception('Item id is null');
     }
 
-    await _collection.doc(item.id).set(item, SetOptions(merge: true));
+    String? imageUrl = item.imageUrl;
+
+    if (imageFile != null) {
+      imageUrl = await _uploadImage(imageFile);
+    }
+
+    final updatedItem = item.copyWith(
+      imageUrl: imageUrl,
+      nameLowercase: item.name?.toLowerCase(),
+    );
+
+    await _collection.doc(item.id).set(updatedItem, SetOptions(merge: true));
   }
 
   @override
@@ -114,5 +139,15 @@ class FirestoreInventoryRepository implements InventoryRepository {
     final snap = await _collection.doc(id).get();
     if (!snap.exists) return null;
     return snap.data();
+  }
+
+  @override
+  Future<String?> _uploadImage(File file) async {
+    final fileName =
+        'items/${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+
+    final ref = _storage.ref().child(fileName);
+    final snapshot = await ref.putFile(file);
+    return await snapshot.ref.getDownloadURL();
   }
 }

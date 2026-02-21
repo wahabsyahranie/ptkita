@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
@@ -24,7 +26,7 @@ abstract class InventoryRepository {
 
   Future<Item?> getItemById(String id);
 
-  Future<void> addItem(Item item);
-  Future<void> updateItem(Item item);
+  Future<void> addItem(Item item, {File? imageFile});
+  Future<void> updateItem(Item item, {File? imageFile});
   Future<void> deleteItem(String id, {String? imageUrl});
 }
