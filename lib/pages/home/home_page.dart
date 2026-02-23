@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/repair/repair_summary_model.dart';
-import 'package:flutter_kita/models/repair/weekly_repair_chart_model.dart';
+import 'package:flutter_kita/models/repair/repair_chart_model.dart';
 import 'package:flutter_kita/models/user/user_model.dart';
 import 'package:flutter_kita/pages/capture/capture_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
@@ -27,7 +27,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final HomeService _homeService;
   late final Future<RepairSummaryModel> _repairSummaryFuture;
-  late final Future<WeeklyRepairChartModel> _weeklyChartFuture;
+  late Future<RepairChartModel> _chartFuture;
 
   //menambah controller search bar di sini
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -45,7 +45,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _homeService = HomeService(FirestoreHomeRepository());
     _repairSummaryFuture = _homeService.repairSummary(30);
-    _weeklyChartFuture = _homeService.weeklyRepairData();
+    _chartFuture = _homeService.chartData(_chartMode);
   }
 
   @override
@@ -87,11 +87,12 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 20),
               RepairChartCard(
-                future: _weeklyChartFuture,
+                future: _chartFuture,
                 chartMode: _chartMode,
                 onModeChanged: (mode) {
                   setState(() {
                     _chartMode = mode;
+                    _chartFuture = _homeService.chartData(mode);
                   });
                 },
               ),

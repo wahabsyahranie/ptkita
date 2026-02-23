@@ -1,5 +1,5 @@
 import '../../../models/repair/repair_summary_model.dart';
-import '../../../models/repair/weekly_repair_chart_model.dart';
+import '../../models/repair/repair_chart_model.dart';
 
 abstract class HomeRepository {
   Stream<int> getTotalItems();
@@ -8,5 +8,5 @@ abstract class HomeRepository {
   Stream<int> getCompletedMaintenanceToday();
 
   Future<RepairSummaryModel> getRepairSummary(int days);
-  Future<WeeklyRepairChartModel> getWeeklyRepairData();
+  Future<RepairChartModel> getChartData(String mode);
 }

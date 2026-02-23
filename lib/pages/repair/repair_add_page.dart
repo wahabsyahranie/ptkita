@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 class RepairAddPage extends StatefulWidget {
   final String? warrantyId;
@@ -396,6 +398,10 @@ class _RepairAddPageState extends State<RepairAddPage> {
                   controller: _costCtrl,
                   enabled: _repairCategory == 'non_warranty',
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    CurrencyInputFormatter(),
+                  ],
                   decoration: _inputDecoration(
                     hint: _repairCategory == 'warranty'
                         ? 'Gratis (Garansi)'
@@ -464,6 +470,34 @@ class WarrantySearchSheet extends StatefulWidget {
 
   @override
   State<WarrantySearchSheet> createState() => _WarrantySearchSheetState();
+}
+
+class CurrencyInputFormatter extends TextInputFormatter {
+  final NumberFormat _formatter = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    final numericString = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final number = int.parse(numericString);
+
+    final newText = _formatter.format(number);
+
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+  }
 }
 
 class _WarrantySearchSheetState extends State<WarrantySearchSheet> {

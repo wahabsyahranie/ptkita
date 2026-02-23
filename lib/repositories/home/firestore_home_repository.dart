@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/repair/repair_summary_model.dart';
-import '../../../models/repair/weekly_repair_chart_model.dart';
+import '../../models/repair/repair_chart_model.dart';
 import 'home_repository.dart';
 
 class FirestoreHomeRepository implements HomeRepository {
@@ -118,48 +118,56 @@ class FirestoreHomeRepository implements HomeRepository {
   // ==============================
 
   @override
-  Future<WeeklyRepairChartModel> getWeeklyRepairData() async {
-    final now = DateTime.now();
-    final startOfMonth = DateTime(now.year, now.month, 1);
-
-    final snapshot = await _firestore
+  Future<RepairChartModel> getChartData(String mode) async {
+    final snapshot = await FirebaseFirestore.instance
         .collection('repair')
-        .where(
-          'createdAt',
-          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
-        )
         .get();
 
     List<int> warranty = [0, 0, 0, 0];
     List<int> nonWarranty = [0, 0, 0, 0];
-    List<int> completed = [0, 0, 0, 0];
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
-      final createdAt = (data['createdAt'] as Timestamp).toDate();
-      final category = data['repairCategory'];
-      final status = data['status'].toString().toLowerCase();
+      final Timestamp? timestamp = data['date'];
 
-      int weekIndex = ((createdAt.day - 1) ~/ 7);
-      if (weekIndex > 3) weekIndex = 3;
+      if (timestamp == null) continue;
 
-      if (category == 'warranty') {
-        warranty[weekIndex]++;
+      final DateTime date = timestamp.toDate();
+      final bool isWarranty = data['repairCategory'] == 'warranty';
+
+      int index = 0;
+
+      if (mode == 'weekly') {
+        final now = DateTime.now();
+        final firstDay = DateTime(now.year, now.month, 1);
+        final diff = date.difference(firstDay).inDays;
+        if (diff < 0) continue;
+        index = (diff ~/ 7).clamp(0, 3);
+      } else {
+        if (date.month <= 3) {
+          index = 0;
+        } else if (date.month <= 6) {
+          index = 1;
+        } else if (date.month <= 9) {
+          index = 2;
+        } else {
+          index = 3;
+        }
       }
 
-      if (category == 'non_warranty') {
-        nonWarranty[weekIndex]++;
-      }
-
-      if (status.contains('selesai')) {
-        completed[weekIndex]++;
+      if (isWarranty) {
+        warranty[index]++;
+      } else {
+        nonWarranty[index]++;
       }
     }
 
-    return WeeklyRepairChartModel(
+    List<int> total = List.generate(4, (i) => warranty[i] + nonWarranty[i]);
+
+    return RepairChartModel(
       warranty: warranty,
       nonWarranty: nonWarranty,
-      completed: completed,
+      total: total,
     );
   }
 }

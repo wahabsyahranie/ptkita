@@ -34,6 +34,8 @@ dependencies:
   # The following adds the Cupertaino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   fl_chart: ^0.66.0
+  path_provider: ^2.1.2
+  share_plus: ^7.2.1
   cupertino_icons: ^1.0.8
   circle_nav_bar: ^2.2.0
   firebase_core: ^4.2.1
@@ -44,6 +46,7 @@ dependencies:
   firebase_analytics: ^12.0.4
   firebase_messaging: ^16.0.4
   cached_network_image: ^3.3.1
+  url_launcher: ^6.2.5
 
   # Wajib untuk capture_page.dart
   http: ^1.2.0
