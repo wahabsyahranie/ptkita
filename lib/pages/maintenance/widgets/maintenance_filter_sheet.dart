@@ -40,7 +40,7 @@ class _MaintenanceFilterSheetState extends State<MaintenanceFilterSheet> {
                 width: 40,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: MyColors.greySoft,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -182,15 +182,15 @@ class _MaintenanceFilterSheetState extends State<MaintenanceFilterSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
-          color: selected ? MyColors.secondary : Colors.white,
+          color: selected ? MyColors.secondary : MyColors.white,
           border: Border.all(
-            color: selected ? MyColors.secondary : Colors.grey.shade300,
+            color: selected ? MyColors.secondary : MyColors.greySoft,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.black,
+            color: selected ? MyColors.white : MyColors.black,
             fontWeight: FontWeight.w600,
           ),
         ),

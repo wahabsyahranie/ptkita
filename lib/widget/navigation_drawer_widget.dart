@@ -1,14 +1,17 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/models/user/user_model.dart';
 import 'package:flutter_kita/pages/maintenance/maintenance_page.dart';
 import 'package:flutter_kita/pages/repair/repair_history_page.dart';
 import 'package:flutter_kita/pages/transaction/transaction_history_page.dart';
 import 'package:flutter_kita/pages/warranty/warranty_history_page.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/widgets/confirmation_sheet.dart';
 
 class NavigationDrawerWidget extends StatelessWidget {
-  const NavigationDrawerWidget({super.key});
+  final UserService userService;
+
+  const NavigationDrawerWidget({super.key, required this.userService});
 
   @override
   Widget build(BuildContext context) {
@@ -16,28 +19,21 @@ class NavigationDrawerWidget extends StatelessWidget {
       child: Material(
         color: MyColors.secondary,
         child: ListView(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 40),
           children: <Widget>[
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(FirebaseAuth.instance.currentUser!.uid)
-                  .snapshots(),
+            StreamBuilder<UserModel?>(
+              stream: userService.currentUserProfile,
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (!snapshot.hasData || snapshot.data == null) {
                   return const SizedBox(height: 120);
                 }
 
-                final data = snapshot.data!.data() as Map<String, dynamic>;
-
-                final name = data['name'] ?? 'User';
-                final photoUrl = data['photoUrl'];
-                final phone = data['phone'] ?? '-';
+                final user = snapshot.data!;
 
                 return buildHeader(
-                  photoUrl: photoUrl,
-                  name: name,
-                  phone: phone,
+                  photoUrl: user.photoUrl,
+                  name: user.name,
+                  phone: user.phone ?? '-', // kalau belum ada di model
                 );
               },
             ),
@@ -67,33 +63,31 @@ class NavigationDrawerWidget extends StatelessWidget {
               onClicked: () => selectedItem(context, 3),
             ),
             const SizedBox(height: 24),
-            Divider(color: MyColors.white),
+            const Divider(color: MyColors.white),
             const SizedBox(height: 24),
             buildMenuItem(
               text: 'Log Out',
               icon: Icons.logout,
-              onClicked: () async {
-                final shouldLogout = await showDialog(
+              onClicked: () {
+                showModalBottomSheet(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text("Konfirmasi"),
-                    content: const Text("Yakin ingin keluar?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text("Batal"),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text("Keluar"),
-                      ),
-                    ],
+                  isScrollControlled: true,
+                  backgroundColor: MyColors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  builder: (_) => ConfirmationSheet(
+                    title: "Konfirmasi Logout",
+                    description: "Yakin ingin keluar dari akun ini?",
+                    confirmText: "Keluar",
+                    isDestructive: true,
+                    onConfirm: () async {
+                      await userService.logout();
+                    },
                   ),
                 );
-
-                if (shouldLogout == true) {
-                  await FirebaseAuth.instance.signOut();
-                }
               },
             ),
           ],
@@ -107,12 +101,12 @@ class NavigationDrawerWidget extends StatelessWidget {
     required IconData icon,
     VoidCallback? onClicked,
   }) {
-    final color = Colors.white;
-    final hoverColor = Colors.white70;
+    const color = Colors.white;
+    const hoverColor = Colors.white70;
 
     return ListTile(
       leading: Icon(icon, color: color),
-      title: Text(text, style: TextStyle(color: color)),
+      title: Text(text, style: const TextStyle(color: color)),
       hoverColor: hoverColor,
       onTap: onClicked,
     );
@@ -121,24 +115,26 @@ class NavigationDrawerWidget extends StatelessWidget {
   void selectedItem(BuildContext context, int index) {
     switch (index) {
       case 0:
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => MaintenancePage()));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const MaintenancePage()),
+        );
         break;
       case 1:
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => TransactionHistoryPage()),
+          MaterialPageRoute(
+            builder: (context) => const TransactionHistoryPage(),
+          ),
         );
         break;
       case 2:
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => RepairHistoryPage()));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const RepairHistoryPage()),
+        );
         break;
       case 3:
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => WarrantyHistoryPage()));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const WarrantyHistoryPage()),
+        );
         break;
     }
   }

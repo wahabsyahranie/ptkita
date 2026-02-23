@@ -1,15 +1,16 @@
-// lib/pages/repair/repair_detail_page.dart
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart'; // atau path yang sesuai
-import 'package:flutter_kita/styles/colors.dart';
+import 'widgets/repair_detail_card.dart';
+import 'package:flutter_kita/services/repair/repair_service.dart';
+import 'widgets/repair_status_badge.dart';
+import 'package:flutter_kita/utils/formatters.dart';
+import 'package:flutter_kita/services/repair/repair_receipt_service.dart';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter/rendering.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RepairDetailPage extends StatefulWidget {
-  /// [data] = map berisi fields dari Firestore (contoh: buyerName, itemName, techName, date, noHp, repairType, detailPart, cost, status)
-  /// [docId] = optional, id dokumen Firestore untuk update; jika tidak ada, update akan gagal.
-  const RepairDetailPage({Key? key, required this.data, this.docId})
-    : super(key: key);
+  const RepairDetailPage({super.key, required this.data, this.docId});
 
   final Map<String, dynamic> data;
   final String? docId;
@@ -19,27 +20,24 @@ class RepairDetailPage extends StatefulWidget {
 }
 
 class _RepairDetailPageState extends State<RepairDetailPage> {
-  late Map<String, dynamic>
-  _current; // local copy (tidak otomatis update Firestore)
+  late Map<String, dynamic> _current;
   late String? _docId;
 
-  // controllers for editable fields (detailPart & cost)
   final TextEditingController _detailCtrl = TextEditingController();
   final TextEditingController _costCtrl = TextEditingController();
 
-  bool _saving = false;
+  final GlobalKey _receiptKey = GlobalKey();
+
+  bool _showForm = false;
 
   @override
   void initState() {
     super.initState();
     _current = Map<String, dynamic>.from(widget.data);
-    _docId = widget.docId ?? widget.data['id'] ?? widget.data['docId'];
+    _docId = widget.docId ?? widget.data['id'];
 
-    // initialize controllers with existing values (if any)
-    _detailCtrl.text =
-        (_current['detailPart'] ?? _current['detailpart'] ?? '') as String;
-    _costCtrl.text =
-        (_current['cost'] ?? _current['price'] ?? '')?.toString() ?? '';
+    _detailCtrl.text = (_current['detailPart'] ?? '').toString();
+    _costCtrl.text = (_current['cost'] ?? '').toString();
   }
 
   @override
@@ -49,465 +47,298 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
     super.dispose();
   }
 
-  // helper: format timestamp or string -> human readable
-  String _fmtDate(dynamic v) {
-    if (v == null) return '-';
-    DateTime d;
-    if (v is Timestamp)
-      d = v.toDate();
-    else if (v is DateTime)
-      d = v;
-    else {
-      try {
-        d = DateTime.parse(v.toString());
-      } catch (_) {
-        return v.toString();
-      }
-    }
-    final months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-    return '${d.day.toString().padLeft(2, '0')} ${months[d.month - 1]} ${d.year}';
-  }
+  // ================= HELPERS =================
 
-  String _fmtRupiah(String raw) {
-    // raw mungkin "250000" atau "250.000", kita ambil angka saja
-    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) return 'Rp 0';
-    final val = int.tryParse(digits) ?? 0;
-    final s = val.toString().split('').reversed.toList();
-    final parts = <String>[];
-    for (var i = 0; i < s.length; i += 3) {
-      parts.add(s.skip(i).take(3).toList().reversed.join());
-    }
-    return 'Rp ${parts.reversed.join('.')}';
-  }
+  bool get _isSelesai =>
+      (_current['status'] ?? '').toString().toLowerCase() == 'selesai';
 
-  bool get _isSelesai {
-    final s = (_current['status'] ?? '').toString().toLowerCase();
-    return s == 'selesai' || s == 'done' || s == 'finished';
-  }
+  bool get _isWarranty => (_current['repairCategory'] ?? '') == 'warranty';
 
-  bool get _hasGaransi {
-    final repairType = (_current['repairType'] ?? _current['repair_type'] ?? '')
-        .toString();
-    return repairType.toLowerCase().contains('garansi');
-  }
+  // ================= UPDATE STATUS =================
 
-  Future<void> _showActionMenu() async {
-    // options depend on status
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: Text(
-                  _isSelesai ? 'Edit Rincian' : 'Tandai Perbaikan Selesai',
-                ),
-                onTap: () => Navigator.pop(ctx, 'selesai'),
-              ),
-              ListTile(
-                title: const Text('Tandai Perbaikan Belum Selesai'),
-                onTap: () => Navigator.pop(ctx, 'belum'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (choice == null) return;
-    if (choice == 'selesai') {
-      // open form to enter/edit detailPart & cost
-      await _openEditRincianSheet();
-    } else if (choice == 'belum') {
-      await _markBelumSelesai();
-    }
-  }
-
-  Future<void> _openEditRincianSheet() async {
-    // prefilled already in controllers
-    final ok = await showModalBottomSheet<bool>(
-      isScrollControlled: true,
-      context: context,
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Konfirmasi Tindakan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _detailCtrl,
-                    maxLines: 4,
-                    decoration: _inputDecoration(
-                      label: 'Rincian (Penggantian Sparepart)',
-                      hint: 'Contoh: 1. rantai, 2. Busi',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _costCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: _inputDecoration(
-                      label: 'Biaya Perbaikan',
-                      prefix: 'Rp ',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: MyColors.secondary,
-                            foregroundColor: MyColors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                          ),
-                          onPressed: () {},
-                          child: const Text(
-                            'Simpan',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (ok == true) {
-      await _markSelesaiWithRincian();
-    }
-  }
-
-  Future<void> _markSelesaiWithRincian() async {
-    if (_docId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak dapat mengupdate: document id tidak tersedia.'),
-        ),
-      );
-      return;
-    }
+  Future<void> _markSelesai() async {
+    if (_docId == null) return;
 
     final detail = _detailCtrl.text.trim();
     final costRaw = _costCtrl.text.trim();
-    if (detail.isEmpty || costRaw.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rincian dan biaya wajib diisi.')),
-      );
-      return;
-    }
 
-    setState(() => _saving = true);
-    try {
-      // convert cost to int (safe)
-      final digits = costRaw.replaceAll(RegExp(r'[^0-9]'), '');
-      final costVal = int.tryParse(digits) ?? 0;
-
-      await FirebaseFirestore.instance.collection('repair').doc(_docId).update({
-        'status': 'Selesai',
-        'detailPart': detail,
-        'cost': costVal
-            .toString(), // sesuai DB-mu (string) — ubah ke int jika perlu
-        'completedAt': FieldValue.serverTimestamp(),
-      });
-
-      // update local view
-      setState(() {
-        _current['status'] = 'Selesai';
-        _current['detailPart'] = detail;
-        _current['cost'] = costVal.toString();
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perbaikan ditandai selesai.')),
-      );
-    } catch (e) {
-      debugPrint('update error: $e');
+    if (detail.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal menyimpan.')));
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  Future<void> _markBelumSelesai() async {
-    if (_docId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak dapat mengupdate: document id tidak tersedia.'),
-        ),
-      );
+      ).showSnackBar(const SnackBar(content: Text('Rincian wajib diisi')));
       return;
     }
 
-    final ok = await showDialog<bool>(
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Konfirmasi'),
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi"),
         content: const Text(
-          'Tandai perbaikan sebagai belum selesai? Ini akan menghapus rincian & biaya.',
+          "Setelah ditandai selesai, data tidak bisa diedit.\n\nLanjutkan?",
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ya, lanjut'),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Ya"),
           ),
         ],
       ),
     );
 
-    if (ok != true) return;
+    if (confirm != true) return;
 
-    setState(() => _saving = true);
+    final digits = costRaw.replaceAll(RegExp(r'[^0-9]'), '');
+    final costVal = int.tryParse(digits) ?? 0;
+
     try {
-      // update: set status, remove detailPart & cost
-      await FirebaseFirestore.instance.collection('repair').doc(_docId).update({
-        'status': 'Belum Selesai',
-        'detailPart': FieldValue.delete(),
-        'cost': FieldValue.delete(),
-        'completedAt': FieldValue.delete(),
-      });
+      final result = await RepairService.markSelesai(
+        docId: _docId!,
+        detail: detail,
+        cost: costVal,
+      );
+
+      if (!mounted) return;
 
       setState(() {
-        _current['status'] = 'Belum Selesai';
-        _current.remove('detailPart');
-        _current.remove('cost');
+        _current['status'] = 'Selesai';
+        _current['detailPart'] = detail;
+        _current['cost'] = costVal;
+        _current['completedByName'] = result['completedByName'];
+        _current['completedAt'] = result['completedAt'];
+        _showForm = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perbaikan ditandai belum selesai.')),
+        const SnackBar(content: Text('Perbaikan berhasil diselesaikan')),
       );
     } catch (e) {
-      debugPrint('update error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal mengupdate status.')));
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan saat menyimpan data')),
+      );
     }
   }
 
+  Future<Uint8List?> _captureReceiptBytes() async {
+    try {
+      RenderRepaintBoundary boundary =
+          _receiptKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
+
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ================= UI =================
+
   @override
   Widget build(BuildContext context) {
-    final buyer = _current['buyerName'] ?? _current['buyer'] ?? '-';
-    final item = _current['itemName'] ?? _current['item'] ?? '-';
-    final tech = _current['techName'] ?? _current['tech'] ?? '-';
-    final dateText = _fmtDate(_current['date']);
-    final phone =
-        _current['noHp'] ?? _current['nohp'] ?? _current['phone'] ?? '-';
-    final repairType = _current['repairType'] ?? _current['repair_type'] ?? '-';
-    final detailPart = _current['detailPart'] ?? _current['detailpart'] ?? '';
-    final cost = _current['cost'] ?? '';
+    final dateText = Formatters.formatDate(_current['date']);
+
+    final detailPart = _current['detailPart'] ?? '';
+    final cost = _current['cost'];
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Perbaikan'),
-        backgroundColor: MyColors.white,
-        surfaceTintColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          // action menu button (visible always)
-          IconButton(
-            onPressed: _saving ? null : _showActionMenu,
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.black87),
-          ),
-        ],
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
+      backgroundColor: const Color(0xFFF7F6F3),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // small badges under banner
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Row(
-                children: [
-                  if (_hasGaransi)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3FBFF),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Garansi',
-                        style: TextStyle(
-                          color: MyColors.secondary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _isSelesai
-                          ? const Color(0xFFDFF7E5)
-                          : const Color(0xFFFFF1E0),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _isSelesai ? 'Selesai' : 'Belum Selesai',
-                      style: TextStyle(
-                        color: _isSelesai
-                            ? const Color(0xFF1E8A3D)
-                            : const Color(0xFFB87112),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+            // STATUS BADGE
+            Row(
+              children: [
+                if (_isWarranty)
+                  const RepairStatusBadge(
+                    text: 'Garansi',
+                    backgroundColor: Colors.blueAccent,
+                    textColor: Colors.white,
                   ),
-                ],
-              ),
+
+                const SizedBox(width: 8),
+
+                RepairStatusBadge(
+                  text: _isSelesai ? 'Selesai' : 'Belum Selesai',
+                  backgroundColor: _isSelesai ? Colors.green : Colors.orange,
+                  textColor: Colors.white,
+                ),
+              ],
             ),
 
-            // content
-            Container(
-              color: Colors.white,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              child: Column(
-                children: [
-                  _infoRow('Nama Pelanggan', buyer),
-                  const DottedlineWidget(),
-                  _infoRow('Nama Barang', item),
-                  const DottedlineWidget(),
-                  _infoRow('Teknisi', tech),
-                  const DottedlineWidget(),
-                  _infoRow('Tanggal Masuk', dateText),
-                  const DottedlineWidget(),
-                  _infoRow('No Whatsapps Pelanggan', phone),
-                  const DottedlineWidget(),
-                  _infoRow('Jenis Perbaikan', repairType),
-                  const DottedlineWidget(),
-                  _infoRow(
-                    'Kelengkapan',
-                    (_current['completeness'] ?? '-')?.toString() ?? '-',
-                  ),
-                  const DottedlineWidget(),
-
-                  // jika selesai -> tunjukkan rincian & biaya
-                  if (_isSelesai) ...[
-                    _infoRow('Rincian', detailPart.toString()),
-                    const SizedBox(height: 8),
-                    _infoRow(
-                      'Biaya',
-                      cost.toString().isEmpty
-                          ? '-'
-                          : _fmtRupiah(cost.toString()),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  if (!_isSelesai) const SizedBox(height: 8),
-
-                  // tombol status (tampilan di bawah; bukan wajib)
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
             const SizedBox(height: 20),
+
+            // INFO CARD
+            RepaintBoundary(
+              key: _receiptKey,
+              child: RepairDetailCard(
+                data: _current,
+                isSelesai: _isSelesai,
+                isWarranty: _isWarranty,
+                dateText: dateText,
+                detailPart: detailPart,
+                cost: cost,
+                bottomSection: !_isSelesai
+                    ? Column(
+                        children: [
+                          if (!_showForm)
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _showForm = true;
+                                  });
+                                },
+                                child: const Text("Tandai Selesai"),
+                              ),
+                            ),
+
+                          if (_showForm) ...[
+                            const SizedBox(height: 16),
+
+                            TextField(
+                              controller: _detailCtrl,
+                              decoration: const InputDecoration(
+                                labelText: "Rincian Perbaikan",
+                                border: OutlineInputBorder(),
+                              ),
+                              maxLines: 3,
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            if (!_isWarranty)
+                              TextField(
+                                controller: _costCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: "Biaya",
+                                  prefixText: "Rp ",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+
+                            const SizedBox(height: 16),
+
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _markSelesai,
+                                child: const Text("Simpan & Tandai Selesai"),
+                              ),
+                            ),
+
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _showForm = false;
+                                });
+                              },
+                              child: const Text("Batal"),
+                            ),
+                          ],
+                        ],
+                      )
+                    : null,
+              ),
+            ),
+            if (_isSelesai) ...[
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.share),
+                  label: const Text("Kirim Bukti ke WhatsApp"),
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    final bytes = await _captureReceiptBytes();
+                    if (bytes == null) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Gagal menangkap bukti")),
+                      );
+                      return;
+                    }
+
+                    final file = await RepairReceiptService.saveReceipt(bytes);
+                    if (file == null) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Gagal menyimpan bukti")),
+                      );
+                      return;
+                    }
+
+                    final phone = (_current['noHp'] ?? '').toString().trim();
+                    if (phone.isEmpty) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Nomor WhatsApp pelanggan tidak tersedia",
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    String formattedPhone = phone.startsWith('0')
+                        ? '62${phone.substring(1)}'
+                        : phone;
+
+                    final message =
+                        "Halo ${_current['buyerName']}, berikut bukti perbaikan barang Anda.\n\nTerima kasih.";
+
+                    final url = Uri.parse(
+                      "https://wa.me/$formattedPhone?text=${Uri.encodeComponent(message)}",
+                    );
+
+                    if (!mounted) return;
+
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Membuka WhatsApp...")),
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "WhatsApp tidak tersedia di perangkat ini",
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
           ],
         ),
-      ),
-      // jika sedang save, tampilkan floating progress
-      floatingActionButton: _saving ? const CircularProgressIndicator() : null,
-    );
-  }
-
-  Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 4,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-          Expanded(flex: 6, child: Text(value, textAlign: TextAlign.right)),
-        ],
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    String? label,
-    String? hint,
-    String? prefix,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixText: prefix,
-
-      labelStyle: const TextStyle(color: Colors.black54),
-      floatingLabelStyle: TextStyle(
-        color: MyColors.secondary,
-        fontWeight: FontWeight.w600,
-      ),
-
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
-      ),
-
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: MyColors.secondary, width: 1.5),
       ),
     );
   }

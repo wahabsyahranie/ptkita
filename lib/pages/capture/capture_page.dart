@@ -4,7 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'package:flutter_kita/pages/home_page.dart';
+import 'package:flutter_kita/pages/home/home_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/capture/preview_capture_page.dart';
 
@@ -174,11 +174,13 @@ class _CapturePageState extends State<CapturePage> {
               children: [
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const HomePage()),
-                      (route) => false,
-                    );
+                    //WAHAB EDIT
+                    // Navigator.pushAndRemoveUntil(
+                    //   context,
+                    //   MaterialPageRoute(builder: (_) => const HomePage()),
+                    //   (route) => false,
+                    // );
+                    Navigator.pop(context);
                   },
                   child: Container(
                     padding: const EdgeInsets.all(12),
@@ -227,7 +229,7 @@ class _CapturePageState extends State<CapturePage> {
                         height: 78,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: MyColors.white.withOpacity(0.38),
+                          color: MyColors.white.withValues(alpha: 0.38),
                           border: Border.all(color: MyColors.white, width: 6),
                         ),
                       ),
@@ -242,7 +244,7 @@ class _CapturePageState extends State<CapturePage> {
                           width: 55,
                           height: 55,
                           decoration: BoxDecoration(
-                            color: MyColors.white.withOpacity(0.30),
+                            color: MyColors.white.withValues(alpha: 0.30),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.image, color: MyColors.white),

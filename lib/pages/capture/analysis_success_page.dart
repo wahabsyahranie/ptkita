@@ -8,6 +8,10 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 
+//MODIFIED WAHAB
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
+import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+
 class AnalysisSuccessPage extends StatefulWidget {
   final XFile imageFile;
   final String label;
@@ -30,11 +34,16 @@ class AnalysisSuccessPage extends StatefulWidget {
 
 class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
   ui.Image? _imageInfo;
+  //MODIFIEL BY WAHAB
+  late final InventoryService _inventoryService;
 
   @override
   void initState() {
     super.initState();
     _loadImage();
+
+    //MODIFIEL BY WAHAB
+    _inventoryService = InventoryService(FirestoreInventoryRepository());
   }
 
   Future<void> _loadImage() async {
@@ -113,6 +122,20 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                         width: _imageInfo!.width.toDouble(),
                         height: _imageInfo!.height.toDouble(),
                         fit: BoxFit.fill,
+              const SizedBox(height: 30),
+
+              /// ============================
+              /// DETAIL BUTTON
+              /// ============================
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            DetailsInventoryPage(itemId: widget.item.id!),
                       ),
 
                       /// Bounding Box (Fix All Device)
@@ -273,8 +296,10 @@ class _LabelField extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: MyColors.secondary.withOpacity(0.4)),
-            color: MyColors.tertiary.withOpacity(0.35),
+            border: Border.all(
+              color: MyColors.secondary.withValues(alpha: 0.5),
+            ),
+            color: MyColors.tertiary.withValues(alpha: 0.35),
           ),
           child: Text(
             value,

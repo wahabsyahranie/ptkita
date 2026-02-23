@@ -48,10 +48,6 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // =========================
   DateTime? _transactionDate;
 
-  DateTime _addYears(DateTime date, int years) {
-    return DateTime(date.year + years, date.month, date.day);
-  }
-
   // =========================
   // CART
   // =========================
@@ -85,10 +81,10 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // TOTAL (AUTO)
   // =========================
   int get _total {
-    return _cartItems.fold<int>(0, (sum, item) {
+    return _cartItems.fold<int>(0, (accumulator, item) {
       final int price = item['price'] as int;
       final int qty = item['qty'] as int;
-      return sum + (price * qty);
+      return accumulator + (price * qty);
     });
   }
 
@@ -166,6 +162,32 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       (s, e) => s + (e['subtotal'] as int),
     );
 
+    // =========================
+    // CEK STOK SEBELUM SIMPAN
+    // =========================
+    for (final item in _cartItems) {
+      final doc = await FirebaseFirestore.instance
+          .collection('items')
+          .doc(item['itemId'])
+          .get();
+
+      if (!doc.exists) {
+        _showAlert('Item ${item['name']} tidak ditemukan');
+        return;
+      }
+
+      final currentStock = (doc.data()?['stock'] ?? 0) as int;
+      final qty = item['qty'] as int;
+
+      if (currentStock < qty) {
+        _showAlert(
+          'Stok tidak cukup untuk ${item['name']}. '
+          'Sisa stok: $currentStock',
+        );
+        return;
+      }
+    }
+
     final txCode = await _generateTxCode();
 
     // =========================
@@ -189,10 +211,14 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     // =========================
     // 🔥 AUTO CREATE WARRANTY (DI SINI)
     // =========================
+    final transactionDate = _transactionDate ?? DateTime.now();
+
     await _createWarrantiesFromTransaction(
       transactionId: transactionId,
       buyerName: _nameCtrl.text.trim(),
+      phone: _phoneCtrl.text,
       items: _cartItems,
+      transactionDate: transactionDate,
     );
 
     // =========================
@@ -274,7 +300,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                     _label('Pilih Item / Barang'),
                     DropdownButtonFormField<String>(
                       isExpanded: true,
-                      value: _selectedItemId,
+                      initialValue: _selectedItemId,
                       items: _items.map<DropdownMenuItem<String>>((e) {
                         return DropdownMenuItem<String>(
                           value: e['id'] as String,
@@ -300,11 +326,11 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                     const SizedBox(height: 12),
                     TextButton.icon(
                       onPressed: _selectedItem == null ? null : _addToCart,
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.add_circle_outline,
                         color: MyColors.secondary,
                       ),
-                      label: Text(
+                      label: const Text(
                         'Tambah Item ke Transaksi',
                         style: TextStyle(
                           color: MyColors.secondary,
@@ -498,7 +524,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
             const SizedBox(height: 14),
             _subLabel('Jenis Garansi'),
             DropdownButtonFormField<String>(
-              value: _warrantyType,
+              initialValue: _warrantyType,
               items: const [
                 DropdownMenuItem(value: 'Jasa', child: Text('Jasa')),
                 DropdownMenuItem(value: 'SparePart', child: Text('SparePart')),
@@ -611,7 +637,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       // FOCUS (saat disentuh)
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: MyColors.secondary, width: 1.5),
+        borderSide: const BorderSide(color: MyColors.secondary, width: 1.5),
       ),
 
       // OPTIONAL (biar konsisten)
@@ -682,9 +708,10 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   Future<void> _createWarrantiesFromTransaction({
     required String transactionId,
     required String buyerName,
+    required String phone,
     required List<Map<String, dynamic>> items,
+    required DateTime transactionDate,
   }) async {
-    final now = DateTime.now();
     final warrantyRef = FirebaseFirestore.instance.collection('warranty');
 
     for (final item in items) {
@@ -693,24 +720,34 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       final int duration = (item['warrantyYear'] ?? 0) as int;
       if (duration <= 0) continue;
 
-      final startAt = now;
-      final expireAt = DateTime(now.year + duration, now.month, now.day);
+      final int qty = (item['qty'] ?? 1) as int;
 
-      await warrantyRef.add({
-        'transactionId': transactionId,
-        'itemId': item['itemId'],
-        'buyerName': buyerName.trim(),
+      for (int i = 0; i < qty; i++) {
+        final startAt = transactionDate;
+        final expireAt = DateTime(
+          transactionDate.year + duration,
+          transactionDate.month,
+          transactionDate.day,
+        );
 
-        'productName': item['name'],
-        'serialNumber': item['serialNumber'] ?? '',
-        'warrantyType': item['warrantyType'],
+        await warrantyRef.add({
+          'transactionId': transactionId,
+          'itemId': item['itemId'],
+          'buyerName': buyerName.trim(),
+          'phone': phone.trim(),
 
-        'startAt': Timestamp.fromDate(startAt),
-        'expireAt': Timestamp.fromDate(expireAt),
-        'createdAt': Timestamp.fromDate(now),
+          'productName': item['name'],
+          'serialNumber': '',
+          'warrantyType': item['warrantyType'], // 🔥 TAMBAHKAN INI
 
-        'isActive': true,
-      });
+          'startAt': Timestamp.fromDate(startAt),
+          'expireAt': Timestamp.fromDate(expireAt),
+          'createdAt': FieldValue.serverTimestamp(),
+
+          'status': 'Active',
+          'claimCount': 0,
+        });
+      }
     }
   }
 

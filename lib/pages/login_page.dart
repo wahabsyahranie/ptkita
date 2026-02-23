@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final UserService userService;
+
+  const LoginPage({super.key, required this.userService});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -17,7 +19,10 @@ class _LoginPageState extends State<LoginPage> {
     super.didChangeDependencies();
 
     if (!_isPrecached) {
-      precacheImage(const AssetImage('assets/images/login_image.jpg'), context);
+      precacheImage(
+        const AssetImage('assets/images/login_image.jpeg'),
+        context,
+      );
       _isPrecached = true;
     }
   }
@@ -29,8 +34,6 @@ class _LoginPageState extends State<LoginPage> {
   String? _passwordError;
   bool _isLoading = false;
   bool _obscurePassword = true;
-
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<void> _login() async {
     setState(() {
@@ -54,24 +57,12 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      final email = "$phone@ptkita.com";
-
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
-
-      // ✅ HANYA pop jika sukses
-      if (!mounted) return;
-      Navigator.of(context).pop();
-    } on FirebaseAuthException catch (e) {
+      await widget.userService.login(phone: phone, password: password);
+    } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        if (e.code == 'user-not-found') {
-          _phoneError = "Akun tidak ditemukan";
-        } else if (e.code == 'wrong-password') {
-          _passwordError = "Password salah";
-        } else {
-          _passwordError = "Login gagal";
-        }
+        _passwordError = "Login gagal";
       });
     } finally {
       if (mounted) {
@@ -82,13 +73,17 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (FocusScope.of(context).hasFocus) {
-          FocusScope.of(context).unfocus();
-          return false;
+    return PopScope(
+      canPop: false, // kita kontrol manual
+      onPopInvokedWithResult: (didPop, result) {
+        // kalau keyboard terbuka
+        if (MediaQuery.of(context).viewInsets.bottom > 0) {
+          FocusManager.instance.primaryFocus?.unfocus();
+          return; // jangan pop
         }
-        return true;
+
+        // kalau tidak ada keyboard → pop manual
+        Navigator.of(context).pop();
       },
       child: Scaffold(
         body: Container(
@@ -96,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
           height: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/images/login_image.jpg'),
+              image: AssetImage('assets/images/login_image.jpeg'),
               fit: BoxFit.cover,
             ),
           ),
@@ -106,9 +101,9 @@ class _LoginPageState extends State<LoginPage> {
               Container(
                 height: 420,
                 width: double.infinity,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: MyColors.white,
-                  borderRadius: const BorderRadius.only(
+                  borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(40),
                     topRight: Radius.circular(40),
                   ),
@@ -145,7 +140,7 @@ class _LoginPageState extends State<LoginPage> {
 
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(40),
-                          borderSide: BorderSide(
+                          borderSide: const BorderSide(
                             color: MyColors.secondary,
                             width: 2,
                           ),
@@ -153,12 +148,18 @@ class _LoginPageState extends State<LoginPage> {
 
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(40),
-                          borderSide: BorderSide(color: Colors.red, width: 1.5),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 1.5,
+                          ),
                         ),
 
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(40),
-                          borderSide: BorderSide(color: Colors.red, width: 2),
+                          borderSide: const BorderSide(
+                            color: Colors.red,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),
@@ -204,7 +205,7 @@ class _LoginPageState extends State<LoginPage> {
 
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(40),
-                          borderSide: BorderSide(
+                          borderSide: const BorderSide(
                             color: MyColors.secondary,
                             width: 2,
                           ),

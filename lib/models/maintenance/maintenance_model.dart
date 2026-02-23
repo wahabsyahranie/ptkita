@@ -66,6 +66,32 @@ class Maintenance {
     'status': status,
     'tasks': tasks.map((e) => e.toMap()).toList(),
   };
+
+  Maintenance copyWith({
+    String? id,
+    String? itemId,
+    String? itemName,
+    String? sku,
+    int? intervalDays,
+    String? priority,
+    String? status,
+    Timestamp? lastMaintenanceAt,
+    Timestamp? nextMaintenanceAt,
+    List<MaintenanceTask>? tasks,
+  }) {
+    return Maintenance(
+      id: id ?? this.id,
+      itemId: itemId ?? this.itemId,
+      itemName: itemName ?? this.itemName,
+      sku: sku ?? this.sku,
+      intervalDays: intervalDays ?? this.intervalDays,
+      priority: priority ?? this.priority,
+      status: status ?? this.status,
+      lastMaintenanceAt: lastMaintenanceAt ?? this.lastMaintenanceAt,
+      nextMaintenanceAt: nextMaintenanceAt ?? this.nextMaintenanceAt,
+      tasks: tasks ?? this.tasks,
+    );
+  }
 }
 
 class MaintenanceTask {
@@ -111,4 +137,11 @@ class MaintenanceTask {
       completed: completed ?? this.completed,
     );
   }
+}
+
+class MaintenanceDetail {
+  final Maintenance maintenance;
+  final String? imageUrl;
+
+  MaintenanceDetail({required this.maintenance, required this.imageUrl});
 }

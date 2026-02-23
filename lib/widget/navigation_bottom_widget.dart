@@ -26,7 +26,7 @@ class NavigationBottomWidget extends StatelessWidget {
             // Left icon (index 0)
             IconButton(
               onPressed: () => onTap(0),
-              icon: Icon(Icons.home, color: MyColors.background),
+              icon: const Icon(Icons.home, color: MyColors.background),
             ),
 
             // Spacer to leave center space for FAB
@@ -35,7 +35,7 @@ class NavigationBottomWidget extends StatelessWidget {
                 // Right-of-center icon (index 2)
                 IconButton(
                   onPressed: () => onTap(1),
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.home_repair_service,
                     color: MyColors.background,
                   ),
