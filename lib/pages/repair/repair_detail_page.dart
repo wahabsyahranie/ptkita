@@ -3,6 +3,11 @@ import 'widgets/repair_detail_card.dart';
 import 'package:flutter_kita/services/repair/repair_service.dart';
 import 'widgets/repair_status_badge.dart';
 import 'package:flutter_kita/utils/formatters.dart';
+import 'package:flutter_kita/services/repair/repair_receipt_service.dart';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter/rendering.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RepairDetailPage extends StatefulWidget {
   const RepairDetailPage({super.key, required this.data, this.docId});
@@ -20,6 +25,8 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
 
   final TextEditingController _detailCtrl = TextEditingController();
   final TextEditingController _costCtrl = TextEditingController();
+
+  final GlobalKey _receiptKey = GlobalKey();
 
   bool _showForm = false;
 
@@ -117,6 +124,23 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
     }
   }
 
+  Future<Uint8List?> _captureReceiptBytes() async {
+    try {
+      RenderRepaintBoundary boundary =
+          _receiptKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
+
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      return null;
+    }
+  }
+
   // ================= UI =================
 
   @override
@@ -161,77 +185,158 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
             const SizedBox(height: 20),
 
             // INFO CARD
-            RepairDetailCard(
-              data: _current,
-              isSelesai: _isSelesai,
-              isWarranty: _isWarranty,
-              dateText: dateText,
-              detailPart: detailPart,
-              cost: cost,
-              bottomSection: !_isSelesai
-                  ? Column(
-                      children: [
-                        if (!_showForm)
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _showForm = true;
-                                });
-                              },
-                              child: const Text("Tandai Selesai"),
-                            ),
-                          ),
-
-                        if (_showForm) ...[
-                          const SizedBox(height: 16),
-
-                          TextField(
-                            controller: _detailCtrl,
-                            decoration: const InputDecoration(
-                              labelText: "Rincian Perbaikan",
-                              border: OutlineInputBorder(),
-                            ),
-                            maxLines: 3,
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          if (!_isWarranty)
-                            TextField(
-                              controller: _costCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: "Biaya",
-                                prefixText: "Rp ",
-                                border: OutlineInputBorder(),
+            RepaintBoundary(
+              key: _receiptKey,
+              child: RepairDetailCard(
+                data: _current,
+                isSelesai: _isSelesai,
+                isWarranty: _isWarranty,
+                dateText: dateText,
+                detailPart: detailPart,
+                cost: cost,
+                bottomSection: !_isSelesai
+                    ? Column(
+                        children: [
+                          if (!_showForm)
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _showForm = true;
+                                  });
+                                },
+                                child: const Text("Tandai Selesai"),
                               ),
                             ),
 
-                          const SizedBox(height: 16),
+                          if (_showForm) ...[
+                            const SizedBox(height: 16),
 
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _markSelesai,
-                              child: const Text("Simpan & Tandai Selesai"),
+                            TextField(
+                              controller: _detailCtrl,
+                              decoration: const InputDecoration(
+                                labelText: "Rincian Perbaikan",
+                                border: OutlineInputBorder(),
+                              ),
+                              maxLines: 3,
                             ),
-                          ),
 
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _showForm = false;
-                              });
-                            },
-                            child: const Text("Batal"),
-                          ),
+                            const SizedBox(height: 12),
+
+                            if (!_isWarranty)
+                              TextField(
+                                controller: _costCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: "Biaya",
+                                  prefixText: "Rp ",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+
+                            const SizedBox(height: 16),
+
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _markSelesai,
+                                child: const Text("Simpan & Tandai Selesai"),
+                              ),
+                            ),
+
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _showForm = false;
+                                });
+                              },
+                              child: const Text("Batal"),
+                            ),
+                          ],
                         ],
-                      ],
-                    )
-                  : null,
+                      )
+                    : null,
+              ),
             ),
+            if (_isSelesai) ...[
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.share),
+                  label: const Text("Kirim Bukti ke WhatsApp"),
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    final bytes = await _captureReceiptBytes();
+                    if (bytes == null) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Gagal menangkap bukti")),
+                      );
+                      return;
+                    }
+
+                    final file = await RepairReceiptService.saveReceipt(bytes);
+                    if (file == null) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Gagal menyimpan bukti")),
+                      );
+                      return;
+                    }
+
+                    final phone = (_current['noHp'] ?? '').toString().trim();
+                    if (phone.isEmpty) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Nomor WhatsApp pelanggan tidak tersedia",
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    String formattedPhone = phone.startsWith('0')
+                        ? '62${phone.substring(1)}'
+                        : phone;
+
+                    final message =
+                        "Halo ${_current['buyerName']}, berikut bukti perbaikan barang Anda.\n\nTerima kasih.";
+
+                    final url = Uri.parse(
+                      "https://wa.me/$formattedPhone?text=${Uri.encodeComponent(message)}",
+                    );
+
+                    if (!mounted) return;
+
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Membuka WhatsApp...")),
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "WhatsApp tidak tersedia di perangkat ini",
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),

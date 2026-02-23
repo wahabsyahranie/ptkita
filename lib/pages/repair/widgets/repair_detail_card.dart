@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'repair_info_row.dart';
+import 'package:flutter_kita/utils/formatters.dart';
 
 class RepairDetailCard extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -80,19 +81,19 @@ class RepairDetailCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             RepairInfoRow(
-              label: 'Tanggal Selesai',
-              value: data['completedAt']?.toString() ?? '-',
+              label: "Tanggal Selesai",
+              value: Formatters.formatDate(data['completedAt']),
             ),
             const SizedBox(height: 8),
             RepairInfoRow(label: 'Rincian', value: detailPart),
             const SizedBox(height: 8),
             RepairInfoRow(
-              label: 'Biaya',
+              label: "Biaya",
               value: isWarranty
-                  ? 'Gratis (Garansi)'
+                  ? "Gratis (Garansi)"
                   : cost == null
-                  ? '-'
-                  : cost.toString(),
+                  ? "-"
+                  : Formatters.formatRupiah(cost),
             ),
           ],
 
