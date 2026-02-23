@@ -8,7 +8,6 @@ import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
 import 'package:flutter_kita/pages/inventory/inventory_page.dart';
 import 'package:flutter_kita/services/user/user_service.dart';
-import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/home/home_service.dart';
 import 'package:flutter_kita/repositories/home/firestore_home_repository.dart';
 import 'widgets/home_header.dart';
@@ -18,7 +17,8 @@ import 'widgets/repair_progress_card.dart';
 import 'widgets/repair_chart_card.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final UserService userService;
+  const HomePage({super.key, required this.userService});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -26,7 +26,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final HomeService _homeService;
-  late final UserService _userService;
   late final Future<RepairSummaryModel> _repairSummaryFuture;
   late final Future<WeeklyRepairChartModel> _weeklyChartFuture;
 
@@ -45,7 +44,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _homeService = HomeService(FirestoreHomeRepository());
-    _userService = UserService(FirestoreUserRepository());
     _repairSummaryFuture = _homeService.repairSummary(30);
     _weeklyChartFuture = _homeService.weeklyRepairData();
   }
@@ -121,7 +119,7 @@ class _HomePageState extends State<HomePage> {
         key: _scaffoldKey, // <--- root scaffold key
         extendBody: true,
         // Pindahkan endDrawer ke sini agar drawer muncul di atas bottomNavigationBar
-        endDrawer: const NavigationDrawerWidget(),
+        endDrawer: NavigationDrawerWidget(userService: widget.userService),
         body: IndexedStack(index: _currentIndex, children: pages),
         bottomNavigationBar: NavigationBottomWidget(
           activeIndex: _currentIndex,
@@ -153,11 +151,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  UserService get _userService => widget.userService;
   Widget _header() {
-    return StreamBuilder<UserModel>(
-      stream: _userService.currentUser(),
+    return StreamBuilder<UserModel?>(
+      stream: _userService.currentUserProfile,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (!snapshot.hasData || snapshot.data == null) {
           return const SizedBox();
         }
 

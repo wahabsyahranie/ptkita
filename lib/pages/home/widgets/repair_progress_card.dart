@@ -31,6 +31,11 @@ class RepairProgressCard extends StatelessWidget {
                 'Ringkasan Perbaikan',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 8),
+              const Text(
+                '30 hari terakhir',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+              ),
               const SizedBox(height: 20),
               _progressRow(
                 'Dalam perbaikan',
