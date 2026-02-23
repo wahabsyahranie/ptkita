@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../models/repair/weekly_repair_chart_model.dart';
+import '../../../models/repair/repair_chart_model.dart';
 import '../../../styles/colors.dart';
 
 class RepairChartCard extends StatelessWidget {
-  final Future<WeeklyRepairChartModel> future;
+  final Future<RepairChartModel> future;
   final String chartMode;
   final ValueChanged<String> onModeChanged;
 
@@ -30,7 +30,7 @@ class RepairChartCard extends StatelessWidget {
           const SizedBox(height: 20),
           _legend(),
           const SizedBox(height: 16),
-          FutureBuilder<WeeklyRepairChartModel>(
+          FutureBuilder<RepairChartModel>(
             future: future,
             builder: (context, snap) {
               if (!snap.hasData) {
@@ -57,9 +57,14 @@ class RepairChartCard extends StatelessWidget {
         DropdownButton<String>(
           value: chartMode,
           underline: const SizedBox(),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
           items: const [
-            DropdownMenuItem(value: 'weekly', child: Text('Mingguan')),
-            DropdownMenuItem(value: 'monthly', child: Text('Bulanan')),
+            DropdownMenuItem(value: 'weekly', child: Text("Mingguan")),
+            DropdownMenuItem(value: 'quarterly', child: Text("Kuartalan")),
           ],
           onChanged: (value) {
             if (value != null) onModeChanged(value);
@@ -81,7 +86,7 @@ class RepairChartCard extends StatelessWidget {
     );
   }
 
-  Widget _buildChart(WeeklyRepairChartModel model) {
+  Widget _buildChart(RepairChartModel model) {
     final maxY = _calculateMaxY([
       model.warranty,
       model.nonWarranty,
@@ -112,16 +117,26 @@ class RepairChartCard extends StatelessWidget {
                 showTitles: true,
                 interval: 1,
                 getTitlesWidget: (value, meta) {
-                  const titles = ['M1', 'M2', 'M3', 'M4'];
-                  if (value.toInt() >= 0 && value.toInt() < titles.length) {
+                  final index = value.toInt();
+
+                  List<String> titles;
+
+                  if (chartMode == 'weekly') {
+                    titles = ['M1', 'M2', 'M3', 'M4'];
+                  } else {
+                    titles = ['Q1', 'Q2', 'Q3', 'Q4'];
+                  }
+
+                  if (index >= 0 && index < titles.length) {
                     return Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        titles[value.toInt()],
+                        titles[index],
                         style: const TextStyle(fontSize: 12),
                       ),
                     );
                   }
+
                   return const SizedBox();
                 },
               ),
@@ -157,6 +172,7 @@ class RepairChartCard extends StatelessWidget {
         (i) => FlSpot(i.toDouble(), values[i].toDouble()),
       ),
       isCurved: true,
+      curveSmoothness: 0.1, // 👈 kecilkan dari default (0.35)
       color: color,
       barWidth: 3,
       dotData: const FlDotData(show: true),

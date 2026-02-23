@@ -1,6 +1,6 @@
 import 'package:flutter_kita/repositories/home/home_repository.dart';
 import 'package:flutter_kita/models/repair/repair_summary_model.dart';
-import 'package:flutter_kita/models/repair/weekly_repair_chart_model.dart';
+import 'package:flutter_kita/models/repair/repair_chart_model.dart';
 
 class HomeService {
   final HomeRepository repository;
@@ -19,6 +19,6 @@ class HomeService {
   Future<RepairSummaryModel> repairSummary(int days) =>
       repository.getRepairSummary(days);
 
-  Future<WeeklyRepairChartModel> weeklyRepairData() =>
-      repository.getWeeklyRepairData();
+  Future<RepairChartModel> chartData(String mode) =>
+      repository.getChartData(mode);
 }
