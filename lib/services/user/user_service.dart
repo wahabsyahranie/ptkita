@@ -11,13 +11,12 @@ class UserService {
   Stream<User?> get authState => repository.authStateChanges();
 
   /// Stream profile user berdasarkan auth state
-  Stream<UserModel?> get currentUserProfile =>
-      repository.authStateChanges().asyncExpand((user) {
-        if (user == null) {
-          return Stream.value(null);
-        }
-        return repository.getUserProfile(user.uid);
-      });
+  Stream<UserModel?> get currentUserProfile => authState.asyncExpand((user) {
+    if (user == null) {
+      return Stream.value(null);
+    }
+    return repository.getUserProfile(user.uid);
+  });
 
   /// Logout
   Future<void> logout() => repository.signOut();
@@ -25,9 +24,7 @@ class UserService {
   /// Login
   Future<void> login({required String phone, required String password}) async {
     final email = "$phone@ptkita.com";
-    print("LOGIN DIPANGGIL DENGAN $email");
 
     await repository.signIn(email: email, password: password);
-    print("LOGIN BERHASIL");
   }
 }
