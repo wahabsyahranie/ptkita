@@ -110,9 +110,8 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       sku: _selectedItemSku,
       intervalDays: intervalDays,
       priority: _selectedPriority!,
-      status: widget.initialItem?.status ?? 'pending',
+      status: widget.initialItem?.status ?? '',
       lastMaintenanceAt: widget.initialItem?.lastMaintenanceAt,
-      nextMaintenanceAt: widget.initialItem?.nextMaintenanceAt,
       tasks: tasks,
     );
 

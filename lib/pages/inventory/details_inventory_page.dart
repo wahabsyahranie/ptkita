@@ -3,28 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
+import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
 
 class DetailsInventoryPage extends StatefulWidget {
   final String itemId;
-  final InventoryService service;
 
-  const DetailsInventoryPage({
-    super.key,
-    required this.itemId,
-    required this.service,
-  });
+  const DetailsInventoryPage({super.key, required this.itemId});
 
   @override
   State<DetailsInventoryPage> createState() => _DetailsInventoryPageState();
 }
 
 class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
+  late final InventoryService _service;
   @override
   void initState() {
     super.initState();
+    _service = InventoryService(FirestoreInventoryRepository());
   }
 
   /// Membatasi text
@@ -35,7 +33,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Item?>(
-      stream: widget.service.streamItemById(widget.itemId),
+      stream: _service.streamItemById(widget.itemId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -96,10 +94,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                       confirmText: "Hapus",
                       isDestructive: true,
                       onConfirm: () async {
-                        await widget.service.deleteItemById(
-                          id: item.id!,
-                          imageUrl: item.imageUrl,
-                        );
+                        await _service.deleteItem(item.id!);
 
                         if (context.mounted) {
                           Navigator.pop(context);
@@ -120,7 +115,6 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
   }
 
   Widget _buildContent(Item item) {
-    final service = widget.service;
     final name = item.name ?? '-';
     final sku = item.sku ?? '-';
     final price = item.price ?? 0;
@@ -207,7 +201,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("Harga", service.formatCurrency(price)),
+                _rowInfo("Harga", _service.formatCurrency(price)),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 

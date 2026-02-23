@@ -10,11 +10,17 @@ class MaintenanceService {
   MaintenanceService(this._repository);
 
   // =========================================================
-  // ?? STREAM ??
+  // ====================== STREAM LIST ======================
   // =========================================================
 
-  Stream<List<Maintenance>> streamMaintenance() {
-    return _repository.streamMaintenance();
+  Stream<List<Maintenance>> streamMaintenance({
+    MaintenanceFilter? filter,
+    String searchQuery = '',
+  }) {
+    return _repository.streamMaintenance().map((items) {
+      final filtered = _applyFilter(items, filter);
+      return _applySearch(filtered, searchQuery);
+    });
   }
 
   Stream<List<Item>> streamItems() {
@@ -26,7 +32,7 @@ class MaintenanceService {
   }
 
   // =========================================================
-  // ?? STATUS (DERIVED - CLIENT SIDE) ??
+  // ====================== STATUS ===========================
   // =========================================================
 
   String computeStatus(Maintenance maintenance) {
@@ -39,10 +45,10 @@ class MaintenanceService {
   }
 
   // =========================================================
-  // ?? FILTER ??
+  // ====================== FILTER ===========================
   // =========================================================
 
-  List<Maintenance> applyFilter(
+  List<Maintenance> _applyFilter(
     List<Maintenance> items,
     MaintenanceFilter? filter,
   ) {
@@ -54,25 +60,19 @@ class MaintenanceService {
       final next = m.nextMaintenanceAt?.toDate();
       if (next == null) return false;
 
-      // 🔹 Filter Status
+      // Status filter
       if (filter.statuses.isNotEmpty) {
-        final isLate = next.isBefore(now);
-        final isScheduled = next.isAfter(now);
-
-        final statusMatch =
-            (filter.statuses.contains('terlambat') && isLate) ||
-            (filter.statuses.contains('terjadwal') && isScheduled);
-
-        if (!statusMatch) return false;
+        final status = computeStatus(m);
+        if (!filter.statuses.contains(status)) return false;
       }
 
-      // 🔹 Filter Priority
+      // Priority filter
       if (filter.priorities.isNotEmpty &&
           !filter.priorities.contains(m.priority)) {
         return false;
       }
 
-      // 🔹 Filter Time Range
+      // Time range filter
       if (filter.timeRange != null &&
           next.isAfter(now.add(filter.timeRange!))) {
         return false;
@@ -83,10 +83,10 @@ class MaintenanceService {
   }
 
   // =========================================================
-  // ?? SEARCH ??
+  // ====================== SEARCH ===========================
   // =========================================================
 
-  List<Maintenance> applySearch(List<Maintenance> items, String query) {
+  List<Maintenance> _applySearch(List<Maintenance> items, String query) {
     if (query.isEmpty) return items;
 
     final q = query.toLowerCase();
@@ -99,33 +99,25 @@ class MaintenanceService {
   }
 
   // =========================================================
-  // ?? SAVE (CREATE / UPDATE) ??
+  // ====================== SAVE =============================
   // =========================================================
 
   Future<void> saveMaintenance({required Maintenance maintenance}) async {
-    final nextMaintenance = calculateNextMaintenance(
+    final nextMaintenance = _calculateNextMaintenance(
       lastMaintenance: maintenance.lastMaintenanceAt?.toDate(),
       intervalDays: maintenance.intervalDays,
     );
 
-    final updatedMaintenance = Maintenance(
-      id: maintenance.id,
-      itemId: maintenance.itemId,
-      itemName: maintenance.itemName,
-      sku: maintenance.sku,
-      intervalDays: maintenance.intervalDays,
-      priority: maintenance.priority,
-      status: maintenance.status,
-      lastMaintenanceAt: maintenance.lastMaintenanceAt,
+    final updatedMaintenance = maintenance.copyWith(
+      status: maintenance.status.isEmpty ? 'pending' : maintenance.status,
       nextMaintenanceAt: nextMaintenance,
-      tasks: maintenance.tasks,
     );
 
     await _repository.save(updatedMaintenance);
   }
 
   // =========================================================
-  // ?? DELETE ??
+  // ====================== DELETE ===========================
   // =========================================================
 
   Future<void> deleteById(String id) {
@@ -133,39 +125,35 @@ class MaintenanceService {
   }
 
   // =========================================================
-  // ?? FINISH MAINTENANCE ??
+  // ====================== FINISH ===========================
   // =========================================================
 
-  Future<void> finishMaintenance(Maintenance maintenance) {
-    return _repository.finishMaintenance(
-      maintenance: maintenance,
-      completedAt: DateTime.now(),
+  Future<void> finishMaintenance(Maintenance maintenance) async {
+    final now = DateTime.now();
+
+    final updated = maintenance.copyWith(
+      status: 'selesai',
+      lastMaintenanceAt: Timestamp.fromDate(now),
+      nextMaintenanceAt: _calculateNextMaintenance(
+        lastMaintenance: now,
+        intervalDays: maintenance.intervalDays,
+      ),
     );
+
+    await _repository.save(updated);
   }
 
   // =========================================================
-  // ?? IMAGE ??
+  // ====================== DATE LOGIC =======================
   // =========================================================
 
-  Future<String?> getItemImageUrl(String itemId) {
-    return _repository.getItemImageUrl(itemId);
-  }
-
-  // =========================================================
-  // ?? DATE LOGIC ??
-  // =========================================================
-
-  Timestamp calculateNextMaintenance({
+  Timestamp _calculateNextMaintenance({
     required DateTime? lastMaintenance,
     required int intervalDays,
   }) {
     final baseDate = lastMaintenance ?? DateTime.now();
     final nextDate = baseDate.add(Duration(days: intervalDays));
     return Timestamp.fromDate(nextDate);
-  }
-
-  DateTime? extractLastMaintenance(Maintenance? maintenance) {
-    return maintenance?.lastMaintenanceAt?.toDate();
   }
 
   String formatLastMaintenance(Maintenance? maintenance) {

@@ -24,8 +24,7 @@ class InventoryCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                DetailsInventoryPage(itemId: item.id!, service: service),
+            builder: (_) => DetailsInventoryPage(itemId: item.id!),
           ),
         );
       },
