@@ -18,9 +18,8 @@ class InventoryService {
     }
   }
 
-  Future<void> deleteItem(Item item) async {
-    if (item.id == null) return;
-    await _repository.deleteItem(item.id!, imageUrl: item.imageUrl);
+  Future<void> deleteItemById({required String id, String? imageUrl}) {
+    return _repository.deleteItem(id, imageUrl: imageUrl);
   }
 
   String formatCurrency(int value) {

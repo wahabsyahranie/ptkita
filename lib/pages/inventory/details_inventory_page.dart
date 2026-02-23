@@ -1,11 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
-import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 
 class DetailsInventoryPage extends StatefulWidget {
   final String itemId;
@@ -80,33 +80,33 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
 
               /// DELETE
               IconButton(
-                onPressed: () async {
-                  final ok = await showDialog<bool>(
+                onPressed: () {
+                  showModalBottomSheet(
                     context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: MyColors.white,
-                      title: const Text('Hapus item?'),
-                      content: const Text('Item akan dihapus permanen.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Batal'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Hapus'),
-                        ),
-                      ],
+                    isScrollControlled: true,
+                    backgroundColor: MyColors.white,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (_) => ConfirmationSheet(
+                      title: "Hapus item?",
+                      description: "Item akan dihapus permanen.",
+                      confirmText: "Hapus",
+                      isDestructive: true,
+                      onConfirm: () async {
+                        await widget.service.deleteItemById(
+                          id: item.id!,
+                          imageUrl: item.imageUrl,
+                        );
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      },
                     ),
                   );
-
-                  if (ok == true) {
-                    await widget.service.deleteItem(item);
-
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  }
                 },
                 icon: const Icon(Icons.delete),
               ),
@@ -120,7 +120,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
   }
 
   Widget _buildContent(Item item) {
-    final service = InventoryService(FirestoreInventoryRepository());
+    final service = widget.service;
     final name = item.name ?? '-';
     final sku = item.sku ?? '-';
     final price = item.price ?? 0;
