@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final UserService userService;
+
+  const LoginPage({super.key, required this.userService});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -33,8 +35,6 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
   Future<void> _login() async {
     setState(() {
       _phoneError = null;
@@ -57,24 +57,12 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      final email = "$phone@ptkita.com";
-
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
-
-      // ✅ HANYA pop jika sukses
-      if (!mounted) return;
-      Navigator.of(context).pop();
-    } on FirebaseAuthException catch (e) {
+      await widget.userService.login(phone: phone, password: password);
+    } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        if (e.code == 'user-not-found') {
-          _phoneError = "Akun tidak ditemukan";
-        } else if (e.code == 'wrong-password') {
-          _passwordError = "Password salah";
-        } else {
-          _passwordError = "Login gagal";
-        }
+        _passwordError = "Login gagal";
       });
     } finally {
       if (mounted) {

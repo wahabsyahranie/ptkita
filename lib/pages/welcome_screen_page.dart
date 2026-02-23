@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/login_page.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class WelcomeScreenPage extends StatefulWidget {
-  const WelcomeScreenPage({super.key});
+  final UserService userService;
+  const WelcomeScreenPage({super.key, required this.userService});
 
   @override
   State<WelcomeScreenPage> createState() => _WelcomeScreenPageState();
@@ -77,7 +79,9 @@ class _WelcomeScreenPageState extends State<WelcomeScreenPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  MaterialPageRoute(
+                    builder: (_) => LoginPage(userService: widget.userService),
+                  ),
                 );
               },
               child: Container(

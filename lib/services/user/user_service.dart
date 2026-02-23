@@ -21,4 +21,13 @@ class UserService {
 
   /// Logout
   Future<void> logout() => repository.signOut();
+
+  /// Login
+  Future<void> login({required String phone, required String password}) async {
+    final email = "$phone@ptkita.com";
+    print("LOGIN DIPANGGIL DENGAN $email");
+
+    await repository.signIn(email: email, password: password);
+    print("LOGIN BERHASIL");
+  }
 }
