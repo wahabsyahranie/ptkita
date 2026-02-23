@@ -13,7 +13,7 @@ class AnalysisSuccessPage extends StatefulWidget {
   final String label;
   final double confidence;
   final Map<String, dynamic> box;
-  final Item item; // 🔥 cukup kirim object ini saja
+  final Item item;
 
   const AnalysisSuccessPage({
     super.key,
@@ -52,216 +52,204 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
 
   @override
   Widget build(BuildContext context) {
-    const double containerWidth = 325;
-    const double containerHeight = 280;
-
     return Scaffold(
       backgroundColor: MyColors.white,
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              /// ============================
+              /// =========================
               /// IMAGE + BOUNDING BOX
-              /// ============================
-              SizedBox(
-                width: containerWidth,
-                height: containerHeight,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: _imageInfo == null
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: MyColors.secondary,
-                          ),
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final originalWidth = _imageInfo!.width.toDouble();
-                            final originalHeight = _imageInfo!.height
-                                .toDouble();
+              /// =========================
+              _buildImageSection(),
 
-                            final containerWidth = constraints.maxWidth;
-                            final containerHeight = constraints.maxHeight;
+              const SizedBox(height: 32),
 
-                            // Rasio asli gambar
-                            final imageRatio = originalWidth / originalHeight;
-                            final containerRatio =
-                                containerWidth / containerHeight;
+              /// =========================
+              /// DATA CARD
+              /// =========================
+              _buildInfoCard(),
 
-                            double displayWidth;
-                            double displayHeight;
+              const SizedBox(height: 32),
 
-                            if (imageRatio > containerRatio) {
-                              displayWidth = containerWidth;
-                              displayHeight = containerWidth / imageRatio;
-                            } else {
-                              displayHeight = containerHeight;
-                              displayWidth = containerHeight * imageRatio;
-                            }
+              /// =========================
+              /// BUTTONS
+              /// =========================
+              _buildButtons(),
 
-                            final offsetX = (containerWidth - displayWidth) / 2;
-                            final offsetY =
-                                (containerHeight - displayHeight) / 2;
-
-                            final scale = displayWidth / originalWidth;
-
-                            final x1 = widget.box['x1'] * scale + offsetX;
-                            final y1 = widget.box['y1'] * scale + offsetY;
-                            final x2 = widget.box['x2'] * scale + offsetX;
-                            final y2 = widget.box['y2'] * scale + offsetY;
-
-                            return Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: Image.file(
-                                    File(widget.imageFile.path),
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                                Positioned(
-                                  left: x1,
-                                  top: y1,
-                                  child: Container(
-                                    width: x2 - x1,
-                                    height: y2 - y1,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Colors.red,
-                                        width: 3,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// ============================
-              /// DATA RINGKAS
-              /// ============================
-              Container(
-                width: 361,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 22,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: MyColors.secondary, width: 1),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _LabelField(
-                      label: "Nama Barang",
-                      value: widget.item.name ?? '-',
-                    ),
-
-                    const SizedBox(height: 12),
-                    _LabelField(label: "SKU", value: widget.item.sku ?? '-'),
-
-                    const SizedBox(height: 12),
-                    _LabelField(
-                      label: "Stok",
-                      value: (widget.item.stock ?? 0).toString(),
-                    ),
-
-                    const SizedBox(height: 18),
-                    _LabelField(
-                      label: "Confidence",
-                      value:
-                          "${(widget.confidence * 100).toStringAsFixed(2)} %",
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              /// ============================
-              /// DETAIL BUTTON
-              /// ============================
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DetailsInventoryPage(item: widget.item),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    height: 55,
-                    decoration: BoxDecoration(
-                      color: MyColors.secondary,
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      "Detail Barang",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: MyColors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              /// ============================
-              /// AMBIL ULANG
-              /// ============================
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 55),
-                    side: const BorderSide(color: MyColors.secondary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CapturePage()),
-                    );
-                  },
-                  child: const Text(
-                    "Ambil Ulang",
-                    style: TextStyle(
-                      color: MyColors.secondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 30),
+              const SizedBox(height: 32),
             ],
           ),
         ),
       ),
     );
   }
+
+  /// =============================================
+  /// IMAGE SECTION
+  /// =============================================
+  Widget _buildImageSection() {
+    return SizedBox(
+      width: double.infinity,
+      height: 280,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: _imageInfo == null
+            ? const Center(
+                child: CircularProgressIndicator(color: MyColors.secondary),
+              )
+            : FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: _imageInfo!.width.toDouble(),
+                  height: _imageInfo!.height.toDouble(),
+                  child: Stack(
+                    children: [
+                      Image.file(
+                        File(widget.imageFile.path),
+                        width: _imageInfo!.width.toDouble(),
+                        height: _imageInfo!.height.toDouble(),
+                        fit: BoxFit.fill,
+                      ),
+
+                      /// Bounding Box (Fix All Device)
+                      Positioned(
+                        left: widget.box['x1'].toDouble(),
+                        top: widget.box['y1'].toDouble(),
+                        child: Container(
+                          width: widget.box['x2'] - widget.box['x1'],
+                          height: widget.box['y2'] - widget.box['y1'],
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.red, width: 3),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+  /// =============================================
+  /// INFO CARD
+  /// =============================================
+  Widget _buildInfoCard() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: MyColors.secondary),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _LabelField(label: "Nama Barang", value: widget.item.name ?? '-'),
+
+              const SizedBox(height: 16),
+
+              _LabelField(label: "SKU", value: widget.item.sku ?? '-'),
+
+              const SizedBox(height: 16),
+
+              _LabelField(
+                label: "Stok",
+                value: (widget.item.stock ?? 0).toString(),
+              ),
+
+              const SizedBox(height: 20),
+
+              _LabelField(
+                label: "Confidence",
+                value: "${(widget.confidence * 100).toStringAsFixed(2)} %",
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// =============================================
+  /// BUTTON SECTION
+  /// =============================================
+  Widget _buildButtons() {
+    return Column(
+      children: [
+        /// DETAIL BUTTON
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MyColors.secondary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(40),
+              ),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DetailsInventoryPage(item: widget.item),
+                ),
+              );
+            },
+            child: const Text(
+              "Detail Barang",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: MyColors.white,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        /// RETAKE BUTTON
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: MyColors.secondary),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(40),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const CapturePage()),
+              );
+            },
+            child: const Text(
+              "Ambil Ulang",
+              style: TextStyle(
+                color: MyColors.secondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-/// ============================
+/// =============================================
 /// LABEL FIELD WIDGET
-/// ============================
+/// =============================================
 class _LabelField extends StatelessWidget {
   final String label;
   final String value;
@@ -277,13 +265,15 @@ class _LabelField extends StatelessWidget {
           label,
           style: const TextStyle(fontSize: 13, color: Colors.black54),
         ),
-        const SizedBox(height: 6),
+
+        const SizedBox(height: 8),
+
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: MyColors.secondary.withOpacity(0.5)),
+            border: Border.all(color: MyColors.secondary.withOpacity(0.4)),
             color: MyColors.tertiary.withOpacity(0.35),
           ),
           child: Text(

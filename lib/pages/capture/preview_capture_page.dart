@@ -14,18 +14,23 @@ import 'package:flutter_kita/models/inventory/item_model.dart';
 class PreviewCapturePage extends StatefulWidget {
   final XFile imageFile;
 
-  const PreviewCapturePage({super.key, required this.imageFile});
+  const PreviewCapturePage({
+    super.key,
+    required this.imageFile,
+  });
 
   @override
-  State<PreviewCapturePage> createState() => _PreviewCapturePageState();
+  State<PreviewCapturePage> createState() =>
+      _PreviewCapturePageState();
 }
 
-class _PreviewCapturePageState extends State<PreviewCapturePage> {
+class _PreviewCapturePageState
+    extends State<PreviewCapturePage> {
   bool isLoading = false;
 
-  // ==========================================================
-  // ANALYZE IMAGE (Flutter → Flask → Firestore)
-  // ==========================================================
+  // ===============================
+  // ANALYZE IMAGE
+  // ===============================
   Future<void> analyzeImage() async {
     if (isLoading) return;
 
@@ -34,57 +39,92 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
     try {
       final file = File(widget.imageFile.path);
 
-      // 🔥 1. Kirim ke Flask
-      final result = await DetectionService.detect(file);
+      // 1️⃣ Kirim ke Flask
+      final result =
+          await DetectionService.detect(file);
 
       if (!mounted) return;
 
-      if (result['status'] == 'success') {
-        final String label = result['label'];
+      print("DECODE RESULT: $result");
 
-        // 🔥 2. Query Firestore
-        final Item? item = await FirestoreService.getItemByName(label);
+      final List predictions =
+          result['predictions'] ?? [];
 
-        if (!mounted) return;
-
-        // 🔥 3. Jika tidak ditemukan di Firestore
-        if (item == null) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AnalysisFailPage(imageFile: widget.imageFile),
-            ),
-          );
-          return;
-        }
-
-        // 🔥 4. Jika ditemukan → ke success page
+      // 2️⃣ Jika tidak ada prediksi
+      if (predictions.isEmpty) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => AnalysisSuccessPage(
-              imageFile: widget.imageFile,
-              label: result['label'],
-              confidence: (result['confidence'] as num).toDouble(),
-              box: result['box'],
-              item: item,
-            ),
+            builder: (_) =>
+                AnalysisFailPage(
+                    imageFile: widget.imageFile),
           ),
         );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AnalysisFailPage(imageFile: widget.imageFile),
-          ),
-        );
+        return;
       }
-    } catch (e) {
+
+      // 3️⃣ Ambil detection pertama
+      final first = predictions.first;
+
+      final String label = first['class'];
+      final double confidence =
+          (first['confidence'] as num)
+              .toDouble();
+
+      final Map<String, dynamic> box = {
+        'x1': first['x1'],
+        'y1': first['y1'],
+        'x2': first['x2'],
+        'y2': first['y2'],
+      };
+
+      print("Label YOLO: $label");
+
+      // 4️⃣ Query Firestore
+      final Item? item =
+          await FirestoreService
+              .getItemByName(label);
+
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
+      if (item == null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                AnalysisFailPage(
+                    imageFile: widget.imageFile),
+          ),
+        );
+        return;
+      }
+
+      // 5️⃣ Success
+      Navigator.pushReplacement(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Gagal menghubungi server")));
+        MaterialPageRoute(
+          builder: (_) =>
+              AnalysisSuccessPage(
+            imageFile: widget.imageFile,
+            label: label,
+            confidence: confidence,
+            box: box,
+            item: item,
+          ),
+        ),
+      );
+    } catch (e) {
+      print("ERROR ANALYZE: $e");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          content: Text(
+              "Gagal menghubungi server"),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -92,9 +132,9 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
     }
   }
 
-  // ==========================================================
+  // ===============================
   // UI
-  // ==========================================================
+  // ===============================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,24 +144,29 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
           children: [
             const SizedBox(height: 16),
 
-            // ======================
-            // TOP BAR
-            // ======================
+            // BACK BUTTON
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding:
+                  const EdgeInsets.symmetric(
+                      horizontal: 16),
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () =>
+                        Navigator.pop(context),
                     child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: const BoxDecoration(
-                        color: MyColors.secondary,
+                      padding:
+                          const EdgeInsets.all(12),
+                      decoration:
+                          const BoxDecoration(
+                        color:
+                            MyColors.secondary,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.arrow_back,
-                        color: MyColors.white,
+                        color:
+                            MyColors.white,
                       ),
                     ),
                   ),
@@ -131,21 +176,29 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
 
             const SizedBox(height: 30),
 
-            // ======================
             // IMAGE PREVIEW
-            // ======================
             Expanded(
               child: Center(
                 child: Container(
                   width: 325,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: MyColors.secondary, width: 1),
+                  decoration:
+                      BoxDecoration(
+                    borderRadius:
+                        BorderRadius
+                            .circular(22),
+                    border: Border.all(
+                      color:
+                          MyColors.secondary,
+                      width: 1,
+                    ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius:
+                        BorderRadius
+                            .circular(20),
                     child: Image.file(
-                      File(widget.imageFile.path),
+                      File(widget
+                          .imageFile.path),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -155,17 +208,20 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
 
             const SizedBox(height: 20),
 
-            // ======================
-            // AMBIL ULANG
-            // ======================
+            // RETAKE BUTTON
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+              padding:
+                  const EdgeInsets.symmetric(
+                      horizontal: 30),
               child: PrimaryOutlineButton(
                 text: "Ambil Ulang",
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const CapturePage()),
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const CapturePage(),
+                    ),
                   );
                 },
               ),
@@ -173,38 +229,61 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
 
             const SizedBox(height: 16),
 
-            // ======================
-            // ANALISIS BUTTON
-            // ======================
+            // ANALYZE BUTTON
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+              padding:
+                  const EdgeInsets.symmetric(
+                      horizontal: 30),
               child: GestureDetector(
-                onTap: isLoading ? null : analyzeImage,
+                onTap:
+                    isLoading
+                        ? null
+                        : analyzeImage,
                 child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: MyColors.secondary,
-                    borderRadius: BorderRadius.circular(28),
+                  width:
+                      double.infinity,
+                  padding:
+                      const EdgeInsets
+                          .symmetric(
+                    vertical: 16,
+                  ),
+                  decoration:
+                      BoxDecoration(
+                    color:
+                        MyColors.secondary,
+                    borderRadius:
+                        BorderRadius
+                            .circular(28),
                   ),
                   child: Center(
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            "Analisis",
-                            style: TextStyle(
-                              color: MyColors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    child:
+                        isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(
+                                  color:
+                                      Colors
+                                          .white,
+                                  strokeWidth:
+                                      2,
+                                ),
+                              )
+                            : const Text(
+                                "Analisis",
+                                style:
+                                    TextStyle(
+                                  color:
+                                      MyColors
+                                          .white,
+                                  fontSize:
+                                      16,
+                                  fontWeight:
+                                      FontWeight
+                                          .bold,
+                                ),
+                              ),
                   ),
                 ),
               ),
