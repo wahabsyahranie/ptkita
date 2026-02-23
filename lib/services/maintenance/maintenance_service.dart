@@ -128,7 +128,7 @@ class MaintenanceService {
   // ?? DELETE ??
   // =========================================================
 
-  Future<void> deleteMaintenance(String id) {
+  Future<void> deleteById(String id) {
     return _repository.deleteMaintenance(id);
   }
 

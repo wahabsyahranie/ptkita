@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
@@ -130,10 +131,30 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
               // DELETE
               IconButton(
                 padding: const EdgeInsets.only(right: 20),
-                onPressed: () async {
-                  await _service.deleteMaintenance(maintenance.id);
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: MyColors.white,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (_) => ConfirmationSheet(
+                      title: "Hapus perawatan?",
+                      description: "Data perawatan akan dihapus permanen.",
+                      confirmText: "Hapus",
+                      isDestructive: true,
+                      onConfirm: () async {
+                        await _service.deleteById(maintenance.id);
+
+                        if (!context.mounted) return;
+
+                        Navigator.pop(context); // tutup sheet
+                      },
+                    ),
+                  );
                 },
                 icon: Container(
                   decoration: BoxDecoration(
