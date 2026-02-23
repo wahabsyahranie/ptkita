@@ -208,11 +208,11 @@ class _InventoryFormState extends State<FormInventoryPage> {
         sku: sku,
         price: price,
         stock: stock,
-        type: _selectedType ?? 'unit',
         imageUrl: _existingImageUrl,
         description: desc.isEmpty ? null : desc,
-        merk: _selectedMerk ?? 'nomerk',
         locationCode: location,
+        type: _selectedType,
+        merk: _selectedMerk,
       );
 
       await _service.saveItem(item, imageFile: _imageFile);

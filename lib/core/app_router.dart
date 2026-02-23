@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_kita/pages/home/home_page.dart';
-import 'package:flutter_kita/pages/welcome_screen_page.dart';
+import 'package:flutter_kita/pages/login_page.dart';
+import '../repositories/user/firestore_user_repository.dart';
+import '../services/user/user_service.dart';
+import '../pages/home/home_page.dart';
 
 class AppRouter extends StatelessWidget {
-  const AppRouter({super.key});
+  AppRouter({super.key});
+
+  final UserService _userService = UserService(FirestoreUserRepository());
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return StreamBuilder(
+      stream: _userService.authState,
       builder: (context, snapshot) {
-        // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // Jika sudah login
         if (snapshot.hasData) {
-          return const HomePage();
+          return HomePage(userService: _userService);
         }
 
-        // Jika belum login → tampilkan Welcome dulu
-        return const WelcomeScreenPage();
+        return LoginPage(userService: _userService);
       },
     );
   }

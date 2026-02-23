@@ -174,11 +174,13 @@ class _CapturePageState extends State<CapturePage> {
               children: [
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const HomePage()),
-                      (route) => false,
-                    );
+                    //WAHAB EDIT
+                    // Navigator.pushAndRemoveUntil(
+                    //   context,
+                    //   MaterialPageRoute(builder: (_) => const HomePage()),
+                    //   (route) => false,
+                    // );
+                    Navigator.pop(context);
                   },
                   child: Container(
                     padding: const EdgeInsets.all(12),

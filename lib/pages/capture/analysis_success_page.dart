@@ -207,10 +207,7 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                       MaterialPageRoute(
                         builder: (_) =>
                             // DetailsInventoryPage(itemId: widget.item.id!),
-                            DetailsInventoryPage(
-                              itemId: widget.item.id!,
-                              service: _inventoryService,
-                            ),
+                            DetailsInventoryPage(itemId: widget.item.id!),
                       ),
                     );
                   },

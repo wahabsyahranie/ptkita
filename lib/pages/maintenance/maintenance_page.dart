@@ -181,7 +181,10 @@ class _MaintenancePageState extends State<MaintenancePage> {
       ),
       body: SafeArea(
         child: StreamBuilder<List<Maintenance>>(
-          stream: _service.streamMaintenance(),
+          stream: _service.streamMaintenance(
+            filter: _appliedFilter,
+            searchQuery: _searchQuery,
+          ),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
@@ -192,38 +195,18 @@ class _MaintenancePageState extends State<MaintenancePage> {
               );
             }
 
-            final allItems = snapshot.data!;
-            if (allItems.isEmpty) {
-              return const Center(child: Text('Belum ada perawatan.'));
-            }
+            final items = snapshot.data!;
 
-            // =========================
-            // FILTER BERDASARKAN MAINTENANCE FILTER
-            // =========================
-            final filteredByFilter = _service.applyFilter(
-              allItems,
-              _appliedFilter,
-            );
-
-            // =========================
-            // FILTER SEARCH (NAMA / SKU)
-            // =========================
-            // Search diterapkan SETELAH filter utama,
-            // agar hasil pencarian tetap relevan.
-            final filtered = _service.applySearch(
-              filteredByFilter,
-              _searchQuery,
-            );
-            if (filtered.isEmpty) {
+            if (items.isEmpty) {
               return const MaintenanceEmptyState();
             }
 
             return ListView.separated(
               padding: const EdgeInsets.all(16),
-              itemCount: filtered.length,
+              itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, idx) {
-                final main = filtered[idx];
+                final main = items[idx];
                 final status = _service.computeStatus(main);
 
                 final formattedDate = _service.formatDate(
