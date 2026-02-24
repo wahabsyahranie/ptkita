@@ -19,7 +19,7 @@ class NavigationBottomWidget extends StatelessWidget {
       color: MyColors.secondary,
       elevation: 8,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 30.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
