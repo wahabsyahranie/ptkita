@@ -73,7 +73,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                     ),
                   );
                 },
-                icon: const Icon(Icons.edit),
+                icon: const Icon(Icons.edit, color: MyColors.white),
               ),
 
               /// DELETE
@@ -103,12 +103,12 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                     ),
                   );
                 },
-                icon: const Icon(Icons.delete),
+                icon: const Icon(Icons.delete, color: MyColors.white),
               ),
             ],
           ),
 
-          body: _buildContent(item),
+          body: SafeArea(child: _buildContent(item)),
         );
       },
     );
