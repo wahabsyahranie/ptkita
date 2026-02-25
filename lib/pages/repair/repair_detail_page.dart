@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'widgets/repair_detail_card.dart';
+import 'package:flutter_kita/styles/colors.dart';
+import 'widgets/repair_receipt_view.dart';
 import 'package:flutter_kita/services/repair/repair_service.dart';
-import 'widgets/repair_status_badge.dart';
-import 'package:flutter_kita/utils/formatters.dart';
 import 'package:flutter_kita/services/repair/repair_receipt_service.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter_kita/pages/repair/widgets/complete_repair_sheet.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:flutter/rendering.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class RepairDetailPage extends StatefulWidget {
   const RepairDetailPage({super.key, required this.data, this.docId});
@@ -27,8 +27,6 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
   final TextEditingController _costCtrl = TextEditingController();
 
   final GlobalKey _receiptKey = GlobalKey();
-
-  bool _showForm = false;
 
   @override
   void initState() {
@@ -51,8 +49,6 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
 
   bool get _isSelesai =>
       (_current['status'] ?? '').toString().toLowerCase() == 'selesai';
-
-  bool get _isWarranty => (_current['repairCategory'] ?? '') == 'warranty';
 
   // ================= UPDATE STATUS =================
 
@@ -110,7 +106,6 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         _current['cost'] = costVal;
         _current['completedByName'] = result['completedByName'];
         _current['completedAt'] = result['completedAt'];
-        _showForm = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -122,6 +117,26 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         const SnackBar(content: Text('Terjadi kesalahan saat menyimpan data')),
       );
     }
+  }
+
+  Future<void> _showCompleteForm() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) {
+        return CompleteRepairSheet(
+          detailCtrl: _detailCtrl,
+          costCtrl: _costCtrl,
+          onSubmit: () async {
+            Navigator.pop(context);
+            await _markSelesai();
+          },
+        );
+      },
+    );
   }
 
   Future<Uint8List?> _captureReceiptBytes() async {
@@ -145,120 +160,46 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final dateText = Formatters.formatDate(_current['date']);
-
-    final detailPart = _current['detailPart'] ?? '';
-    final cost = _current['cost'];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Perbaikan'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: MyColors.white,
+        foregroundColor: MyColors.black,
         elevation: 0,
       ),
-      backgroundColor: const Color(0xFFF7F6F3),
+      backgroundColor: MyColors.white,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // STATUS BADGE
-            Row(
-              children: [
-                if (_isWarranty)
-                  const RepairStatusBadge(
-                    text: 'Garansi',
-                    backgroundColor: Colors.blueAccent,
-                    textColor: Colors.white,
+            // ================= RECEIPT (VISIBLE UI) =================
+            RepairReceiptView(data: _current),
+
+            if (!_isSelesai) ...[
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MyColors.secondary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-
-                const SizedBox(width: 8),
-
-                RepairStatusBadge(
-                  text: _isSelesai ? 'Selesai' : 'Belum Selesai',
-                  backgroundColor: _isSelesai ? Colors.green : Colors.orange,
-                  textColor: Colors.white,
+                  onPressed: _showCompleteForm,
+                  child: const Text(
+                    "Tandai Selesai",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: MyColors.white,
+                    ),
+                  ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // INFO CARD
-            RepaintBoundary(
-              key: _receiptKey,
-              child: RepairDetailCard(
-                data: _current,
-                isSelesai: _isSelesai,
-                isWarranty: _isWarranty,
-                dateText: dateText,
-                detailPart: detailPart,
-                cost: cost,
-                bottomSection: !_isSelesai
-                    ? Column(
-                        children: [
-                          if (!_showForm)
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _showForm = true;
-                                  });
-                                },
-                                child: const Text("Tandai Selesai"),
-                              ),
-                            ),
-
-                          if (_showForm) ...[
-                            const SizedBox(height: 16),
-
-                            TextField(
-                              controller: _detailCtrl,
-                              decoration: const InputDecoration(
-                                labelText: "Rincian Perbaikan",
-                                border: OutlineInputBorder(),
-                              ),
-                              maxLines: 3,
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            if (!_isWarranty)
-                              TextField(
-                                controller: _costCtrl,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: "Biaya",
-                                  prefixText: "Rp ",
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-
-                            const SizedBox(height: 16),
-
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _markSelesai,
-                                child: const Text("Simpan & Tandai Selesai"),
-                              ),
-                            ),
-
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _showForm = false;
-                                });
-                              },
-                              child: const Text("Batal"),
-                            ),
-                          ],
-                        ],
-                      )
-                    : null,
               ),
-            ),
+            ],
+
             if (_isSelesai) ...[
               const SizedBox(height: 20),
 
@@ -288,55 +229,23 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
                       return;
                     }
 
-                    final phone = (_current['noHp'] ?? '').toString().trim();
-                    if (phone.isEmpty) {
-                      if (!mounted) return;
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Nomor WhatsApp pelanggan tidak tersedia",
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    String formattedPhone = phone.startsWith('0')
-                        ? '62${phone.substring(1)}'
-                        : phone;
-
                     final message =
-                        "Halo ${_current['buyerName']}, berikut bukti perbaikan barang Anda.\n\nTerima kasih.";
+                        "Halo ${_current['buyerName'] ?? ''}, berikut bukti perbaikan barang Anda.\n\nTerima kasih.";
 
-                    final url = Uri.parse(
-                      "https://wa.me/$formattedPhone?text=${Uri.encodeComponent(message)}",
-                    );
-
-                    if (!mounted) return;
-
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(
-                        url,
-                        mode: LaunchMode.externalApplication,
-                      );
-
-                      if (!mounted) return;
-                      messenger.showSnackBar(
-                        const SnackBar(content: Text("Membuka WhatsApp...")),
-                      );
-                    } else {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "WhatsApp tidak tersedia di perangkat ini",
-                          ),
-                        ),
-                      );
-                    }
+                    await Share.shareXFiles([XFile(file.path)], text: message);
                   },
                 ),
               ),
             ],
+
+            // ================= HIDDEN RECEIPT (FOR CAPTURE ONLY) =================
+            Offstage(
+              offstage: true,
+              child: RepaintBoundary(
+                key: _receiptKey,
+                child: RepairReceiptView(data: _current),
+              ),
+            ),
           ],
         ),
       ),
