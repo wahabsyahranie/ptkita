@@ -13,6 +13,7 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print("PHOTO URL: ${user.photoUrl}");
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
