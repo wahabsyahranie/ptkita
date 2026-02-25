@@ -266,7 +266,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
               const Text("Jenis Perawatan"),
               const SizedBox(height: 8),
 
-              MaintenanceTaskFormSection(tasks: _tasks, onAddTask: _addTask),
+              MaintenanceTaskFormSection(tasks: _tasks, onAddTask: _addTask, onDeleteTask: _removeTask,),
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
@@ -296,5 +296,20 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
         ),
       ),
     );
+  }
+
+  void _removeTask(TaskForm task) {
+    if (_tasks.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Minimal harus ada 1 jenis perawatan')),
+      );
+      return;
+    }
+
+    setState(() {
+      task.titleCtrl.dispose();
+      task.descCtrl.dispose();
+      _tasks.remove(task);
+    });
   }
 }

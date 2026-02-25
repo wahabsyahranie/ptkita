@@ -12,11 +12,13 @@ class TaskForm {
 class MaintenanceTaskFormSection extends StatelessWidget {
   final List<TaskForm> tasks;
   final VoidCallback onAddTask;
+  final void Function(TaskForm task) onDeleteTask;
 
   const MaintenanceTaskFormSection({
     super.key,
     required this.tasks,
     required this.onAddTask,
+    required this.onDeleteTask,
   });
 
   @override
@@ -44,10 +46,28 @@ class MaintenanceTaskFormSection extends StatelessWidget {
   }
 
   Widget _buildTaskItem(TaskForm task) {
+    final isOnlyOne = tasks.length == 1;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  "Jenis Perawatan",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (!isOnlyOne)
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => onDeleteTask(task),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
           TextFormField(
             controller: task.titleCtrl,
             decoration: const InputDecoration(
