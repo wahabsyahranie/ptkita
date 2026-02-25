@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/user/user_model.dart';
+import 'package:flutter_kita/pages/about/about_page.dart';
 import 'package:flutter_kita/pages/maintenance/maintenance_page.dart';
 import 'package:flutter_kita/pages/repair/repair_history_page.dart';
 import 'package:flutter_kita/pages/transaction/transaction_history_page.dart';
@@ -62,9 +63,15 @@ class NavigationDrawerWidget extends StatelessWidget {
               icon: Icons.newspaper_sharp,
               onClicked: () => selectedItem(context, 3),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             const Divider(color: MyColors.white),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            buildMenuItem(
+              text: 'Tentang Aplikasi',
+              icon: Icons.info_outline,
+              onClicked: () => selectedItem(context, 4),
+            ),
+            const SizedBox(height: 16),
             buildMenuItem(
               text: 'Log Out',
               icon: Icons.logout,
@@ -135,6 +142,11 @@ class NavigationDrawerWidget extends StatelessWidget {
         Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const WarrantyHistoryPage()),
         );
+        break;
+      case 4:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const AboutPage()));
         break;
     }
   }

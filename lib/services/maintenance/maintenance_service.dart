@@ -41,7 +41,15 @@ class MaintenanceService {
 
     if (next == null) return 'terjadwal';
 
-    return next.isBefore(now) ? 'terlambat' : 'terjadwal';
+    // Ambil hanya tanggal (buang jam)
+    final today = DateTime(now.year, now.month, now.day);
+    final nextDate = DateTime(next.year, next.month, next.day);
+
+    if (nextDate.isBefore(today)) {
+      return 'terlambat';
+    }
+
+    return 'terjadwal';
   }
 
   // =========================================================
@@ -73,9 +81,15 @@ class MaintenanceService {
       }
 
       // Time range filter
-      if (filter.timeRange != null &&
-          next.isAfter(now.add(filter.timeRange!))) {
-        return false;
+      // Time range filter (berbasis hari kalender)
+      if (filter.timeRange != null) {
+        final startOfToday = DateTime(now.year, now.month, now.day);
+        final endOfRange = startOfToday.add(filter.timeRange!);
+
+        // next harus di dalam range kalender
+        if (next.isBefore(startOfToday) || !next.isBefore(endOfRange)) {
+          return false;
+        }
       }
 
       return true;

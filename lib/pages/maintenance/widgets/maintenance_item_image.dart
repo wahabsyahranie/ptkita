@@ -37,6 +37,26 @@ class MaintenanceItemImage extends StatelessWidget {
         height: 140,
         width: 140,
         fit: BoxFit.cover,
+
+        /// 🔥 INI YANG PENTING
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            return child; // gambar selesai load
+          }
+
+          return SizedBox(
+            height: 180,
+            child: Center(
+              child: CircularProgressIndicator(
+                color: MyColors.secondary,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
         errorBuilder: (_, __, ___) {
           return const Icon(
             Icons.broken_image,

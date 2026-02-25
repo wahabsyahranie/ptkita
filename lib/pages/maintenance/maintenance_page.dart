@@ -119,7 +119,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     Expanded(
                       child: SearchBarWidget(
                         controller: _searchCtrl,
-                        hintText: 'Cari nama atau SKU',
+                        hintText: 'Cari nama/SKU',
                         onChanged: _onSearchChanged,
                       ),
                     ),
