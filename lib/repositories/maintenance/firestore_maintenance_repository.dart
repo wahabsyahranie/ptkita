@@ -62,7 +62,9 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     if (maintenance.id.isEmpty) {
       await _collection.add(maintenance);
     } else {
-      await _collection.doc(maintenance.id).set(maintenance);
+      await _collection
+          .doc(maintenance.id)
+          .set(maintenance, SetOptions(merge: true));
     }
   }
 

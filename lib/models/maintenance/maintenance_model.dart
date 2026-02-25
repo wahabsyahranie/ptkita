@@ -10,7 +10,6 @@ class Maintenance {
   final Timestamp? lastMaintenanceAt;
   final int intervalDays;
   final String priority;
-  final String status;
   final List<MaintenanceTask> tasks;
 
   Maintenance({
@@ -22,7 +21,6 @@ class Maintenance {
     this.lastMaintenanceAt,
     required this.intervalDays,
     required this.priority,
-    required this.status,
     required this.tasks,
   });
 
@@ -50,7 +48,6 @@ class Maintenance {
       lastMaintenanceAt: data['lastMaintenanceAt'],
       intervalDays: (data['intervalDays'] as num?)?.toInt() ?? 0,
       priority: data['priority'] ?? 'rendah',
-      status: data['status'] ?? 'pending',
       tasks: tasks,
     );
   }
@@ -63,7 +60,6 @@ class Maintenance {
     'lastMaintenanceAt': lastMaintenanceAt,
     'intervalDays': intervalDays,
     'priority': priority,
-    'status': status,
     'tasks': tasks.map((e) => e.toMap()).toList(),
   };
 
@@ -74,7 +70,6 @@ class Maintenance {
     String? sku,
     int? intervalDays,
     String? priority,
-    String? status,
     Timestamp? lastMaintenanceAt,
     Timestamp? nextMaintenanceAt,
     List<MaintenanceTask>? tasks,
@@ -86,7 +81,6 @@ class Maintenance {
       sku: sku ?? this.sku,
       intervalDays: intervalDays ?? this.intervalDays,
       priority: priority ?? this.priority,
-      status: status ?? this.status,
       lastMaintenanceAt: lastMaintenanceAt ?? this.lastMaintenanceAt,
       nextMaintenanceAt: nextMaintenanceAt ?? this.nextMaintenanceAt,
       tasks: tasks ?? this.tasks,
