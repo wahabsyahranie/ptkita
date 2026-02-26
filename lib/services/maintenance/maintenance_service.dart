@@ -117,17 +117,24 @@ class MaintenanceService {
   // =========================================================
 
   Future<void> saveMaintenance({required Maintenance maintenance}) async {
-    final nextMaintenance = _calculateNextMaintenance(
-      lastMaintenance: maintenance.lastMaintenanceAt?.toDate(),
-      intervalDays: maintenance.intervalDays,
-    );
+    final isCreate = maintenance.id.isEmpty;
 
-    final updatedMaintenance = maintenance.copyWith(
-      status: maintenance.status.isEmpty ? 'pending' : maintenance.status,
-      nextMaintenanceAt: nextMaintenance,
-    );
+    if (isCreate) {
+      // 🔹 CREATE → hitung next maintenance pertama kali
+      final nextMaintenance = _calculateNextMaintenance(
+        lastMaintenance: null,
+        intervalDays: maintenance.intervalDays,
+      );
 
-    await _repository.save(updatedMaintenance);
+      final newMaintenance = maintenance.copyWith(
+        nextMaintenanceAt: nextMaintenance,
+      );
+
+      await _repository.save(newMaintenance);
+    } else {
+      // 🔹 UPDATE (edit form) → JANGAN ubah nextMaintenanceAt
+      await _repository.save(maintenance);
+    }
   }
 
   // =========================================================
@@ -146,7 +153,6 @@ class MaintenanceService {
     final now = DateTime.now();
 
     final updated = maintenance.copyWith(
-      status: 'selesai',
       lastMaintenanceAt: Timestamp.fromDate(now),
       nextMaintenanceAt: _calculateNextMaintenance(
         lastMaintenance: now,

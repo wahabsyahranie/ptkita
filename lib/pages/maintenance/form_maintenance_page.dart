@@ -110,8 +110,8 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       sku: _selectedItemSku,
       intervalDays: intervalDays,
       priority: _selectedPriority!,
-      status: widget.initialItem?.status ?? '',
       lastMaintenanceAt: widget.initialItem?.lastMaintenanceAt,
+      nextMaintenanceAt: widget.initialItem?.nextMaintenanceAt,
       tasks: tasks,
     );
 
@@ -266,7 +266,11 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
               const Text("Jenis Perawatan"),
               const SizedBox(height: 8),
 
-              MaintenanceTaskFormSection(tasks: _tasks, onAddTask: _addTask, onDeleteTask: _removeTask,),
+              MaintenanceTaskFormSection(
+                tasks: _tasks,
+                onAddTask: _addTask,
+                onDeleteTask: _removeTask,
+              ),
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
