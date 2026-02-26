@@ -23,7 +23,7 @@ class RepairReceiptView extends StatelessWidget {
 
     final String phone = (data['noHp'] ?? "-").toString();
 
-    final String kelengkapan = (data['kelengkapan'] ?? "-").toString();
+    final String kelengkapan = (data['completeness'] ?? "-").toString();
 
     final String completedAt = Formatters.formatDate(data['completedAt']);
 
