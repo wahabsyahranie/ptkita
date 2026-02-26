@@ -1,49 +1,8 @@
-// import 'dart:io';
-
-// import 'package:flutter_kita/models/inventory/item_model.dart';
-// import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
-// import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
-// import 'package:intl/intl.dart';
-
-// class InventoryService {
-//   final InventoryRepository _repository;
-
-//   InventoryService(this._repository);
-
-//   Future<void> saveItem(Item item, {File? imageFile}) async {
-//     if (item.id == null) {
-//       await _repository.addItem(item, imageFile: imageFile);
-//     } else {
-//       await _repository.updateItem(item, imageFile: imageFile);
-//     }
-//   }
-
-//   Future<void> deleteItemById({required String id, String? imageUrl}) {
-//     return _repository.deleteItem(id, imageUrl: imageUrl);
-//   }
-
-//   String formatCurrency(int value) {
-//     final formatter = NumberFormat('#,###', 'id_ID');
-//     return "Rp ${formatter.format(value)}";
-//   }
-
-//   Stream<List<Item>> streamItems({
-//     required InventoryFilter filter,
-//     required String searchQuery,
-//   }) {
-//     final normalizedQuery = searchQuery.toLowerCase().trim();
-
-//     return _repository.streamItems(
-//       filter: filter,
-//       searchQuery: normalizedQuery,
-//     );
-//   }
-
-//   Stream<Item?> streamItemById(String id) {
-//     return _repository.streamItemById(id);
-//   }
-// }
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_kita/core/enum/item_brand.dart';
+import 'package:flutter_kita/core/utils/brand_logo_mapper.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
@@ -104,11 +63,22 @@ class InventoryService {
   }
 
   // =========================================================
-  // ====================== FORMAT ===========================
+  // ====================== FORMAT UANG===========================
   // =========================================================
 
   String formatCurrency(int value) {
     final formatter = NumberFormat('#,###', 'id_ID');
     return "Rp ${formatter.format(value)}";
+  }
+
+  ImageProvider resolveImage(Item item) {
+    if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
+      return CachedNetworkImageProvider(item.imageUrl!);
+    }
+
+    final merk = ItemmerkX.fromString(item.merk);
+    final assetPath = merkLogoMapper.getAssetPath(merk);
+
+    return AssetImage(assetPath);
   }
 }

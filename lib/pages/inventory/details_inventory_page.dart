@@ -121,7 +121,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     final stock = item.stock ?? 0;
     final type = item.type ?? '-';
     final desc = item.description ?? '-';
-    final imageUrl = item.imageUrl;
+    final imageProvider = _service.resolveImage(item);
     final merk = item.merk ?? '-';
     final locationCode = item.locationCode ?? '-';
     return SingleChildScrollView(
@@ -157,19 +157,12 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                   const SizedBox(height: 10),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: imageUrl != null && imageUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            width: 230,
-                            height: 230,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.broken_image),
-                          )
-                        : _placeholder(),
+                    child: Image(
+                      image: imageProvider,
+                      width: 230,
+                      height: 230,
+                      fit: BoxFit.contain, // sarankan contain untuk logo
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Padding(

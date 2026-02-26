@@ -52,6 +52,8 @@ class Item {
     );
   }
 
+  String? get brand => null;
+
   Map<String, dynamic> toFirestore() {
     return {
       if (name != null) 'name': name,
