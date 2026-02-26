@@ -6,6 +6,8 @@ import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_empty_state.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_filter_sheet.dart';
+import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/search_bar_widget.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
@@ -39,7 +41,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
   void initState() {
     super.initState();
 
-    _service = MaintenanceService(_repository);
+    _service = MaintenanceService(_repository, InventoryService(FirestoreInventoryRepository()));
 
     _appliedFilter = const MaintenanceFilter(
       statuses: {'terlambat', 'terjadwal'},

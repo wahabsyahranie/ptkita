@@ -1,5 +1,7 @@
 // lib/models/maintenance_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 
 class Maintenance {
   final String id;
@@ -135,7 +137,17 @@ class MaintenanceTask {
 
 class MaintenanceDetail {
   final Maintenance maintenance;
-  final String? imageUrl;
+  final Item? item;
 
-  MaintenanceDetail({required this.maintenance, required this.imageUrl});
+  MaintenanceDetail({required this.maintenance, required this.item});
+}
+
+class MaintenanceDetailView {
+  final Maintenance maintenance;
+  final ImageProvider imageProvider;
+
+  MaintenanceDetailView({
+    required this.maintenance,
+    required this.imageProvider,
+  });
 }

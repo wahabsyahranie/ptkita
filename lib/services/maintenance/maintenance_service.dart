@@ -3,11 +3,13 @@ import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
 import 'package:flutter_kita/repositories/maintenance/maintenance_repository.dart';
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
 
 class MaintenanceService {
   final MaintenanceRepository _repository;
+  final InventoryService _inventoryService;
 
-  MaintenanceService(this._repository);
+  MaintenanceService(this._repository, this._inventoryService);
 
   // =========================================================
   // ====================== STREAM LIST ======================
@@ -27,8 +29,20 @@ class MaintenanceService {
     return _repository.streamItems();
   }
 
-  Stream<MaintenanceDetail?> streamMaintenanceDetail(String id) {
-    return _repository.streamMaintenanceDetail(id);
+  Stream<MaintenanceDetailView?> streamMaintenanceDetail(String id) {
+    return _repository.streamMaintenanceDetail(id).map((detail) {
+      if (detail == null) return null;
+
+      final item = detail.item;
+      if (item == null) return null;
+
+      final imageProvider = _inventoryService.resolveImage(item);
+
+      return MaintenanceDetailView(
+        maintenance: detail.maintenance,
+        imageProvider: imageProvider,
+      );
+    });
   }
 
   // =========================================================

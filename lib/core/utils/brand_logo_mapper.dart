@@ -12,7 +12,7 @@ class merkLogoMapper {
       case Itemmerk.dewalt:
         return '${_basePath}dewalt.png';
       case Itemmerk.blackdecker:
-        return '${_basePath}blackdecker.jpeg';
+        return '${_basePath}blackdecker.png';
       case Itemmerk.unknown:
         return '${_basePath}placeholder.png';
     }

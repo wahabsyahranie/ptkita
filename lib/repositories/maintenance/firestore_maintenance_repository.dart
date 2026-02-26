@@ -32,12 +32,13 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
               .doc(maintenance.itemId)
               .get();
 
-          final imageUrl = itemSnap.data()?['imageUrl'] as String?;
+          Item? item;
 
-          return MaintenanceDetail(
-            maintenance: maintenance,
-            imageUrl: imageUrl,
-          );
+          if (itemSnap.exists) {
+            item = Item.fromFirestore(itemSnap, null);
+          }
+
+          return MaintenanceDetail(maintenance: maintenance, item: item);
         });
   }
 

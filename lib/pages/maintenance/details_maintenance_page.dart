@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
+import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/services/maintenance/maintenance_service.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_task_card.dart';
@@ -27,7 +29,10 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
   @override
   void initState() {
     super.initState();
-    _service = MaintenanceService(FirestoreMaintenanceRepository());
+    _service = MaintenanceService(
+      FirestoreMaintenanceRepository(),
+      InventoryService(FirestoreInventoryRepository()),
+    );
   }
 
   // =========================
@@ -74,7 +79,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<MaintenanceDetail?>(
+    return StreamBuilder<MaintenanceDetailView?>(
       stream: _service.streamMaintenanceDetail(widget.maintenanceId),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -88,7 +93,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
 
         final detail = snapshot.data!;
         final maintenance = detail.maintenance;
-        final imageUrl = detail.imageUrl;
+        final imageProvider = detail.imageProvider;
 
         final itemName = maintenance.itemName;
         final lastMaintenance = _service.formatLastMaintenance(maintenance);
@@ -174,7 +179,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
                   maintenance,
                   itemName,
                   lastMaintenance,
-                  imageUrl,
+                  imageProvider,
                 ),
               ),
 
@@ -222,7 +227,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
     Maintenance maintenance,
     String itemName,
     String lastMaintenance,
-    String? imageUrl,
+    ImageProvider imageProvider,
   ) {
     return SingleChildScrollView(
       child: Column(
@@ -231,7 +236,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
             itemName: itemName,
             lastMaintenance: lastMaintenance,
             imageWidget: MaintenanceItemImage(
-              imageUrl: imageUrl,
+              imageProvider: imageProvider,
               isLoading: false,
             ),
           ),
