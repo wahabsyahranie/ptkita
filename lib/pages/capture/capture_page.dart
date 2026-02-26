@@ -4,7 +4,6 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'package:flutter_kita/pages/home/home_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/capture/preview_capture_page.dart';
 
@@ -82,11 +81,23 @@ class _CapturePageState extends State<CapturePage> {
   // ======================
   // NAVIGATE
   // ======================
-  void navigateToPreview(XFile image) {
-    Navigator.push(
+  Future<void> navigateToPreview(XFile image) async {
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => PreviewCapturePage(imageFile: image)),
     );
+
+    // Setelah kembali dari preview
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    await controller?.dispose();
+    controller = null;
+
+    await initCamera();
   }
 
   // ======================
@@ -146,117 +157,127 @@ class _CapturePageState extends State<CapturePage> {
   // ======================
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // CAMERA PREVIEW
-          Positioned.fill(
-            child: isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  )
-                : hasError
-                ? const Center(
-                    child: Text(
-                      'Camera unavailable',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  )
-                : CameraPreview(controller!),
-          ),
+    return WillPopScope(
+      onWillPop: () async {
+        await controller?.dispose();
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // CAMERA PREVIEW
+              Positioned.fill(
+                child: isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
+                    : hasError
+                    ? const Center(
+                        child: Text(
+                          'Camera unavailable',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      )
+                    : CameraPreview(controller!),
+              ),
 
-          // TOP BAR
-          Positioned(
-            top: 50,
-            left: 20,
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    //WAHAB EDIT
-                    // Navigator.pushAndRemoveUntil(
-                    //   context,
-                    //   MaterialPageRoute(builder: (_) => const HomePage()),
-                    //   (route) => false,
-                    // );
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      color: MyColors.secondary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back,
-                      color: MyColors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  "Scan Foto",
-                  style: TextStyle(
-                    color: MyColors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // BOTTOM BAR
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              decoration: const BoxDecoration(color: MyColors.secondary),
-              child: SizedBox(
-                height: 120,
-                child: Stack(
-                  alignment: Alignment.center,
+              // TOP BAR
+              Positioned(
+                top: 16,
+                left: 20,
+                child: Row(
                   children: [
-                    // CAMERA BUTTON
                     GestureDetector(
-                      onTap: takePhoto,
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
                       child: Container(
-                        width: 78,
-                        height: 78,
-                        decoration: BoxDecoration(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: MyColors.secondary,
                           shape: BoxShape.circle,
-                          color: MyColors.white.withValues(alpha: 0.38),
-                          border: Border.all(color: MyColors.white, width: 6),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: MyColors.white,
+                          size: 24,
                         ),
                       ),
                     ),
-
-                    // GALLERY BUTTON
-                    Positioned(
-                      left: 48,
-                      child: GestureDetector(
-                        onTap: openGallery,
-                        child: Container(
-                          width: 55,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            color: MyColors.white.withValues(alpha: 0.30),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.image, color: MyColors.white),
-                        ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      "Scan Item",
+                      style: TextStyle(
+                        color: MyColors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+
+              // BOTTOM BAR
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: BoxDecoration(
+                    color: MyColors.secondary.withOpacity(0.85),
+                  ),
+                  child: SizedBox(
+                    height: 120,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // CAMERA BUTTON
+                        GestureDetector(
+                          onTap: takePhoto,
+                          child: Container(
+                            width: 78,
+                            height: 78,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: MyColors.white.withOpacity(0.38),
+                              border: Border.all(
+                                color: MyColors.white,
+                                width: 6,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // GALLERY BUTTON
+                        Positioned(
+                          left: 48,
+                          child: GestureDetector(
+                            onTap: openGallery,
+                            child: Container(
+                              width: 55,
+                              height: 55,
+                              decoration: BoxDecoration(
+                                color: MyColors.white.withOpacity(0.30),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.image,
+                                color: MyColors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
