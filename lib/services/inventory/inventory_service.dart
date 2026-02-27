@@ -23,11 +23,39 @@ class InventoryService {
       merk: (item.merk == null || item.merk!.isEmpty) ? 'nomerk' : item.merk,
     );
 
+    // ==============================
+    // CREATE
+    // ==============================
     if (normalized.id == null || normalized.id!.isEmpty) {
-      await _repository.addItem(normalized, imageFile: imageFile);
-    } else {
-      await _repository.updateItem(normalized, imageFile: imageFile);
+      final base = normalized.movementBaseScore;
+
+      final newItem = normalized.copyWith(
+        movementAutoScore: 0,
+        movementTotalScore: base,
+      );
+
+      await _repository.addItem(newItem, imageFile: imageFile);
+      return;
     }
+
+    // ==============================
+    // UPDATE
+    // ==============================
+
+    final existing = await _repository.streamItemById(normalized.id!).first;
+
+    if (existing == null) {
+      throw Exception("Item tidak ditemukan saat update");
+    }
+
+    final newTotal = normalized.movementBaseScore + existing.movementAutoScore;
+
+    final updatedItem = normalized.copyWith(
+      movementAutoScore: existing.movementAutoScore,
+      movementTotalScore: newTotal,
+    );
+
+    await _repository.updateItem(updatedItem, imageFile: imageFile);
   }
 
   // =========================================================

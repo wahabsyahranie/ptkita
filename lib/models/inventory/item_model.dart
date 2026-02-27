@@ -12,6 +12,9 @@ class Item {
   final String? merk;
   final String? locationCode;
   final String? nameLowercase;
+  final int movementBaseScore;
+  final int movementAutoScore;
+  final int movementTotalScore;
 
   Item({
     this.id,
@@ -25,6 +28,9 @@ class Item {
     this.merk,
     this.locationCode,
     this.nameLowercase,
+    this.movementBaseScore = 0,
+    this.movementAutoScore = 0,
+    this.movementTotalScore = 0,
   });
 
   // factory sesuai contoh FlutterFire docs
@@ -49,6 +55,9 @@ class Item {
       merk: data?['merk'] as String?,
       locationCode: data?['locationCode'] as String?,
       nameLowercase: data?['name_lowercase'] as String?,
+      movementBaseScore: (data?['movementBaseScore'] ?? 0) as int,
+      movementAutoScore: (data?['movementAutoScore'] ?? 0) as int,
+      movementTotalScore: (data?['movementTotalScore'] ?? 0) as int,
     );
   }
 
@@ -66,6 +75,9 @@ class Item {
       if (merk != null) 'merk': merk,
       if (locationCode != null) 'locationCode': locationCode,
       if (nameLowercase != null) 'name_lowercase': nameLowercase,
+      'movementBaseScore': movementBaseScore,
+      'movementAutoScore': movementAutoScore,
+      'movementTotalScore': movementTotalScore,
     };
   }
 
@@ -81,6 +93,9 @@ class Item {
     String? merk,
     String? imageUrl,
     String? nameLowercase,
+    int? movementBaseScore,
+    int? movementAutoScore,
+    int? movementTotalScore,
   }) {
     return Item(
       id: id ?? this.id,
@@ -94,6 +109,9 @@ class Item {
       merk: merk ?? this.merk,
       imageUrl: imageUrl ?? this.imageUrl,
       nameLowercase: nameLowercase ?? this.nameLowercase,
+      movementBaseScore: movementBaseScore ?? this.movementBaseScore,
+      movementAutoScore: movementAutoScore ?? this.movementAutoScore,
+      movementTotalScore: movementTotalScore ?? this.movementTotalScore,
     );
   }
 }
