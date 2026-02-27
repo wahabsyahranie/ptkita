@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
@@ -124,6 +123,8 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     final imageProvider = _service.resolveImage(item);
     final merk = item.merk ?? '-';
     final locationCode = item.locationCode ?? '-';
+    final movementLabel = _service.getMovementLabel(item);
+    final movementColor = _service.getMovementColor(item);
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -206,7 +207,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("Type", type),
+                _rowInfo("Tipe", type),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
@@ -215,6 +216,10 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const SizedBox(height: 10),
 
                 _rowInfo("Rak", locationCode),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
+                _rowMovement("Movement Speed", movementLabel, movementColor),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
@@ -270,14 +275,26 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     );
   }
 
-  Widget _placeholder() {
-    return Container(
-      width: 230,
-      height: 230,
-      color: MyColors.greySoft,
-      child: const Center(
-        child: Icon(Icons.image, size: 60, color: MyColors.black),
-      ),
+  Widget _rowMovement(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            value.toUpperCase(),
+            style: TextStyle(color: color, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
     );
   }
 }

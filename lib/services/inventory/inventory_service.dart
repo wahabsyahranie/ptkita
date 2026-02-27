@@ -6,6 +6,7 @@ import 'package:flutter_kita/core/utils/brand_logo_mapper.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
+import 'package:flutter_kita/styles/colors.dart';
 import 'package:intl/intl.dart';
 
 class InventoryService {
@@ -108,5 +109,22 @@ class InventoryService {
     final assetPath = merkLogoMapper.getAssetPath(merk);
 
     return AssetImage(assetPath);
+  }
+
+  ////Movement Speed Label
+  String getMovementLabel(Item item) {
+    final base = item.movementBaseScore;
+
+    if (base >= 1000) return "Fast";
+    if (base >= 500) return "Normal";
+    return "Jarang";
+  }
+
+  Color getMovementColor(Item item) {
+    final base = item.movementBaseScore;
+
+    if (base >= 1000) return MyColors.success;
+    if (base >= 500) return MyColors.warning;
+    return MyColors.background;
   }
 }
