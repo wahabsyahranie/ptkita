@@ -3,7 +3,6 @@ import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class InventoryCard extends StatelessWidget {
   final Item item;

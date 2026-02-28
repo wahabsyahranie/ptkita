@@ -1,5 +1,6 @@
 import 'package:flutter_kita/core/enum/item_brand.dart';
 
+// ignore: camel_case_types
 class merkLogoMapper {
   static const _basePath = 'assets/brands/';
 

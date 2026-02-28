@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/styles/colors.dart';
 
 class InventoryFormFieldsSection extends StatelessWidget {
   final TextEditingController nameCtrl;
@@ -35,15 +34,6 @@ class InventoryFormFieldsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    InputDecoration decoration(String hint) {
-      return const InputDecoration(
-        border: OutlineInputBorder(),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: MyColors.secondary, width: 2),
-        ),
-      ).copyWith(hintText: hint);
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
