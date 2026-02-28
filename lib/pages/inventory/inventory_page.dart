@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_appbar.dart';
-import 'package:flutter_kita/pages/inventory/widget/inventory_grid.dart';
+import 'package:flutter_kita/pages/inventory/widget/inventory_card.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
@@ -164,28 +164,58 @@ class _InventoryPageState extends State<InventoryPage> {
                     )
                   : _service.items.isEmpty
                   ? const Center(child: Text("Data tidak ditemukan"))
-                  : ListView(
+                  : CustomScrollView(
                       controller: _scrollController,
-                      children: [
-                        InventoryGrid(items: _service.items, service: _service),
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          sliver: SliverGrid(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final item = _service.items[index];
+                              return InventoryCard(
+                                item: item,
+                                service: _service,
+                              );
+                            }, childCount: _service.items.length),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 0.7,
+                                ),
+                          ),
+                        ),
 
                         if (_service.isLoading)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: MyColors.secondary,
+                          const SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: MyColors.secondary,
+                                ),
                               ),
                             ),
                           ),
 
                         if (!_service.hasMore)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Center(
-                              child: Text("Semua data telah dimuat"),
+                          const SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: Text("Semua data telah dimuat"),
+                              ),
                             ),
                           ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: MediaQuery.of(context).padding.bottom + 50,
+                          ),
+                        ),
                       ],
                     ),
             );
