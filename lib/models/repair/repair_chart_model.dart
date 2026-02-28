@@ -9,11 +9,11 @@ class RepairChartModel {
     required this.total,
   });
 
-  factory RepairChartModel.empty() {
+  factory RepairChartModel.empty(int length) {
     return RepairChartModel(
-      warranty: List.filled(4, 0),
-      nonWarranty: List.filled(4, 0),
-      total: List.filled(4, 0),
+      warranty: List.filled(length, 0),
+      nonWarranty: List.filled(length, 0),
+      total: List.filled(length, 0),
     );
   }
 }
