@@ -23,7 +23,10 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
   @override
   void initState() {
     super.initState();
-    _service = InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository()));
+    _service = InventoryService(
+      FirestoreInventoryRepository(),
+      UserService(FirestoreUserRepository()),
+    );
   }
 
   /// Membatasi text
@@ -232,6 +235,11 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 Text(desc),
                 const DottedlineWidget(),
 
+                const SizedBox(height: 16),
+
+                const Divider(height: 24, thickness: 0.6),
+                _buildAuditSection(item),
+
                 const SizedBox(height: 30),
 
                 GestureDetector(
@@ -298,5 +306,93 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
         ),
       ],
     );
+  }
+
+  ////  METHOD AUDIT
+  Widget _buildAuditSection(Item item) {
+    final createdBy = item.createdByName ?? '-';
+    final createdAt = item.createdAt;
+    final editedBy = item.lastEditedByName ?? '-';
+    final editedAt = item.lastEditedAt;
+
+    String formatDate(DateTime? date) {
+      if (date == null) return '-';
+      return "${date.day.toString().padLeft(2, '0')} "
+          "${_monthName(date.month)} "
+          "${date.year}, "
+          "${date.hour.toString().padLeft(2, '0')}:"
+          "${date.minute.toString().padLeft(2, '0')}";
+    }
+
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(bottom: 10),
+      title: const Row(
+        children: [
+          Icon(Icons.info_outline, size: 16, color: Colors.black54),
+          SizedBox(width: 6),
+          Text(
+            "Informasi Sistem",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+      iconColor: Colors.black54,
+      collapsedIconColor: Colors.black54,
+      children: [
+        const SizedBox(height: 8),
+        _buildAuditRow("Dibuat oleh", createdBy),
+        const SizedBox(height: 6),
+        _buildAuditRow("Dibuat pada", formatDate(createdAt)),
+        const SizedBox(height: 10),
+        _buildAuditRow("Terakhir diubah", editedBy),
+        const SizedBox(height: 6),
+        _buildAuditRow("Waktu perubahan", formatDate(editedAt)),
+      ],
+    );
+  }
+
+  //// HELPER ROW KHUSUS AUDIT
+  Widget _buildAuditRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
+          ),
+        ),
+      ],
+    );
+  }
+
+  //// HELPER BULAN UNTUK AUDIT
+  String _monthName(int month) {
+    const months = [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
+    return months[month];
   }
 }
