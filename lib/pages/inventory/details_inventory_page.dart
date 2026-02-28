@@ -237,7 +237,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
 
                 const SizedBox(height: 16),
 
-                const Divider(height: 24, thickness: 0.6),
+                // const Divider(height: 24, thickness: 0.6),
                 _buildAuditSection(item),
 
                 const SizedBox(height: 30),

@@ -134,10 +134,10 @@ class MaintenanceService {
     final isCreate = maintenance.id.isEmpty;
 
     if (isCreate) {
-      // 🔹 CREATE → hitung next maintenance pertama kali
-      final nextMaintenance = _calculateNextMaintenance(
-        lastMaintenance: null,
-        intervalDays: maintenance.intervalDays,
+      final now = DateTime.now();
+
+      final nextMaintenance = Timestamp.fromDate(
+        now.add(Duration(days: maintenance.intervalDays)),
       );
 
       final newMaintenance = maintenance.copyWith(
@@ -146,7 +146,6 @@ class MaintenanceService {
 
       await _repository.save(newMaintenance);
     } else {
-      // 🔹 UPDATE (edit form) → JANGAN ubah nextMaintenanceAt
       await _repository.save(maintenance);
     }
   }
@@ -164,31 +163,24 @@ class MaintenanceService {
   // =========================================================
 
   Future<void> finishMaintenance(Maintenance maintenance) async {
-    final now = DateTime.now();
-
-    final updated = maintenance.copyWith(
-      lastMaintenanceAt: Timestamp.fromDate(now),
-      nextMaintenanceAt: _calculateNextMaintenance(
-        lastMaintenance: now,
-        intervalDays: maintenance.intervalDays,
-      ),
+    await _repository.finishMaintenance(
+      maintenance: maintenance,
+      completedAt: DateTime.now(),
     );
-
-    await _repository.save(updated);
   }
 
   // =========================================================
   // ====================== DATE LOGIC =======================
   // =========================================================
 
-  Timestamp _calculateNextMaintenance({
-    required DateTime? lastMaintenance,
-    required int intervalDays,
-  }) {
-    final baseDate = lastMaintenance ?? DateTime.now();
-    final nextDate = baseDate.add(Duration(days: intervalDays));
-    return Timestamp.fromDate(nextDate);
-  }
+  // Timestamp _calculateNextMaintenance({
+  //   required DateTime? lastMaintenance,
+  //   required int intervalDays,
+  // }) {
+  //   final baseDate = lastMaintenance ?? DateTime.now();
+  //   final nextDate = baseDate.add(Duration(days: intervalDays));
+  //   return Timestamp.fromDate(nextDate);
+  // }
 
   String formatLastMaintenance(Maintenance? maintenance) {
     if (maintenance?.lastMaintenanceAt == null) {

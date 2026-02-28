@@ -5,7 +5,7 @@ import 'maintenance_repository.dart';
 
 class FirestoreMaintenanceRepository implements MaintenanceRepository {
   final FirebaseFirestore _firestore;
-  final _collection = FirebaseFirestore.instance
+  CollectionReference<Maintenance> get _collection => _firestore
       .collection('maintenance')
       .withConverter<Maintenance>(
         fromFirestore: Maintenance.fromFirestore,
@@ -120,7 +120,7 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     return data?['imageUrl'] as String?;
   }
 
-  final _itemCollection = FirebaseFirestore.instance
+  CollectionReference<Item> get _itemCollection => _firestore
       .collection('items')
       .withConverter<Item>(
         fromFirestore: Item.fromFirestore,
