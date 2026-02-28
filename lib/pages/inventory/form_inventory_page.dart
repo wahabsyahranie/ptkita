@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_form_fields_section.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_form_image_section.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_form_submit_button.dart';
+import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
@@ -61,7 +63,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _selectedMerk = it?.merk;
     _existingImageUrl = it?.imageUrl;
 
-    _service = InventoryService(FirestoreInventoryRepository());
+    _service = InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository()));
   }
 
   @override

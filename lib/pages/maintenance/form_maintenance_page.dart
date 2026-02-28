@@ -3,8 +3,10 @@ import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
+import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/services/maintenance/maintenance_service.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_task_form_section.dart';
 
@@ -36,7 +38,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
     final it = widget.initialItem;
     _service = MaintenanceService(
       FirestoreMaintenanceRepository(),
-      InventoryService(FirestoreInventoryRepository()),
+      InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository())),
     );
 
     _nameCtrl = TextEditingController(text: it?.itemName ?? '');

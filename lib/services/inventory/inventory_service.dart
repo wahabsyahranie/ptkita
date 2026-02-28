@@ -9,10 +9,15 @@ import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:intl/intl.dart';
 
+//INJECT USER SERVICE
+import 'package:flutter_kita/services/user/user_service.dart';
+import 'package:flutter_kita/models/user/user_model.dart';
+
 class InventoryService {
   final InventoryRepository _repository;
+  final UserService _userService;
 
-  InventoryService(this._repository);
+  InventoryService(this._repository, this._userService);
 
   // =========================================================
   // ====================== SAVE =============================
@@ -24,6 +29,14 @@ class InventoryService {
       merk: (item.merk == null || item.merk!.isEmpty) ? 'nomerk' : item.merk,
     );
 
+    final UserModel? currentUser = await _userService.currentUserProfile.first;
+
+    if (currentUser == null) {
+      throw Exception("User tidak ditemukan");
+    }
+
+    final now = DateTime.now();
+
     // ==============================
     // CREATE
     // ==============================
@@ -33,6 +46,13 @@ class InventoryService {
       final newItem = normalized.copyWith(
         movementAutoScore: 0,
         movementTotalScore: base,
+
+        createdById: currentUser.id,
+        createdByName: currentUser.name,
+        createdAt: now,
+        lastEditedById: currentUser.id,
+        lastEditedByName: currentUser.name,
+        lastEditedAt: now,
       );
 
       await _repository.addItem(newItem, imageFile: imageFile);
@@ -54,6 +74,16 @@ class InventoryService {
     final updatedItem = normalized.copyWith(
       movementAutoScore: existing.movementAutoScore,
       movementTotalScore: newTotal,
+
+      // ===== PRESERVE CREATED =====
+      createdById: existing.createdById,
+      createdByName: existing.createdByName,
+      createdAt: existing.createdAt,
+
+      // ===== UPDATE LAST EDITED =====
+      lastEditedById: currentUser.id,
+      lastEditedByName: currentUser.name,
+      lastEditedAt: now,
     );
 
     await _repository.updateItem(updatedItem, imageFile: imageFile);

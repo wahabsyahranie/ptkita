@@ -3,6 +3,8 @@ import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
@@ -21,7 +23,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
   @override
   void initState() {
     super.initState();
-    _service = InventoryService(FirestoreInventoryRepository());
+    _service = InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository()));
   }
 
   /// Membatasi text

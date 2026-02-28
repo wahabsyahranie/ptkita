@@ -16,6 +16,13 @@ class Item {
   final int movementAutoScore;
   final int movementTotalScore;
 
+  final String? createdById;
+  final String? createdByName;
+  final DateTime? createdAt;
+  final String? lastEditedById;
+  final String? lastEditedByName;
+  final DateTime? lastEditedAt;
+
   Item({
     this.id,
     this.name,
@@ -31,6 +38,13 @@ class Item {
     this.movementBaseScore = 0,
     this.movementAutoScore = 0,
     this.movementTotalScore = 0,
+
+    this.createdById,
+    this.createdByName,
+    this.createdAt,
+    this.lastEditedById,
+    this.lastEditedByName,
+    this.lastEditedAt,
   });
 
   // factory sesuai contoh FlutterFire docs
@@ -58,6 +72,13 @@ class Item {
       movementBaseScore: (data?['movementBaseScore'] ?? 0) as int,
       movementAutoScore: (data?['movementAutoScore'] ?? 0) as int,
       movementTotalScore: (data?['movementTotalScore'] ?? 0) as int,
+
+      createdById: data?['createdById'] as String?,
+      createdByName: data?['createdByName'] as String?,
+      createdAt: (data?['createdAt'] as Timestamp?)?.toDate(),
+      lastEditedById: data?['lastEditedById'] as String?,
+      lastEditedByName: data?['lastEditedByName'] as String?,
+      lastEditedAt: (data?['lastEditedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -78,6 +99,13 @@ class Item {
       'movementBaseScore': movementBaseScore,
       'movementAutoScore': movementAutoScore,
       'movementTotalScore': movementTotalScore,
+
+      if (createdById != null) 'createdById': createdById,
+      if (createdByName != null) 'createdByName': createdByName,
+      if (createdAt != null) 'createdAt': createdAt,
+      if (lastEditedById != null) 'lastEditedById': lastEditedById,
+      if (lastEditedByName != null) 'lastEditedByName': lastEditedByName,
+      if (lastEditedAt != null) 'lastEditedAt': lastEditedAt,
     };
   }
 
@@ -96,6 +124,13 @@ class Item {
     int? movementBaseScore,
     int? movementAutoScore,
     int? movementTotalScore,
+
+    String? createdById,
+    String? createdByName,
+    DateTime? createdAt,
+    String? lastEditedById,
+    String? lastEditedByName,
+    DateTime? lastEditedAt,
   }) {
     return Item(
       id: id ?? this.id,
@@ -112,6 +147,13 @@ class Item {
       movementBaseScore: movementBaseScore ?? this.movementBaseScore,
       movementAutoScore: movementAutoScore ?? this.movementAutoScore,
       movementTotalScore: movementTotalScore ?? this.movementTotalScore,
+
+      createdById: createdById ?? this.createdById,
+      createdByName: createdByName ?? this.createdByName,
+      createdAt: createdAt ?? this.createdAt,
+      lastEditedById: lastEditedById ?? this.lastEditedById,
+      lastEditedByName: lastEditedByName ?? this.lastEditedByName,
+      lastEditedAt: lastEditedAt ?? this.lastEditedAt,
     );
   }
 }

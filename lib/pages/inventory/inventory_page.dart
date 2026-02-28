@@ -6,7 +6,9 @@ import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_appbar.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_grid.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'widget/filter_sheet.dart';
 
@@ -42,7 +44,7 @@ class _InventoryPageState extends State<InventoryPage> {
     // final repo = FirestoreInventoryRepository();
     // repo.migrateMovementFields(); // panggil sekali
 
-    _service = InventoryService(FirestoreInventoryRepository());
+    _service = InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository()));
 
     _appliedFilter = InventoryFilter(
       availability: widget.initialAvailability,
