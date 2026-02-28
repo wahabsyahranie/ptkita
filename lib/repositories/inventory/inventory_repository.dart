@@ -1,8 +1,24 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
-import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+
+class PaginationCursor {
+  final Object? raw;
+
+  const PaginationCursor(this.raw);
+}
+
+class PaginatedResult<T> {
+  final List<T> items;
+  final PaginationCursor? cursor;
+  final bool hasMore;
+
+  PaginatedResult({
+    required this.items,
+    required this.cursor,
+    required this.hasMore,
+  });
+}
 
 abstract class InventoryRepository {
   Future<void> addItem(Item item, {File? imageFile});
@@ -22,6 +38,6 @@ abstract class InventoryRepository {
     required InventoryFilter filter,
     required String searchQuery,
     required int limit,
-    DocumentSnapshot? lastDocument,
+    PaginationCursor? cursor,
   });
 }

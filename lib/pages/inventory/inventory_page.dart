@@ -67,7 +67,10 @@ class _InventoryPageState extends State<InventoryPage> {
     _scrollController.addListener(() async {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
+        if (_service.isLoading || !_service.hasMore) return;
+
         await _service.fetchNextPage();
+
         if (mounted) setState(() {});
       }
     });

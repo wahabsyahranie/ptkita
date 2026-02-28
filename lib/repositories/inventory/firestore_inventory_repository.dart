@@ -6,18 +6,6 @@ import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'inventory_repository.dart';
 
-class PaginatedResult<T> {
-  final List<T> items;
-  final DocumentSnapshot? lastDocument;
-  final bool hasMore;
-
-  PaginatedResult({
-    required this.items,
-    required this.lastDocument,
-    required this.hasMore,
-  });
-}
-
 class FirestoreInventoryRepository implements InventoryRepository {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -93,7 +81,7 @@ class FirestoreInventoryRepository implements InventoryRepository {
     required InventoryFilter filter,
     required String searchQuery,
     required int limit,
-    DocumentSnapshot? lastDocument,
+    PaginationCursor? cursor,
   }) async {
     Query<Item> query = _collection;
 
@@ -142,8 +130,11 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     query = query.limit(limit);
 
-    if (lastDocument != null) {
-      query = query.startAfterDocument(lastDocument);
+    // if (lastDocument != null) {
+    //   query = query.startAfterDocument(lastDocument);
+    // }
+    if (cursor != null && cursor.raw is DocumentSnapshot) {
+      query = query.startAfterDocument(cursor.raw as DocumentSnapshot);
     }
 
     final snapshot = await query.get();
@@ -156,7 +147,7 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     return PaginatedResult<Item>(
       items: items,
-      lastDocument: lastDoc,
+      cursor: lastDoc != null ? PaginationCursor(lastDoc) : null,
       hasMore: hasMore,
     );
   }

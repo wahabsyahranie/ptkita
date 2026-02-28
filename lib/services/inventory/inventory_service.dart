@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/enum/item_brand.dart';
 import 'package:flutter_kita/core/utils/brand_logo_mapper.dart';
@@ -27,7 +26,7 @@ class InventoryService {
   final int _pageSize = 5;
 
   final List<Item> _items = [];
-  DocumentSnapshot? _lastDocument;
+  PaginationCursor? _cursor;
 
   bool _hasMore = true;
   bool _isLoading = false;
@@ -44,7 +43,7 @@ class InventoryService {
     required String searchQuery,
   }) async {
     _items.clear();
-    _lastDocument = null;
+    _cursor = null;
     _hasMore = true;
     _currentFilter = filter;
     _currentSearch = searchQuery.toLowerCase().trim();
@@ -54,23 +53,34 @@ class InventoryService {
 
   Future<void> fetchNextPage() async {
     if (_isLoading || !_hasMore) return;
-
     if (_currentFilter == null) return;
 
     _isLoading = true;
 
-    final result = await _repository.fetchItemsPage(
-      filter: _currentFilter!,
-      searchQuery: _currentSearch,
-      limit: _pageSize,
-      lastDocument: _lastDocument,
-    );
+    try {
+      final result = await _repository.fetchItemsPage(
+        filter: _currentFilter!,
+        searchQuery: _currentSearch,
+        limit: _pageSize,
+        cursor: _cursor,
+      );
 
-    _items.addAll(result.items);
-    _lastDocument = result.lastDocument;
-    _hasMore = result.hasMore;
+      for (final newItem in result.items) {
+        final alreadyExists = _items.any(
+          (existing) => existing.id == newItem.id,
+        );
 
-    _isLoading = false;
+        if (!alreadyExists) {
+          _items.add(newItem);
+        }
+      }
+      _cursor = result.cursor;
+      _hasMore = result.hasMore;
+    } catch (e) {
+      rethrow; // biarkan UI tahu kalau mau handle
+    } finally {
+      _isLoading = false;
+    }
   }
 
   Future<void> refresh() async {
@@ -156,22 +166,6 @@ class InventoryService {
   Future<void> deleteItem(String id) async {
     await _repository.deleteItem(id);
   }
-
-  // =========================================================
-  // ====================== STREAM LIST ======================
-  // =========================================================
-
-  // Stream<List<Item>> streamItems({
-  //   required InventoryFilter filter,
-  //   required String searchQuery,
-  // }) {
-  //   final normalizedQuery = searchQuery.toLowerCase().trim();
-
-  //   return _repository.streamItems(
-  //     filter: filter,
-  //     searchQuery: normalizedQuery,
-  //   );
-  // }
 
   // =========================================================
   // ====================== STREAM DETAIL ====================
