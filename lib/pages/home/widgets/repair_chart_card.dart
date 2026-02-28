@@ -91,15 +91,31 @@ class RepairChartCard extends StatelessWidget {
   /// Build Chart berdasarkan mode
   /// ---------------------------------------------------------------
   Widget _buildChart(RepairChartModel model) {
-    const double maxY = 10; // 🔥 Fixed scale konsisten
-    const double interval = 2;
+    final highest = [
+      ...model.warranty,
+      ...model.nonWarranty,
+      ...model.total,
+    ].reduce((a, b) => a > b ? a : b);
+
+    final scale = _calculateDynamicScale(highest);
+
+    final maxY = scale.$1;
+    final interval = scale.$2;
 
     if (chartMode == "monthly") {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SizedBox(
-          width: model.total.length * 90.0, // 🔥 dinamis sesuai jumlah bulan
-          child: _buildLineChart(model, maxY, interval),
+          width: model.total.length * 90 + 60,
+          height: 240, // 🔥 naikkan
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: 10, // 🔥 ini kuncinya
+              left: 20,
+              right: 20,
+            ),
+            child: _buildLineChart(model, maxY, interval),
+          ),
         ),
       );
     }
@@ -116,11 +132,20 @@ class RepairChartCard extends StatelessWidget {
         minX: 0,
         maxX: (model.total.length - 1).toDouble(),
         minY: 0,
-        maxY: maxY,
+        maxY: maxY + interval, // 🔥 kasih ruang atas
 
         gridData: FlGridData(
           show: true,
-          horizontalInterval: interval, // 🔥 sinkron dengan Y-axis
+          horizontalInterval: interval,
+          verticalInterval: 1,
+
+          // 🔥 Buat grid lebih soft
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: MyColors.black.withValues(alpha: 0.3),
+              strokeWidth: 1,
+            );
+          },
         ),
 
         borderData: FlBorderData(show: false),
@@ -170,11 +195,15 @@ class RepairChartCard extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               interval: interval,
-              reservedSize: 40,
+              reservedSize: 55, // 🔥 minimal 50–55
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
-                  style: const TextStyle(fontSize: 10),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 );
               },
             ),
@@ -234,6 +263,35 @@ class RepairChartCard extends StatelessWidget {
       dotData: const FlDotData(show: true),
     );
   }
+}
+
+/// ---------------------------------------------------------------
+/// Dynamic Y-Axis scaling
+/// Menghasilkan (maxY, interval)
+/// ---------------------------------------------------------------
+(double, double) _calculateDynamicScale(int highestValue) {
+  if (highestValue <= 5) {
+    return (6, 2);
+  }
+
+  if (highestValue <= 10) {
+    return (12, 2);
+  }
+
+  if (highestValue <= 20) {
+    return (25, 5);
+  }
+
+  if (highestValue <= 50) {
+    return (60, 10);
+  }
+
+  if (highestValue <= 100) {
+    return (120, 20);
+  }
+
+  final roundedMax = ((highestValue / 50).ceil() * 50).toDouble();
+  return (roundedMax, roundedMax / 5);
 }
 
 /// ===============================================================
