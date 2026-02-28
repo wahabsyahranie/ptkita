@@ -56,11 +56,7 @@ class _InventoryPageState extends State<InventoryPage> {
 
     // Fetch pertama
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _service
-          .resetAndFetch(filter: _appliedFilter, searchQuery: _searchQuery)
-          .then((_) {
-            if (mounted) setState(() {});
-          });
+      _service.resetAndFetch(filter: _appliedFilter, searchQuery: _searchQuery);
     });
 
     // Scroll listener
@@ -70,8 +66,6 @@ class _InventoryPageState extends State<InventoryPage> {
         if (_service.isLoading || !_service.hasMore) return;
 
         await _service.fetchNextPage();
-
-        if (mounted) setState(() {});
       }
     });
   }
@@ -88,8 +82,6 @@ class _InventoryPageState extends State<InventoryPage> {
         filter: _appliedFilter,
         searchQuery: _searchQuery,
       );
-
-      if (mounted) setState(() {});
     });
   }
 
@@ -114,8 +106,6 @@ class _InventoryPageState extends State<InventoryPage> {
         filter: _appliedFilter,
         searchQuery: _searchQuery,
       );
-
-      if (mounted) setState(() {});
     }
   }
 
@@ -137,8 +127,6 @@ class _InventoryPageState extends State<InventoryPage> {
       filter: _appliedFilter,
       searchQuery: _searchQuery,
     );
-
-    if (mounted) setState(() {});
   }
 
   @override
@@ -161,39 +149,47 @@ class _InventoryPageState extends State<InventoryPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await _service.refresh();
-            if (mounted) setState(() {});
-          },
-          child: _service.items.isEmpty && _service.isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: MyColors.secondary),
-                )
-              : _service.items.isEmpty
-              ? const Center(child: Text("Data tidak ditemukan"))
-              : ListView(
-                  controller: _scrollController,
-                  children: [
-                    InventoryGrid(items: _service.items, service: _service),
+        child: AnimatedBuilder(
+          animation: _service,
+          builder: (context, _) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                await _service.refresh();
+              },
+              child: _service.items.isEmpty && _service.isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: MyColors.secondary,
+                      ),
+                    )
+                  : _service.items.isEmpty
+                  ? const Center(child: Text("Data tidak ditemukan"))
+                  : ListView(
+                      controller: _scrollController,
+                      children: [
+                        InventoryGrid(items: _service.items, service: _service),
 
-                    if (_service.isLoading)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: MyColors.secondary,
+                        if (_service.isLoading)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: MyColors.secondary,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
 
-                    if (!_service.hasMore)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(child: Text("Semua data telah dimuat")),
-                      ),
-                  ],
-                ),
+                        if (!_service.hasMore)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: Text("Semua data telah dimuat"),
+                            ),
+                          ),
+                      ],
+                    ),
+            );
+          },
         ),
       ),
     );

@@ -8,12 +8,13 @@ import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart';
 
 //INJECT USER SERVICE
 import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/models/user/user_model.dart';
 
-class InventoryService {
+class InventoryService extends ChangeNotifier {
   final InventoryRepository _repository;
   final UserService _userService;
 
@@ -49,6 +50,7 @@ class InventoryService {
     _currentSearch = searchQuery.toLowerCase().trim();
 
     await fetchNextPage();
+    notifyListeners();
   }
 
   Future<void> fetchNextPage() async {
@@ -76,10 +78,13 @@ class InventoryService {
       }
       _cursor = result.cursor;
       _hasMore = result.hasMore;
+
+      notifyListeners();
     } catch (e) {
       rethrow; // biarkan UI tahu kalau mau handle
     } finally {
       _isLoading = false;
+      notifyListeners();
     }
   }
 
