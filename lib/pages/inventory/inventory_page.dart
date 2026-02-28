@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_appbar.dart';
@@ -44,24 +43,50 @@ class _InventoryPageState extends State<InventoryPage> {
     // final repo = FirestoreInventoryRepository();
     // repo.migrateMovementFields(); // panggil sekali
 
-    _service = InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository()));
+    _service = InventoryService(
+      FirestoreInventoryRepository(),
+      UserService(FirestoreUserRepository()),
+    );
 
     _appliedFilter = InventoryFilter(
       availability: widget.initialAvailability,
       category: null,
       brands: const {},
     );
+
+    // Fetch pertama
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _service
+          .resetAndFetch(filter: _appliedFilter, searchQuery: _searchQuery)
+          .then((_) {
+            if (mounted) setState(() {});
+          });
+    });
+
+    // Scroll listener
+    _scrollController.addListener(() async {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        await _service.fetchNextPage();
+        if (mounted) setState(() {});
+      }
+    });
   }
 
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
 
-    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
       if (!mounted) return;
 
-      setState(() {
-        _searchQuery = value;
-      });
+      _searchQuery = value;
+
+      await _service.resetAndFetch(
+        filter: _appliedFilter,
+        searchQuery: _searchQuery,
+      );
+
+      if (mounted) setState(() {});
     });
   }
 
@@ -80,9 +105,14 @@ class _InventoryPageState extends State<InventoryPage> {
     );
 
     if (result != null) {
-      setState(() {
-        _appliedFilter = result;
-      });
+      _appliedFilter = result;
+
+      await _service.resetAndFetch(
+        filter: _appliedFilter,
+        searchQuery: _searchQuery,
+      );
+
+      if (mounted) setState(() {});
     }
   }
 
@@ -99,6 +129,13 @@ class _InventoryPageState extends State<InventoryPage> {
       category: null,
       brands: {},
     );
+
+    await _service.resetAndFetch(
+      filter: _appliedFilter,
+      searchQuery: _searchQuery,
+    );
+
+    if (mounted) setState(() {});
   }
 
   @override
@@ -121,30 +158,39 @@ class _InventoryPageState extends State<InventoryPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-        child: StreamBuilder<List<Item>>(
-          stream: _service.streamItems(
-            filter: _appliedFilter,
-            searchQuery: _searchQuery,
-          ),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: MyColors.secondary),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return const Center(child: Text("Terjadi kesalahan memuat data"));
-            }
-
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text("Data tidak ditemukan"));
-            }
-
-            final items = snapshot.data!;
-
-            return InventoryGrid(items: items, service: _service);
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await _service.refresh();
+            if (mounted) setState(() {});
           },
+          child: _service.items.isEmpty && _service.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: MyColors.secondary),
+                )
+              : _service.items.isEmpty
+              ? const Center(child: Text("Data tidak ditemukan"))
+              : ListView(
+                  controller: _scrollController,
+                  children: [
+                    InventoryGrid(items: _service.items, service: _service),
+
+                    if (_service.isLoading)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: MyColors.secondary,
+                          ),
+                        ),
+                      ),
+
+                    if (!_service.hasMore)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(child: Text("Semua data telah dimuat")),
+                      ),
+                  ],
+                ),
         ),
       ),
     );

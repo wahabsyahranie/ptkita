@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/enum/item_brand.dart';
 import 'package:flutter_kita/core/utils/brand_logo_mapper.dart';
@@ -18,6 +19,65 @@ class InventoryService {
   final UserService _userService;
 
   InventoryService(this._repository, this._userService);
+
+  // =========================================================
+  // ====================== PAGINATION STATE =================
+  // =========================================================
+
+  final int _pageSize = 5;
+
+  final List<Item> _items = [];
+  DocumentSnapshot? _lastDocument;
+
+  bool _hasMore = true;
+  bool _isLoading = false;
+
+  InventoryFilter? _currentFilter;
+  String _currentSearch = '';
+
+  List<Item> get items => List.unmodifiable(_items);
+  bool get hasMore => _hasMore;
+  bool get isLoading => _isLoading;
+
+  Future<void> resetAndFetch({
+    required InventoryFilter filter,
+    required String searchQuery,
+  }) async {
+    _items.clear();
+    _lastDocument = null;
+    _hasMore = true;
+    _currentFilter = filter;
+    _currentSearch = searchQuery.toLowerCase().trim();
+
+    await fetchNextPage();
+  }
+
+  Future<void> fetchNextPage() async {
+    if (_isLoading || !_hasMore) return;
+
+    if (_currentFilter == null) return;
+
+    _isLoading = true;
+
+    final result = await _repository.fetchItemsPage(
+      filter: _currentFilter!,
+      searchQuery: _currentSearch,
+      limit: _pageSize,
+      lastDocument: _lastDocument,
+    );
+
+    _items.addAll(result.items);
+    _lastDocument = result.lastDocument;
+    _hasMore = result.hasMore;
+
+    _isLoading = false;
+  }
+
+  Future<void> refresh() async {
+    if (_currentFilter == null) return;
+
+    await resetAndFetch(filter: _currentFilter!, searchQuery: _currentSearch);
+  }
 
   // =========================================================
   // ====================== SAVE =============================
@@ -101,17 +161,17 @@ class InventoryService {
   // ====================== STREAM LIST ======================
   // =========================================================
 
-  Stream<List<Item>> streamItems({
-    required InventoryFilter filter,
-    required String searchQuery,
-  }) {
-    final normalizedQuery = searchQuery.toLowerCase().trim();
+  // Stream<List<Item>> streamItems({
+  //   required InventoryFilter filter,
+  //   required String searchQuery,
+  // }) {
+  //   final normalizedQuery = searchQuery.toLowerCase().trim();
 
-    return _repository.streamItems(
-      filter: filter,
-      searchQuery: normalizedQuery,
-    );
-  }
+  //   return _repository.streamItems(
+  //     filter: filter,
+  //     searchQuery: normalizedQuery,
+  //   );
+  // }
 
   // =========================================================
   // ====================== STREAM DETAIL ====================

@@ -6,6 +6,18 @@ import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'inventory_repository.dart';
 
+class PaginatedResult<T> {
+  final List<T> items;
+  final DocumentSnapshot? lastDocument;
+  final bool hasMore;
+
+  PaginatedResult({
+    required this.items,
+    required this.lastDocument,
+    required this.hasMore,
+  });
+}
+
 class FirestoreInventoryRepository implements InventoryRepository {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -73,6 +85,79 @@ class FirestoreInventoryRepository implements InventoryRepository {
     ////RETURN
     return query.snapshots().map(
       (snapshot) => snapshot.docs.map((e) => e.data()).toList(),
+    );
+  }
+
+  // PAGINATION
+  Future<PaginatedResult<Item>> fetchItemsPage({
+    required InventoryFilter filter,
+    required String searchQuery,
+    required int limit,
+    DocumentSnapshot? lastDocument,
+  }) async {
+    Query<Item> query = _collection;
+
+    // ==============================
+    // FILTER LOGIC (SAMA DENGAN STREAM)
+    // ==============================
+
+    if (filter.availability == 'tersedia') {
+      query = query.where('stock', isGreaterThan: 0);
+    } else if (filter.availability == 'habis') {
+      query = query.where('stock', isEqualTo: 0);
+    }
+
+    if (filter.category != null) {
+      query = query.where('type', isEqualTo: filter.category);
+    }
+
+    if (filter.brands.isNotEmpty) {
+      if (filter.brands.length == 1) {
+        query = query.where('merk', isEqualTo: filter.brands.first);
+      } else {
+        query = query.where('merk', whereIn: filter.brands.toList());
+      }
+    }
+
+    // ==============================
+    // ORDERING (HARUS IDENTIK)
+    // ==============================
+
+    if (searchQuery.isEmpty) {
+      if (filter.availability == 'tersedia') {
+        query = query
+            .orderBy('stock')
+            .orderBy('movementTotalScore', descending: true);
+      } else {
+        query = query.orderBy('movementTotalScore', descending: true);
+      }
+    } else {
+      query = query.orderBy('name_lowercase');
+      query = query.startAt([searchQuery]).endAt(['$searchQuery\uf8ff']);
+    }
+
+    // ==============================
+    // PAGINATION
+    // ==============================
+
+    query = query.limit(limit);
+
+    if (lastDocument != null) {
+      query = query.startAfterDocument(lastDocument);
+    }
+
+    final snapshot = await query.get();
+
+    final items = snapshot.docs.map((e) => e.data()).toList();
+
+    final lastDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+
+    final hasMore = snapshot.docs.length == limit;
+
+    return PaginatedResult<Item>(
+      items: items,
+      lastDocument: lastDoc,
+      hasMore: hasMore,
     );
   }
 
