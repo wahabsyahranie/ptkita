@@ -8,7 +8,6 @@ import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter/foundation.dart';
 
 //INJECT USER SERVICE
 import 'package:flutter_kita/services/user/user_service.dart';
