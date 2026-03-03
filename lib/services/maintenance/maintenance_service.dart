@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_kita/core/enum/maintenance_status.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
@@ -21,7 +22,40 @@ class MaintenanceService {
   }) {
     return _repository.streamMaintenance().map((items) {
       final filtered = _applyFilter(items, filter);
-      return _applySearch(filtered, searchQuery);
+      final searched = _applySearch(filtered, searchQuery);
+
+      searched.sort((a, b) {
+        final statusA = computeStatus(a);
+        final statusB = computeStatus(b);
+
+        // 1️⃣ Dalam Proses paling atas
+        if (statusA == MaintenanceStatus.dalamProses &&
+            statusB != MaintenanceStatus.dalamProses) {
+          return -1;
+        }
+        if (statusB == MaintenanceStatus.dalamProses &&
+            statusA != MaintenanceStatus.dalamProses) {
+          return 1;
+        }
+
+        // 2️⃣ Terlambat berikutnya
+        if (statusA == MaintenanceStatus.terlambat &&
+            statusB != MaintenanceStatus.terlambat) {
+          return -1;
+        }
+        if (statusB == MaintenanceStatus.terlambat &&
+            statusA != MaintenanceStatus.terlambat) {
+          return 1;
+        }
+
+        // 3️⃣ Sisanya berdasarkan tanggal
+        final nextA = a.nextMaintenanceAt?.toDate() ?? DateTime(2100);
+        final nextB = b.nextMaintenanceAt?.toDate() ?? DateTime(2100);
+
+        return nextA.compareTo(nextB);
+      });
+
+      return searched;
     });
   }
 
@@ -48,24 +82,31 @@ class MaintenanceService {
   // =========================================================
   // ====================== STATUS ===========================
   // =========================================================
-
-  String computeStatus(Maintenance maintenance) {
+  MaintenanceStatus computeStatus(Maintenance maintenance) {
     final now = DateTime.now();
     final next = maintenance.nextMaintenanceAt?.toDate();
 
-    if (next == null) return 'terjadwal';
+    final initial = maintenance.cycleInitialQuantity;
+    final remaining = maintenance.remainingQuantity;
 
-    // Ambil hanya tanggal (buang jam)
+    // DALAM PROSES (prioritas tertinggi)
+    if (remaining < initial && remaining > 0) {
+      return MaintenanceStatus.dalamProses;
+    }
+
+    if (next == null) return MaintenanceStatus.terjadwal;
+
     final today = DateTime(now.year, now.month, now.day);
     final nextDate = DateTime(next.year, next.month, next.day);
 
-    if (nextDate.isBefore(today)) {
-      return 'terlambat';
+    final isDueOrPast = !today.isBefore(nextDate);
+
+    if (isDueOrPast && remaining == initial) {
+      return MaintenanceStatus.terlambat;
     }
 
-    return 'terjadwal';
+    return MaintenanceStatus.terjadwal;
   }
-
   // =========================================================
   // ====================== FILTER ===========================
   // =========================================================
@@ -136,12 +177,23 @@ class MaintenanceService {
     if (isCreate) {
       final now = DateTime.now();
 
+      // 1️⃣ Ambil stok item
+      final item = await _inventoryService
+          .streamItemById(maintenance.itemId)
+          .first;
+
+      final currentStock = item?.stock ?? 0;
+
+      // 2️⃣ Hitung next maintenance
       final nextMaintenance = Timestamp.fromDate(
         now.add(Duration(days: maintenance.intervalDays)),
       );
 
+      // 3️⃣ Buat maintenance dengan snapshot siklus
       final newMaintenance = maintenance.copyWith(
         nextMaintenanceAt: nextMaintenance,
+        cycleInitialQuantity: currentStock,
+        remainingQuantity: currentStock,
       );
 
       await _repository.save(newMaintenance);
@@ -162,11 +214,114 @@ class MaintenanceService {
   // ====================== FINISH ===========================
   // =========================================================
 
-  Future<void> finishMaintenance(Maintenance maintenance) async {
-    await _repository.finishMaintenance(
-      maintenance: maintenance,
-      completedAt: DateTime.now(),
+  Future<bool> finishMaintenance({
+    required Maintenance maintenance,
+    required int completedQuantity,
+  }) async {
+    if (maintenance.remainingQuantity == 0) {
+      throw Exception("Maintenance sudah selesai.");
+    }
+
+    final now = DateTime.now();
+    final completedTimestamp = Timestamp.fromDate(now);
+
+    // ========================================
+    // SAFETY GUARD UNTUK DATA LAMA
+    // ========================================
+    if (maintenance.cycleInitialQuantity == 0 &&
+        maintenance.remainingQuantity == 0) {
+      final item = await _inventoryService
+          .streamItemById(maintenance.itemId)
+          .first;
+
+      final currentStock = item?.stock ?? 0;
+
+      final snapshotUpdate = {
+        'cycleInitialQuantity': currentStock,
+        'remainingQuantity': currentStock,
+      };
+
+      await _repository.commitMaintenanceBatch(
+        maintenanceId: maintenance.id,
+        maintenanceUpdate: snapshotUpdate,
+        logData: {}, // tidak buat log
+      );
+
+      throw Exception(
+        "Snapshot siklus diinisialisasi ulang. Silakan ulangi proses maintenance.",
+      );
+    }
+
+    // ==============================
+    // VALIDASI
+    // ==============================
+
+    if (completedQuantity <= 0) {
+      throw Exception("completedQuantity harus lebih dari 0");
+    }
+
+    if (completedQuantity > maintenance.remainingQuantity) {
+      throw Exception("Jumlah melebihi sisa maintenance");
+    }
+
+    final newRemaining = maintenance.remainingQuantity - completedQuantity;
+
+    // ==============================
+    // SIAPKAN LOG
+    // ==============================
+
+    final logData = {
+      'maintenanceId': maintenance.id,
+      'itemId': maintenance.itemId,
+      'completedQuantity': completedQuantity,
+      'completedAt': completedTimestamp,
+    };
+
+    // ==============================
+    // CASE 1: BELUM SELESAI SIKLUS
+    // ==============================
+
+    if (newRemaining > 0) {
+      final maintenanceUpdate = {'remainingQuantity': newRemaining};
+
+      await _repository.commitMaintenanceBatch(
+        maintenanceId: maintenance.id,
+        maintenanceUpdate: maintenanceUpdate,
+        logData: logData,
+      );
+
+      return false; // siklus belum selesai
+    }
+
+    // ==============================
+    // CASE 2: SIKLUS SELESAI
+    // ==============================
+
+    // Ambil stok terbaru dari inventory
+    final item = await _inventoryService
+        .streamItemById(maintenance.itemId)
+        .first;
+
+    final currentStock = item?.stock ?? 0;
+
+    final nextMaintenanceDate = now.add(
+      Duration(days: maintenance.intervalDays),
     );
+
+    final maintenanceUpdate = {
+      'lastMaintenanceAt': completedTimestamp,
+      'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),
+      'cycleInitialQuantity': currentStock,
+      'remainingQuantity': currentStock,
+    };
+
+    await _repository.commitMaintenanceBatch(
+      maintenanceId: maintenance.id,
+      maintenanceUpdate: maintenanceUpdate,
+      logData: logData,
+    );
+
+    return true; // siklus selesai
   }
 
   // =========================================================

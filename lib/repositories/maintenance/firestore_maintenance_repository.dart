@@ -75,36 +75,24 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
   }
 
   @override
-  Future<void> finishMaintenance({
-    required Maintenance maintenance,
-    required DateTime completedAt,
+  Future<void> commitMaintenanceBatch({
+    required String maintenanceId,
+    required Map<String, dynamic> maintenanceUpdate,
+    required Map<String, dynamic> logData,
   }) async {
     final batch = _firestore.batch();
 
     final maintenanceRef = _firestore
         .collection('maintenance')
-        .doc(maintenance.id);
+        .doc(maintenanceId);
 
     final logRef = _firestore.collection('maintenance_logs').doc();
 
-    final completedTimestamp = Timestamp.fromDate(completedAt);
-
-    final nextMaintenance = Timestamp.fromDate(
-      completedAt.add(Duration(days: maintenance.intervalDays)),
-    );
-
-    // 1️⃣ write log
-    batch.set(logRef, {
-      'maintenanceId': maintenance.id,
-      'completedAt': completedTimestamp,
-      'itemId': maintenance.itemId,
-    });
+    // 1️⃣ insert log
+    batch.set(logRef, logData);
 
     // 2️⃣ update maintenance
-    batch.update(maintenanceRef, {
-      'lastMaintenanceAt': completedTimestamp,
-      'nextMaintenanceAt': nextMaintenance,
-    });
+    batch.update(maintenanceRef, maintenanceUpdate);
 
     await batch.commit();
   }

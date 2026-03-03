@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/core/enum/maintenance_status.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/details_maintenance_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class MaintenanceBox extends StatelessWidget {
   final Maintenance main;
-  final String status;
+  final MaintenanceStatus status;
   final String formattedDate;
 
   const MaintenanceBox({
@@ -26,8 +27,16 @@ class MaintenanceBox extends StatelessWidget {
     }
   }
 
-  Color _statusColor(String status) {
-    return status == 'terlambat' ? MyColors.error : MyColors.success;
+  Color _statusColor(MaintenanceStatus status) {
+    switch (status) {
+      case MaintenanceStatus.terlambat:
+        return MyColors.error;
+      case MaintenanceStatus.dalamProses:
+        return MyColors.warning;
+      case MaintenanceStatus.terjadwal:
+      default:
+        return MyColors.success;
+    }
   }
 
   @override
@@ -36,6 +45,13 @@ class MaintenanceBox extends StatelessWidget {
     final sku = main.sku ?? '-';
     final intervalDays = main.intervalDays;
     final priority = main.priority;
+    final initial = main.cycleInitialQuantity;
+    final remaining = main.remainingQuantity;
+    final completed = initial - remaining;
+
+    final progress = initial > 0 ? (completed / initial).clamp(0.0, 1.0) : 0.0;
+
+    final isInProgress = initial > 0 && remaining < initial && remaining > 0;
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -115,6 +131,24 @@ class MaintenanceBox extends StatelessWidget {
                   const Spacer(),
                 ],
               ),
+              // PROGRESS SECTION (jika dalam proses)
+              if (isInProgress) ...[
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 6,
+                  backgroundColor: MyColors.greySoft,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    MyColors.secondary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "$completed / $initial unit (${(progress * 100).toStringAsFixed(0)}%)",
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+
               // status badge
               const SizedBox(height: 16),
               Container(
@@ -126,12 +160,27 @@ class MaintenanceBox extends StatelessWidget {
                   color: _statusColor(status).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(status, style: const TextStyle(fontSize: 12)),
+                child: Text(
+                  _formatStatus(status),
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _formatStatus(MaintenanceStatus status) {
+    switch (status) {
+      case MaintenanceStatus.terlambat:
+        return 'Terlambat';
+      case MaintenanceStatus.dalamProses:
+        return 'Dalam Proses';
+      case MaintenanceStatus.terjadwal:
+      default:
+        return 'Terjadwal';
+    }
   }
 }

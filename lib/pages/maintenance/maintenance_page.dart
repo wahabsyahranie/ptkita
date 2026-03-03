@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/core/enum/maintenance_status.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
@@ -43,10 +44,20 @@ class _MaintenancePageState extends State<MaintenancePage> {
   void initState() {
     super.initState();
 
-    _service = MaintenanceService(_repository, InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository())));
+    _service = MaintenanceService(
+      _repository,
+      InventoryService(
+        FirestoreInventoryRepository(),
+        UserService(FirestoreUserRepository()),
+      ),
+    );
 
     _appliedFilter = const MaintenanceFilter(
-      statuses: {'terlambat', 'terjadwal'},
+      statuses: {
+        MaintenanceStatus.terlambat,
+        MaintenanceStatus.terjadwal,
+        MaintenanceStatus.dalamProses,
+      },
       timeRange: Duration(days: 1),
     );
   }
