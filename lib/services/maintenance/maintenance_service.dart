@@ -293,6 +293,7 @@ class MaintenanceService {
         maintenanceId: maintenance.id,
         maintenanceUpdate: snapshotUpdate,
         logData: {}, // tidak buat log
+        incrementCompletedToday: false,
       );
 
       throw MaintenanceException(
@@ -348,6 +349,7 @@ class MaintenanceService {
         maintenanceId: maintenance.id,
         maintenanceUpdate: maintenanceUpdate,
         logData: logData,
+        incrementCompletedToday: false,
       );
 
       return false; // siklus belum selesai
@@ -373,6 +375,7 @@ class MaintenanceService {
       maintenanceId: maintenance.id,
       maintenanceUpdate: maintenanceUpdate,
       logData: logData,
+      incrementCompletedToday: true,
     );
 
     return true; // siklus selesai

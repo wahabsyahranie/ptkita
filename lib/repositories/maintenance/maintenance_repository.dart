@@ -14,6 +14,7 @@ abstract class MaintenanceRepository {
     required String maintenanceId,
     required Map<String, dynamic> maintenanceUpdate,
     required Map<String, dynamic> logData,
+    required bool incrementCompletedToday,
   });
 
   Future<String?> getItemImageUrl(String itemId);

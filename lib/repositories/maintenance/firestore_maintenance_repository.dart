@@ -79,6 +79,7 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     required String maintenanceId,
     required Map<String, dynamic> maintenanceUpdate,
     required Map<String, dynamic> logData,
+    required bool incrementCompletedToday,
   }) async {
     final batch = _firestore.batch();
 
@@ -93,6 +94,21 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
 
     // 2️⃣ update maintenance
     batch.update(maintenanceRef, maintenanceUpdate);
+
+    // 3️⃣ update snapshot (hanya jika siklus selesai)
+    if (incrementCompletedToday) {
+      final now = DateTime.now();
+      final docId =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+      final snapshotRef = _firestore
+          .collection('daily_maintenance_snapshot')
+          .doc(docId);
+
+      batch.set(snapshotRef, {
+        'completedToday': FieldValue.increment(1),
+      }, SetOptions(merge: true));
+    }
 
     await batch.commit();
   }

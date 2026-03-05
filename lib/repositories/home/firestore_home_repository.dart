@@ -65,15 +65,14 @@ class FirestoreHomeRepository implements HomeRepository {
 
   @override
   Stream<int> getCompletedMaintenanceToday() {
-    final start = Timestamp.fromDate(_todayStart());
-    final end = Timestamp.fromDate(_todayEnd());
-
     return _firestore
-        .collection('maintenance_logs')
-        .where('completedAt', isGreaterThanOrEqualTo: start)
-        .where('completedAt', isLessThanOrEqualTo: end)
+        .collection('daily_maintenance_snapshot')
+        .doc(_todayDocId())
         .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+        .map((doc) {
+          if (!doc.exists) return 0;
+          return doc.data()?['completedToday'] ?? 0;
+        });
   }
 
   // ==============================
