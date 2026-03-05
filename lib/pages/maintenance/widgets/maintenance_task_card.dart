@@ -27,24 +27,48 @@ class MaintenanceTaskCard extends StatelessWidget {
   Widget _completeCard() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        border: Border.all(color: MyColors.success, width: 2),
+        color: MyColors.success.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MyColors.success, width: 2),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _checkIcon(),
-          const SizedBox(width: 12),
+
+          const SizedBox(width: 14),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _titleRow(task.title, 'Selesai', MyColors.success),
-                const SizedBox(height: 8),
+                Text(
+                  task.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: MyColors.success,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
                 Text(
                   task.description,
-                  style: const TextStyle(color: MyColors.success),
+                  style: const TextStyle(fontSize: 14, color: MyColors.success),
+                ),
+
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    "Selesai",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: MyColors.success,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -57,22 +81,56 @@ class MaintenanceTaskCard extends StatelessWidget {
   Widget _pendingCard() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        border: Border.all(color: MyColors.secondary, width: 2),
+        color: MyColors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MyColors.secondary, width: 2),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _circleIndex(index + 1, MyColors.secondary),
-          const SizedBox(width: 12),
+
+          const SizedBox(width: 14),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _titleRow(task.title, 'Tandai', MyColors.secondary),
-                const SizedBox(height: 8),
-                Text(task.description),
+                Text(
+                  task.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  task.description,
+                  style: const TextStyle(fontSize: 14, color: MyColors.black),
+                ),
+
+                // const SizedBox(height: 10),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    "Tandai",
+                    style: TextStyle(
+                      color: MyColors.secondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

@@ -22,15 +22,15 @@ class MaintenanceItemImage extends StatelessWidget {
       );
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 140,
-        width: 140,
-        color: Colors.white, // background agar logo kontras
-        alignment: Alignment.center,
-        child: Image(image: imageProvider, fit: BoxFit.contain),
+    return Container(
+      height: 160,
+      width: 160,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MyColors.greySoft,
+        borderRadius: BorderRadius.circular(20),
       ),
+      child: Image(image: imageProvider, fit: BoxFit.contain),
     );
   }
 }

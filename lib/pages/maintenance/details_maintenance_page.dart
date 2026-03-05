@@ -13,6 +13,9 @@ import 'package:flutter_kita/pages/maintenance/widgets/maintenance_task_card.dar
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_detail_header.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_item_image.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/finish_maintenance_sheet.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/maintenance_meta_card.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/maintenance_progress_card.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/maintenance_alert_box.dart';
 
 class DetailsMaintenancePage extends StatefulWidget {
   final String maintenanceId;
@@ -222,42 +225,62 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
         children: [
           MaintenanceDetailHeader(
             itemName: maintenance.itemName,
-            lastMaintenance: lastMaintenance,
             imageWidget: MaintenanceItemImage(
               imageProvider: detail.imageProvider,
               isLoading: false,
             ),
           ),
-          if (detail.initialQuantity > 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Progress Pengerjaan",
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: detail.progress,
-                    minHeight: 8,
-                    backgroundColor: MyColors.greySoft,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      detail.progress == 1
-                          ? MyColors.success
-                          : MyColors.secondary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "${detail.completedQuantity} / ${detail.initialQuantity} unit selesai "
-                    "(${(detail.progress * 100).toStringAsFixed(0)}%)",
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ],
-              ),
+          MaintenanceAlertBox(
+            status: _service.computeStatus(maintenance),
+            nextMaintenance: _service.formatDate(
+              maintenance.nextMaintenanceAt?.toDate(),
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.access_time, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  "Perawatan terakhir: $lastMaintenance",
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 30),
+          MaintenanceMetaCard(
+            intervalDays: maintenance.intervalDays,
+            nextMaintenance: _service.formatDate(
+              maintenance.nextMaintenanceAt?.toDate(),
+            ),
+            priority: maintenance.priority,
+          ),
+
+          const SizedBox(height: 10),
+          if (detail.initialQuantity > 0)
+            MaintenanceProgressCard(
+              progress: detail.progress,
+              completed: detail.completedQuantity,
+              total: detail.initialQuantity,
+            ),
+          const SizedBox(height: 6),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.checklist, size: 20, color: MyColors.secondary),
+                SizedBox(width: 8),
+                Text(
+                  "Checklist Perawatan",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
