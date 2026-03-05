@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'widgets/customer_form.dart';
+import 'widgets/cart_item_card.dart';
+import 'widgets/item_detail_card.dart';
+import 'widgets/transaction_total_bar.dart';
+
+import '../../models/transaction/cart_item_model.dart';
+import '../../services/transaction/transaction_service.dart';
+
 class TransactionAddPage extends StatefulWidget {
   const TransactionAddPage({super.key});
 
@@ -17,9 +25,6 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   final TextEditingController _dateCtrl = TextEditingController();
   final TextEditingController _phoneCtrl = TextEditingController();
 
-  // =========================
-  // FOCUS NODES (UX)
-  // =========================
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _phoneFocus = FocusNode();
 
@@ -29,7 +34,12 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   // =========================
-  // ITEMS FROM DB
+  // SERVICE
+  // =========================
+  final TransactionService _transactionService = TransactionService();
+
+  // =========================
+  // ITEMS
   // =========================
   List<Map<String, dynamic>> _items = [];
   String? _selectedItemId;
@@ -51,7 +61,17 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // =========================
   // CART
   // =========================
-  final List<Map<String, dynamic>> _cartItems = [];
+  final List<CartItemModel> _cartItems = [];
+
+  List<TextEditingController> _serialControllers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+
+    _generateSerialControllers();
+  }
 
   @override
   void dispose() {
@@ -61,12 +81,9 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadItems();
-  }
-
+  // =========================
+  // LOAD ITEMS
+  // =========================
   Future<void> _loadItems() async {
     final snap = await _db.collection('items').get();
 
@@ -77,15 +94,15 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     });
   }
 
+  void _generateSerialControllers() {
+    _serialControllers = List.generate(_qty, (_) => TextEditingController());
+  }
+
   // =========================
-  // TOTAL (AUTO)
+  // TOTAL
   // =========================
   int get _total {
-    return _cartItems.fold<int>(0, (accumulator, item) {
-      final int price = item['price'] as int;
-      final int qty = item['qty'] as int;
-      return accumulator + (price * qty);
-    });
+    return _cartItems.fold<int>(0, (acc, item) => acc + item.subtotal);
   }
 
   // =========================
@@ -93,38 +110,48 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // =========================
   void _addToCart() {
     if (_selectedItem == null) return;
-    if (_transactionDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pilih tanggal transaksi terlebih dahulu'),
-        ),
-      );
-      return;
-    }
 
     final price = _selectedItem!['price'] as int;
 
-    setState(() {
-      _cartItems.add({
-        'itemId': _selectedItem!['id'],
-        'name': _selectedItem!['name'],
-        'price': price,
-        'qty': _qty,
-        'subtotal': _qty * price,
+    /// ambil serial number dari textfield
+    final serialNumbers = _serialControllers.map((e) => e.text.trim()).toList();
 
-        // ===== GARANSI (DIRATAKAN) =====
-        'hasWarranty': _hasWarranty,
-        'warrantyYear': _hasWarranty ? _warrantyYear : 0,
-        'warrantyType': _hasWarranty ? _warrantyType : null,
-        'serialNumber': '', // nanti bisa diisi kalau mau
-      });
+    /// validasi serial number jika item = unit
+    if (_selectedItem!['type'] == 'unit') {
+      for (final sn in serialNumbers) {
+        if (sn.isEmpty) {
+          _showAlert('Serial number tidak boleh kosong');
+          return;
+        }
+      }
+    }
+
+    final cartItem = CartItemModel(
+      itemId: _selectedItem!['id'],
+      name: _selectedItem!['name'],
+      price: price,
+      qty: _qty,
+      hasWarranty: _hasWarranty,
+      warrantyYear: _hasWarranty ? _warrantyYear : 0,
+      warrantyType: _hasWarranty ? _warrantyType : null,
+
+      /// kirim serial number ke model
+      serialNumbers: serialNumbers,
+    );
+
+    setState(() {
+      _cartItems.add(cartItem);
 
       _selectedItem = null;
       _selectedItemId = null;
       _qty = 1;
+
       _hasWarranty = true;
       _warrantyYear = 1;
       _warrantyType = 'Jasa';
+
+      /// reset serial controller
+      _serialControllers.clear();
     });
   }
 
@@ -132,9 +159,6 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // SUBMIT
   // =========================
   Future<void> _submit() async {
-    // =========================
-    // VALIDASI (STOP DI SINI)
-    // =========================
     if (_nameCtrl.text.trim().isEmpty) {
       _showAlert('Nama pelanggan wajib diisi');
       _nameFocus.requestFocus();
@@ -152,84 +176,12 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       return;
     }
 
-    // =========================
-    // HITUNG TOTAL
-    // =========================
-    final totalQty = _cartItems.fold<int>(0, (s, e) => s + (e['qty'] as int));
-
-    final subtotal = _cartItems.fold<int>(
-      0,
-      (s, e) => s + (e['subtotal'] as int),
-    );
-
-    // =========================
-    // CEK STOK SEBELUM SIMPAN
-    // =========================
-    for (final item in _cartItems) {
-      final doc = await FirebaseFirestore.instance
-          .collection('items')
-          .doc(item['itemId'])
-          .get();
-
-      if (!doc.exists) {
-        _showAlert('Item ${item['name']} tidak ditemukan');
-        return;
-      }
-
-      final currentStock = (doc.data()?['stock'] ?? 0) as int;
-      final qty = item['qty'] as int;
-
-      if (currentStock < qty) {
-        _showAlert(
-          'Stok tidak cukup untuk ${item['name']}. '
-          'Sisa stok: $currentStock',
-        );
-        return;
-      }
-    }
-
-    final txCode = await _generateTxCode();
-
-    // =========================
-    // SIMPAN KE FIRESTORE (1x)
-    // =========================
-    final txRef = FirebaseFirestore.instance.collection('transaction').doc();
-    final transactionId = txRef.id;
-
-    await txRef.set({
-      'customer': {
-        'name': _nameCtrl.text.trim(),
-        'phone': _phoneCtrl.text.trim(),
-      },
-      'date': Timestamp.fromDate(_transactionDate ?? DateTime.now()),
-      'items': _cartItems,
-      'summary': {'subtotal': subtotal, 'totalQty': totalQty, 'txCode': txCode},
-      'status': 'Sudah Dibayar',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    // =========================
-    // 🔥 AUTO CREATE WARRANTY (DI SINI)
-    // =========================
-    final transactionDate = _transactionDate ?? DateTime.now();
-
-    await _createWarrantiesFromTransaction(
-      transactionId: transactionId,
-      buyerName: _nameCtrl.text.trim(),
-      phone: _phoneCtrl.text,
+    await _transactionService.createTransaction(
+      name: _nameCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+      date: _transactionDate ?? DateTime.now(),
       items: _cartItems,
-      transactionDate: transactionDate,
     );
-
-    // =========================
-    // OPTIONAL: KURANGI STOK
-    // =========================
-    for (final item in _cartItems) {
-      await FirebaseFirestore.instance
-          .collection('items')
-          .doc(item['itemId'])
-          .update({'stock': FieldValue.increment(-(item['qty'] as int))});
-    }
 
     if (!mounted) return;
 
@@ -268,42 +220,23 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _label('Nama Pelanggan'),
-                    TextField(
-                      controller: _nameCtrl,
-                      focusNode: _nameFocus,
-                      decoration: _inputDecoration(hint: 'Nama pelanggan'),
+                    CustomerForm(
+                      nameCtrl: _nameCtrl,
+                      phoneCtrl: _phoneCtrl,
+                      dateCtrl: _dateCtrl,
+                      onPickDate: _pickDate,
                     ),
-                    const SizedBox(height: 14),
 
-                    _label('No. HP'),
-                    TextField(
-                      controller: _phoneCtrl,
-                      focusNode: _phoneFocus,
-                      keyboardType: TextInputType.phone,
-                      decoration: _inputDecoration(hint: '08xxxxxxxxxx'),
-                    ),
-                    const SizedBox(height: 14),
-
-                    _label('Tanggal Transaksi'),
-                    TextField(
-                      controller: _dateCtrl,
-                      readOnly: true,
-                      decoration: _inputDecoration(
-                        hint: 'Pilih tanggal',
-                        suffixIcon: Icons.calendar_today_rounded,
-                      ),
-                      onTap: _pickDate,
-                    ),
                     const SizedBox(height: 14),
 
                     _label('Pilih Item / Barang'),
+
                     DropdownButtonFormField<String>(
                       isExpanded: true,
                       initialValue: _selectedItemId,
                       items: _items.map<DropdownMenuItem<String>>((e) {
                         return DropdownMenuItem<String>(
-                          value: e['id'] as String,
+                          value: e['id'],
                           child: Text(e['name']),
                         );
                       }).toList(),
@@ -313,6 +246,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                           _selectedItem = _items.firstWhere(
                             (e) => e['id'] == v,
                           );
+                          _generateSerialControllers();
                         });
                       },
                       decoration: _inputDecoration(hint: 'Pilih item'),
@@ -320,10 +254,61 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
 
                     if (_selectedItem != null) ...[
                       const SizedBox(height: 16),
-                      _itemDetailCard(),
+
+                      ItemDetailCard(
+                        item: _selectedItem!,
+                        qty: _qty,
+                        stock: _selectedItem!['stock'],
+                        hasWarranty: _hasWarranty,
+                        warrantyYear: _warrantyYear,
+                        warrantyType: _warrantyType,
+                        serialControllers: _serialControllers,
+
+                        onClose: () {
+                          setState(() {
+                            _selectedItem = null;
+                            _selectedItemId = null;
+                            _qty = 1;
+                            _hasWarranty = true;
+                            _warrantyYear = 1;
+                            _warrantyType = 'Jasa';
+                          });
+                        },
+
+                        onQtyAdd: () {
+                          if (_qty < _selectedItem!['stock']) {
+                            setState(() {
+                              _qty++;
+                              _generateSerialControllers();
+                            });
+                          }
+                        },
+
+                        onQtyMinus: _qty > 1
+                            ? () {
+                                setState(() {
+                                  _qty--;
+                                  _generateSerialControllers();
+                                });
+                              }
+                            : null,
+
+                        onWarrantyChanged: (v) {
+                          setState(() => _hasWarranty = v);
+                        },
+
+                        onWarrantyYearChanged: (v) {
+                          setState(() => _warrantyYear = v);
+                        },
+
+                        onWarrantyTypeChanged: (v) {
+                          setState(() => _warrantyType = v);
+                        },
+                      ),
                     ],
 
                     const SizedBox(height: 12),
+
                     TextButton.icon(
                       onPressed: _selectedItem == null ? null : _addToCart,
                       icon: const Icon(
@@ -343,8 +328,13 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                       const SizedBox(height: 20),
                       _label('Item dalam Transaksi'),
                       const SizedBox(height: 8),
+
                       ..._cartItems.asMap().entries.map(
-                        (e) => _cartItemCard(e.key, e.value),
+                        (e) => CartItemCard(
+                          item: e.value,
+                          onDelete: () =>
+                              setState(() => _cartItems.removeAt(e.key)),
+                        ),
                       ),
                     ],
                   ],
@@ -352,195 +342,13 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
               ),
             ),
 
-            // TOTAL + SUBMIT
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Total',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'Rp ${_fmt(_total)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MyColors.secondary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                      ),
-                      onPressed: _cartItems.isEmpty ? null : _submit,
-                      child: const Text(
-                        'Simpan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            TransactionTotalBar(
+              total: _total,
+              isDisabled: _cartItems.isEmpty,
+              onSubmit: _submit,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // =========================
-  // ITEM DETAIL
-  // =========================
-  Widget _itemDetailCard() {
-    final price = _selectedItem!['price'] as int;
-    final stock = _selectedItem!['stock'] as int;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: MyColors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MyColors.secondary.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _selectedItem!['name'],
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  Text(
-                    'Rp ${_fmt(price)}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  Text('Stok: $stock', style: const TextStyle(fontSize: 12)),
-                ],
-              ),
-              // TOMBOL HAPUS / BATAL
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  setState(() {
-                    _selectedItem = null;
-                    _selectedItemId = null;
-                    _qty = 1;
-                    _hasWarranty = true;
-                    _warrantyYear = 1;
-                    _warrantyType = 'Jasa';
-                  });
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          _subLabel('Jumlah'),
-          Row(
-            children: [
-              _qtyButton(
-                icon: Icons.remove,
-                onTap: _qty > 1 ? () => setState(() => _qty--) : null,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  '$_qty',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              _qtyButton(
-                icon: Icons.add,
-                onTap: _qty < stock ? () => setState(() => _qty++) : null,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          _subLabel('Garansi'),
-          Row(
-            children: [
-              _radioBool(
-                label: 'Ada',
-                value: true,
-                group: _hasWarranty,
-                onChanged: (v) => setState(() => _hasWarranty = v),
-              ),
-              _radioBool(
-                label: 'Tidak Ada',
-                value: false,
-                group: _hasWarranty,
-                onChanged: (v) => setState(() => _hasWarranty = v),
-              ),
-            ],
-          ),
-
-          if (_hasWarranty) ...[
-            const SizedBox(height: 14),
-            _subLabel('Durasi Garansi'),
-            Row(
-              children: [
-                _radioInt(
-                  label: '1 Tahun',
-                  value: 1,
-                  group: _warrantyYear,
-                  onChanged: (v) => setState(() => _warrantyYear = v),
-                ),
-                _radioInt(
-                  label: '2 Tahun',
-                  value: 2,
-                  group: _warrantyYear,
-                  onChanged: (v) => setState(() => _warrantyYear = v),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            _subLabel('Jenis Garansi'),
-            DropdownButtonFormField<String>(
-              initialValue: _warrantyType,
-              items: const [
-                DropdownMenuItem(value: 'Jasa', child: Text('Jasa')),
-                DropdownMenuItem(value: 'SparePart', child: Text('SparePart')),
-                DropdownMenuItem(
-                  value: 'Jasa & SparePart',
-                  child: Text('Jasa & SparePart'),
-                ),
-              ],
-              onChanged: (v) => setState(() => _warrantyType = v!),
-              decoration: _inputDecoration(
-                hint: 'Pilih jenis garansi',
-                suffixIcon: Icons.keyboard_arrow_down_rounded,
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }
@@ -553,125 +361,25 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     child: Text(t, style: const TextStyle(fontWeight: FontWeight.w700)),
   );
 
-  Widget _subLabel(String t) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Text(
-      t,
-      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-    ),
-  );
-
-  Widget _qtyButton({required IconData icon, VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: MyColors.secondary.withValues(alpha: 0.6)),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: onTap == null ? Colors.grey : MyColors.secondary,
-        ),
-      ),
-    );
-  }
-
-  Widget _radioBool({
-    required String label,
-    required bool value,
-    required bool group,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Row(
-      children: [
-        Radio<bool>(
-          value: value,
-          groupValue: group,
-          activeColor: MyColors.secondary,
-          onChanged: (v) => onChanged(v!),
-        ),
-        Text(label),
-      ],
-    );
-  }
-
-  Widget _radioInt({
-    required String label,
-    required int value,
-    required int group,
-    required ValueChanged<int> onChanged,
-  }) {
-    return Row(
-      children: [
-        Radio<int>(
-          value: value,
-          groupValue: group,
-          activeColor: MyColors.secondary,
-          onChanged: (v) => onChanged(v!),
-        ),
-        Text(label),
-      ],
-    );
-  }
-
-  InputDecoration _inputDecoration({String? hint, IconData? suffixIcon}) {
+  InputDecoration _inputDecoration({String? hint}) {
     return InputDecoration(
       hintText: hint,
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
 
-      // DEFAULT / IDLE (belum disentuh)
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(
-          color: Colors.black, // 🔥 hitam jelas
-          width: 1,
-        ),
+        borderSide: const BorderSide(color: Colors.black, width: 1),
       ),
 
-      // FOCUS (saat disentuh)
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: MyColors.secondary, width: 1.5),
       ),
-
-      // OPTIONAL (biar konsisten)
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
 
-  // =========================
-  // generate txCode
-  // =========================
-  Future<String> _generateTxCode() async {
-    final year = DateTime.now().year;
-    final counterRef = _db.collection('counters').doc('tx_$year');
-
-    return _db.runTransaction((transaction) async {
-      final snapshot = await transaction.get(counterRef);
-
-      int current = 0;
-      if (snapshot.exists) {
-        current = snapshot['value'] as int;
-      }
-
-      final next = current + 1;
-
-      transaction.set(counterRef, {'value': next}, SetOptions(merge: true));
-
-      final number = next.toString().padLeft(5, '0');
-      return 'TX-$year-$number';
-    });
-  }
-
-  // =========================
-  // alert message
-  // =========================
   void _showAlert(String message) {
     showDialog(
       context: context,
@@ -699,113 +407,10 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     if (d != null) {
       setState(() {
         _transactionDate = d;
+
         _dateCtrl.text =
             '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
       });
     }
-  }
-
-  Future<void> _createWarrantiesFromTransaction({
-    required String transactionId,
-    required String buyerName,
-    required String phone,
-    required List<Map<String, dynamic>> items,
-    required DateTime transactionDate,
-  }) async {
-    final warrantyRef = FirebaseFirestore.instance.collection('warranty');
-
-    for (final item in items) {
-      if (item['hasWarranty'] != true) continue;
-
-      final int duration = (item['warrantyYear'] ?? 0) as int;
-      if (duration <= 0) continue;
-
-      final int qty = (item['qty'] ?? 1) as int;
-
-      for (int i = 0; i < qty; i++) {
-        final startAt = transactionDate;
-        final expireAt = DateTime(
-          transactionDate.year + duration,
-          transactionDate.month,
-          transactionDate.day,
-        );
-
-        await warrantyRef.add({
-          'transactionId': transactionId,
-          'itemId': item['itemId'],
-          'buyerName': buyerName.trim(),
-          'phone': phone.trim(),
-
-          'productName': item['name'],
-          'serialNumber': '',
-          'warrantyType': item['warrantyType'], // 🔥 TAMBAHKAN INI
-
-          'startAt': Timestamp.fromDate(startAt),
-          'expireAt': Timestamp.fromDate(expireAt),
-          'createdAt': FieldValue.serverTimestamp(),
-
-          'status': 'Active',
-          'claimCount': 0,
-        });
-      }
-    }
-  }
-
-  String _fmt(int v) {
-    final s = v.toString().split('').reversed.toList();
-    final parts = <String>[];
-    for (var i = 0; i < s.length; i += 3) {
-      parts.add(s.skip(i).take(3).toList().reversed.join());
-    }
-    return parts.reversed.join('.');
-  }
-
-  Widget _cartItemCard(int index, Map<String, dynamic> item) {
-    final subtotal = item['price'] * item['qty'];
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: MyColors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MyColors.secondary.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  item['name'],
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => setState(() => _cartItems.removeAt(index)),
-                child: const Icon(Icons.close, size: 18),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Qty ${item['qty']} × Rp ${_fmt(item['price'])}',
-            style: const TextStyle(fontSize: 12),
-          ),
-          Text(
-            item['hasWarranty'] == true
-                ? 'Garansi ${item['warrantyYear']} Tahun (${item['warrantyType']})'
-                : 'Tanpa Garansi',
-            style: const TextStyle(fontSize: 12),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Subtotal: Rp ${_fmt(subtotal)}',
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
-    );
   }
 }
