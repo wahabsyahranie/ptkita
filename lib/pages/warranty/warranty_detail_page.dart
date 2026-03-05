@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/models/warranty_model.dart';
+import 'package:flutter_kita/models/warranty/warranty_model.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/repair/repair_add_page.dart';
 

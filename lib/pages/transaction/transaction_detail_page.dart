@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:flutter_kita/models/warranty_model.dart';
+import 'package:flutter_kita/models/warranty/warranty_model.dart';
 import '../warranty/warranty_detail_page.dart';
 
 class TransactionDetailPage extends StatelessWidget {
