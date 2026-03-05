@@ -42,7 +42,9 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >
           _scrollController.position.maxScrollExtent - 200) {
-        _loadMore();
+        if (!_isLoading && _hasMore) {
+          _loadMore();
+        }
       }
     });
   }
@@ -81,10 +83,9 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
   Future<void> _refresh() async {
     setState(() {
       _warranties.clear();
-
       _lastDoc = null;
-
       _hasMore = true;
+      _isLoading = false;
     });
 
     await _loadMore();
@@ -115,11 +116,11 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
     final query = _searchCtrl.text.trim().toLowerCase();
 
     return Scaffold(
-      backgroundColor: MyColors.greySoft,
+      backgroundColor: MyColors.white,
 
       appBar: AppBar(
         title: const Text('Data Garansi'),
-        backgroundColor: MyColors.greySoft,
+        backgroundColor: MyColors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         iconTheme: const IconThemeData(color: MyColors.black),

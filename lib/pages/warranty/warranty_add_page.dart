@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_kita/models/warranty/warranty_model.dart';
 import 'package:flutter_kita/services/warranty/warranty_service.dart';
+import 'package:flutter_kita/core/widgets/forms/app_text.dart';
+import 'package:flutter_kita/styles/colors.dart';
 
 class WarrantyAddPage extends StatefulWidget {
   const WarrantyAddPage({super.key});
@@ -47,7 +49,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
     if (_startDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select transaction date")),
+        const SnackBar(content: Text("Mohon isi tanggal transaksi")),
       );
       return;
     }
@@ -83,27 +85,137 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Warranty successfully created")),
+        const SnackBar(content: Text("Garansi berhasil ditambahkan")),
       );
 
       Navigator.pop(context, {"ok": true});
     }
   }
 
+  Future<void> _confirmSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Mohon isi tanggal transaksi")),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Simpan Garansi?",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+
+              const SizedBox(height: 10),
+
+              const Text(
+                "Data garansi yang sudah disimpan tidak dapat dihapus dari aplikasi.",
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 24),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text("Batal"),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _saveWarranty(); // ← DISINI dipanggil
+                      },
+                      child: const Text("Simpan"),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Add Warranty")),
+      backgroundColor: MyColors.white,
+
+      appBar: AppBar(
+        title: const Text("Tambah Garansi"),
+        backgroundColor: MyColors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              _buildTextField("Buyer Name", _buyerController),
-              _buildTextField("Phone Number", _phoneController),
-              _buildTextField("Product Name", _productController),
-              _buildTextField("Serial Number", _serialController),
+              const SizedBox(height: 6),
+
+              AppTextFormField(
+                controller: _buyerController,
+                label: "Nama Pelanggan",
+                validator: (value) => value == null || value.isEmpty
+                    ? "Nama pelanggan wajib diisi"
+                    : null,
+              ),
+
+              const SizedBox(height: 16),
+
+              AppTextFormField(
+                controller: _phoneController,
+                label: "No. HP",
+                keyboardType: TextInputType.phone,
+                validator: (value) => value == null || value.isEmpty
+                    ? "Nomor HP wajib diisi"
+                    : null,
+              ),
+
+              const SizedBox(height: 16),
+
+              AppTextFormField(
+                controller: _productController,
+                label: "Nama Barang",
+                validator: (value) => value == null || value.isEmpty
+                    ? "Nama barang wajib diisi"
+                    : null,
+              ),
+
+              const SizedBox(height: 16),
+
+              AppTextFormField(
+                controller: _serialController,
+                label: "Nomor Seri",
+                validator: (value) => value == null || value.isEmpty
+                    ? "Nomor seri wajib diisi"
+                    : null,
+              ),
 
               const SizedBox(height: 16),
 
@@ -111,8 +223,8 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(
                   _startDate == null
-                      ? "Select Transaction Date"
-                      : "Transaction Date: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}",
+                      ? "Pilih Tanggal Transaksi"
+                      : "Tanggal Transaksi: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}",
                 ),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
@@ -135,9 +247,33 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
               DropdownButtonFormField<String>(
                 initialValue: _selectedBrand,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Brand",
-                  border: OutlineInputBorder(),
+
+                  filled: true,
+                  fillColor: Colors.white,
+
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+                  ),
+
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: MyColors.secondary,
+                      width: 2,
+                    ),
+                  ),
                 ),
                 items: brandClaimPolicy.keys
                     .map(
@@ -156,9 +292,33 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
               DropdownButtonFormField<int>(
                 initialValue: _durationMonth,
-                decoration: const InputDecoration(
-                  labelText: "Warranty Duration",
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: "Durasi Garansi",
+
+                  filled: true,
+                  fillColor: Colors.white,
+
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+                  ),
+
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: MyColors.secondary,
+                      width: 2,
+                    ),
+                  ),
                 ),
                 items: const [
                   DropdownMenuItem(value: 12, child: Text("1 Tahun")),
@@ -189,7 +349,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          "Warranty will expire on "
+                          "Garansi berlaku hingga: "
                           "${calculateExpireDate().day}/"
                           "${calculateExpireDate().month}/"
                           "${calculateExpireDate().year}",
@@ -203,29 +363,41 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
               const SizedBox(height: 24),
 
-              ElevatedButton(
-                onPressed: _isLoading ? null : _saveWarranty,
-                child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text("Save Warranty"),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _confirmSave,
+
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MyColors.secondary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          "Simpan Garansi",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        validator: (value) =>
-            value == null || value.isEmpty ? "$label is required" : null,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
         ),
       ),
     );
