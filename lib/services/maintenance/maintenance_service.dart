@@ -137,6 +137,7 @@ class MaintenanceService {
 
     return MaintenanceStatus.terjadwal;
   }
+
   // =========================================================
   // ====================== FILTER ===========================
   // =========================================================
@@ -228,7 +229,24 @@ class MaintenanceService {
 
       await _repository.save(newMaintenance);
     } else {
-      await _repository.save(maintenance);
+      final detail = await _repository
+          .streamMaintenanceDetail(maintenance.id)
+          .first;
+
+      if (detail == null) {
+        throw MaintenanceException("Maintenance tidak ditemukan");
+      }
+
+      final existing = detail.maintenance;
+
+      final updatedMaintenance = maintenance.copyWith(
+        cycleInitialQuantity: existing.cycleInitialQuantity,
+        remainingQuantity: existing.remainingQuantity,
+        lastMaintenanceAt: existing.lastMaintenanceAt,
+        nextMaintenanceAt: existing.nextMaintenanceAt,
+      );
+
+      await _repository.save(updatedMaintenance);
     }
   }
 
