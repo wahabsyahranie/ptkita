@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/core/enum/maintenance_status.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
@@ -11,7 +12,7 @@ class MaintenanceFilterSheet extends StatefulWidget {
 }
 
 class _MaintenanceFilterSheetState extends State<MaintenanceFilterSheet> {
-  late Set<String> statuses;
+  late Set<MaintenanceStatus> statuses;
   late Set<String> priorities;
   Duration? timeRange;
 
@@ -66,21 +67,26 @@ class _MaintenanceFilterSheetState extends State<MaintenanceFilterSheet> {
             const SizedBox(height: 10),
             Wrap(
               spacing: 12,
-              children: ['terlambat', 'terjadwal'].map((s) {
-                return _chipButton(
-                  label: s,
-                  selected: statuses.contains(s),
-                  onTap: () {
-                    setState(() {
-                      statuses.contains(s)
-                          ? statuses.remove(s)
-                          : statuses.add(s);
-                    });
-                  },
-                );
-              }).toList(),
+              runSpacing: 10,
+              children:
+                  [
+                    MaintenanceStatus.terlambat,
+                    MaintenanceStatus.terjadwal,
+                    MaintenanceStatus.dalamProses,
+                  ].map((s) {
+                    return _chipButton(
+                      label: _formatStatus(s),
+                      selected: statuses.contains(s),
+                      onTap: () {
+                        setState(() {
+                          statuses.contains(s)
+                              ? statuses.remove(s)
+                              : statuses.add(s);
+                        });
+                      },
+                    );
+                  }).toList(),
             ),
-
             const SizedBox(height: 20),
 
             // =========================
@@ -208,5 +214,16 @@ class _MaintenanceFilterSheetState extends State<MaintenanceFilterSheet> {
         });
       },
     );
+  }
+
+  String _formatStatus(MaintenanceStatus status) {
+    switch (status) {
+      case MaintenanceStatus.terlambat:
+        return 'Terlambat';
+      case MaintenanceStatus.dalamProses:
+        return 'Dalam Proses';
+      case MaintenanceStatus.terjadwal:
+      return 'Terjadwal';
+    }
   }
 }

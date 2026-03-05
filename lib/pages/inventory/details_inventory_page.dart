@@ -1,9 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
@@ -22,7 +23,10 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
   @override
   void initState() {
     super.initState();
-    _service = InventoryService(FirestoreInventoryRepository());
+    _service = InventoryService(
+      FirestoreInventoryRepository(),
+      UserService(FirestoreUserRepository()),
+    );
   }
 
   /// Membatasi text
@@ -121,9 +125,11 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     final stock = item.stock ?? 0;
     final type = item.type ?? '-';
     final desc = item.description ?? '-';
-    final imageUrl = item.imageUrl;
+    final imageProvider = _service.resolveImage(item);
     final merk = item.merk ?? '-';
     final locationCode = item.locationCode ?? '-';
+    final movementLabel = _service.getMovementLabel(item);
+    final movementColor = _service.getMovementColor(item);
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -157,19 +163,12 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                   const SizedBox(height: 10),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: imageUrl != null && imageUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            width: 230,
-                            height: 230,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.broken_image),
-                          )
-                        : _placeholder(),
+                    child: Image(
+                      image: imageProvider,
+                      width: 230,
+                      height: 230,
+                      fit: BoxFit.contain, // sarankan contain untuk logo
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Padding(
@@ -213,7 +212,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("Type", type),
+                _rowInfo("Tipe", type),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
@@ -225,12 +224,21 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
+                _rowMovement("Movement Speed", movementLabel, movementColor),
+                const DottedlineWidget(),
+                const SizedBox(height: 10),
+
                 const Text(
                   "Deskripsi",
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                 ),
                 Text(desc),
                 const DottedlineWidget(),
+
+                const SizedBox(height: 16),
+
+                // const Divider(height: 24, thickness: 0.6),
+                _buildAuditSection(item),
 
                 const SizedBox(height: 30),
 
@@ -277,14 +285,114 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     );
   }
 
-  Widget _placeholder() {
-    return Container(
-      width: 230,
-      height: 230,
-      color: MyColors.greySoft,
-      child: const Center(
-        child: Icon(Icons.image, size: 60, color: MyColors.black),
-      ),
+  Widget _rowMovement(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            value.toUpperCase(),
+            style: TextStyle(color: color, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
     );
+  }
+
+  ////  METHOD AUDIT
+  Widget _buildAuditSection(Item item) {
+    final createdBy = item.createdByName ?? '-';
+    final createdAt = item.createdAt;
+    final editedBy = item.lastEditedByName ?? '-';
+    final editedAt = item.lastEditedAt;
+
+    String formatDate(DateTime? date) {
+      if (date == null) return '-';
+      return "${date.day.toString().padLeft(2, '0')} "
+          "${_monthName(date.month)} "
+          "${date.year}, "
+          "${date.hour.toString().padLeft(2, '0')}:"
+          "${date.minute.toString().padLeft(2, '0')}";
+    }
+
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(bottom: 10),
+      title: const Row(
+        children: [
+          Icon(Icons.info_outline, size: 16, color: Colors.black54),
+          SizedBox(width: 6),
+          Text(
+            "Informasi Sistem",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+      iconColor: Colors.black54,
+      collapsedIconColor: Colors.black54,
+      children: [
+        const SizedBox(height: 8),
+        _buildAuditRow("Dibuat oleh", createdBy),
+        const SizedBox(height: 6),
+        _buildAuditRow("Dibuat pada", formatDate(createdAt)),
+        const SizedBox(height: 10),
+        _buildAuditRow("Terakhir diubah", editedBy),
+        const SizedBox(height: 6),
+        _buildAuditRow("Waktu perubahan", formatDate(editedAt)),
+      ],
+    );
+  }
+
+  //// HELPER ROW KHUSUS AUDIT
+  Widget _buildAuditRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
+          ),
+        ),
+      ],
+    );
+  }
+
+  //// HELPER BULAN UNTUK AUDIT
+  String _monthName(int month) {
+    const months = [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
+    return months[month];
   }
 }

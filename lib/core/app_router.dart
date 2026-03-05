@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/login_page.dart';
-import 'package:flutter_kita/pages/welcome_screen_page.dart';
 import '../repositories/user/firestore_user_repository.dart';
 import '../services/user/user_service.dart';
 import '../pages/home/home_page.dart';

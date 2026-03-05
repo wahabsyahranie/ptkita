@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/styles/colors.dart';
 
 class InventoryFormFieldsSection extends StatelessWidget {
   final TextEditingController nameCtrl;
@@ -11,7 +10,9 @@ class InventoryFormFieldsSection extends StatelessWidget {
 
   final String? selectedType;
   final String? selectedMerk;
+  final int movementBaseScore;
 
+  final ValueChanged<int> onMovementChanged;
   final ValueChanged<String?> onTypeChanged;
   final ValueChanged<String?> onMerkChanged;
 
@@ -27,46 +28,41 @@ class InventoryFormFieldsSection extends StatelessWidget {
     required this.selectedMerk,
     required this.onTypeChanged,
     required this.onMerkChanged,
+    required this.movementBaseScore,
+    required this.onMovementChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    InputDecoration decoration(String hint) {
-      return const InputDecoration(
-        border: OutlineInputBorder(),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: MyColors.secondary, width: 2),
-        ),
-      ).copyWith(hintText: hint);
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Nama"),
         const SizedBox(height: 8),
         TextFormField(
           controller: nameCtrl,
-          decoration: decoration("Masukkan nama barang"),
+          decoration: const InputDecoration(
+            labelText: "Nama Barang",
+            border: OutlineInputBorder(),
+          ),
           validator: (v) => v == null || v.isEmpty ? "Nama wajib diisi" : null,
         ),
-        const SizedBox(height: 15),
-
-        const Text("SKU"),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         TextFormField(
           controller: skuCtrl,
-          decoration: decoration("Masukkan SKU barang"),
+          decoration: const InputDecoration(
+            labelText: "SKU",
+            border: OutlineInputBorder(),
+          ),
           validator: (v) => v == null || v.isEmpty ? "SKU wajib diisi" : null,
         ),
-        const SizedBox(height: 15),
-
-        const Text("Harga"),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         TextFormField(
           controller: priceCtrl,
           keyboardType: TextInputType.number,
-          decoration: decoration("Harga barang"),
+          decoration: const InputDecoration(
+            labelText: "Harga",
+            border: OutlineInputBorder(),
+          ),
           validator: (v) {
             if (v == null || v.trim().isEmpty) {
               return 'Harga wajib diisi';
@@ -74,30 +70,27 @@ class InventoryFormFieldsSection extends StatelessWidget {
             return null;
           },
         ),
-        const SizedBox(height: 15),
-
-        const Text("Stok"),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         TextFormField(
           controller: stockCtrl,
           keyboardType: TextInputType.number,
-          decoration: decoration("Masukkan jumlah stok"),
+          decoration: const InputDecoration(
+            labelText: "Jumlah Stok",
+            border: OutlineInputBorder(),
+          ),
           validator: (v) =>
               v == null || v.trim().isEmpty ? 'Jumlah wajib diisi' : null,
         ),
-        const SizedBox(height: 15),
-
-        const Text("Rak"),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         TextFormField(
           controller: locationCtrl,
-          decoration: decoration("Masukkan kode rak"),
+          decoration: const InputDecoration(
+            labelText: "Rak",
+            border: OutlineInputBorder(),
+          ),
           validator: (v) => v == null || v.isEmpty ? "Rak wajib diisi" : null,
         ),
-        const SizedBox(height: 15),
-
-        const Text("Tipe"),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         DropdownButtonFormField<String>(
           initialValue: selectedType,
           items: const [
@@ -105,13 +98,13 @@ class InventoryFormFieldsSection extends StatelessWidget {
             DropdownMenuItem(value: "part", child: Text("Part")),
           ],
           onChanged: onTypeChanged,
-          decoration: decoration("Pilih tipe barang"),
+          decoration: const InputDecoration(
+            labelText: "Tipe Barang",
+            border: OutlineInputBorder(),
+          ),
           validator: (v) => v == null || v.isEmpty ? 'Tipe wajib diisi' : null,
         ),
-        const SizedBox(height: 15),
-
-        const Text("Merk"),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         DropdownButtonFormField<String>(
           initialValue: selectedMerk,
           items: const [
@@ -124,18 +117,39 @@ class InventoryFormFieldsSection extends StatelessWidget {
             DropdownMenuItem(value: "dewalt", child: Text("Dewalt")),
           ],
           onChanged: onMerkChanged,
-          decoration: decoration("Pilih merk barang"),
+          decoration: const InputDecoration(
+            labelText: "Merk",
+            border: OutlineInputBorder(),
+          ),
           validator: (v) => v == null || v.isEmpty ? 'Merk wajib diisi' : null,
         ),
-        const SizedBox(height: 15),
-
-        const Text("Deskripsi"),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<int>(
+          initialValue: movementBaseScore,
+          decoration: const InputDecoration(
+            labelText: "Movement Speed",
+            border: OutlineInputBorder(),
+          ),
+          items: const [
+            DropdownMenuItem(value: 1000, child: Text("Cepat")),
+            DropdownMenuItem(value: 500, child: Text("Normal")),
+            DropdownMenuItem(value: 100, child: Text("Jarang")),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              onMovementChanged(value);
+            }
+          },
+        ),
+        const SizedBox(height: 16),
         TextFormField(
           controller: descCtrl,
           minLines: 4,
           maxLines: 8,
-          decoration: decoration("Jelaskan deskripsi produk"),
+          decoration: const InputDecoration(
+            labelText: "Deskripsi",
+            border: OutlineInputBorder(),
+          ),
           validator: (v) =>
               v == null || v.trim().isEmpty ? 'Deskripsi wajib diisi' : null,
         ),

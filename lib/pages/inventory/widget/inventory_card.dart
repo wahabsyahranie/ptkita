@@ -3,7 +3,6 @@ import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class InventoryCard extends StatelessWidget {
   final Item item;
@@ -17,7 +16,7 @@ class InventoryCard extends StatelessWidget {
     final locationCode = item.locationCode ?? '-';
     final stock = item.stock ?? 0;
     final price = item.price ?? 0;
-    final imageUrl = item.imageUrl;
+    final imageProvider = service.resolveImage(item);
 
     return InkWell(
       onTap: () {
@@ -45,19 +44,7 @@ class InventoryCard extends StatelessWidget {
             children: [
               AspectRatio(
                 aspectRatio: 3 / 2,
-                child: imageUrl != null && imageUrl.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) =>
-                            const Center(child: CircularProgressIndicator()),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.broken_image),
-                      )
-                    : Container(
-                        color: MyColors.greySoft,
-                        child: const Center(child: Icon(Icons.image)),
-                      ),
+                child: Image(image: imageProvider, fit: BoxFit.contain),
               ),
               const SizedBox(height: 8),
               Text(

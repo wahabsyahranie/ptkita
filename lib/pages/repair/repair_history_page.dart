@@ -4,7 +4,6 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/repair/repair_add_page.dart';
 import 'package:flutter_kita/services/repair/repair_history_service.dart';
 import 'package:flutter_kita/models/repair/repair_model.dart';
-import 'repair_detail_page.dart';
 import 'widgets/repair_card.dart';
 import 'widgets/repair_search_bar.dart';
 

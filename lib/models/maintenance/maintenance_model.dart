@@ -1,5 +1,7 @@
 // lib/models/maintenance_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 
 class Maintenance {
   final String id;
@@ -11,6 +13,8 @@ class Maintenance {
   final int intervalDays;
   final String priority;
   final List<MaintenanceTask> tasks;
+  final int cycleInitialQuantity;
+  final int remainingQuantity;
 
   Maintenance({
     required this.id,
@@ -22,6 +26,8 @@ class Maintenance {
     required this.intervalDays,
     required this.priority,
     required this.tasks,
+    this.cycleInitialQuantity = 0,
+    this.remainingQuantity = 0,
   });
 
   factory Maintenance.fromFirestore(
@@ -49,6 +55,9 @@ class Maintenance {
       intervalDays: (data['intervalDays'] as num?)?.toInt() ?? 0,
       priority: data['priority'] ?? 'rendah',
       tasks: tasks,
+      cycleInitialQuantity:
+          (data['cycleInitialQuantity'] as num?)?.toInt() ?? 0,
+      remainingQuantity: (data['remainingQuantity'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -61,6 +70,8 @@ class Maintenance {
     'intervalDays': intervalDays,
     'priority': priority,
     'tasks': tasks.map((e) => e.toMap()).toList(),
+    'cycleInitialQuantity': cycleInitialQuantity,
+    'remainingQuantity': remainingQuantity,
   };
 
   Maintenance copyWith({
@@ -73,6 +84,8 @@ class Maintenance {
     Timestamp? lastMaintenanceAt,
     Timestamp? nextMaintenanceAt,
     List<MaintenanceTask>? tasks,
+    int? cycleInitialQuantity,
+    int? remainingQuantity,
   }) {
     return Maintenance(
       id: id ?? this.id,
@@ -84,6 +97,8 @@ class Maintenance {
       lastMaintenanceAt: lastMaintenanceAt ?? this.lastMaintenanceAt,
       nextMaintenanceAt: nextMaintenanceAt ?? this.nextMaintenanceAt,
       tasks: tasks ?? this.tasks,
+      cycleInitialQuantity: cycleInitialQuantity ?? this.cycleInitialQuantity,
+      remainingQuantity: remainingQuantity ?? this.remainingQuantity,
     );
   }
 }
@@ -135,7 +150,26 @@ class MaintenanceTask {
 
 class MaintenanceDetail {
   final Maintenance maintenance;
-  final String? imageUrl;
+  final Item? item;
 
-  MaintenanceDetail({required this.maintenance, required this.imageUrl});
+  MaintenanceDetail({required this.maintenance, required this.item});
+}
+
+class MaintenanceDetailView {
+  final Maintenance maintenance;
+  final ImageProvider imageProvider;
+
+  final int initialQuantity;
+  final int remainingQuantity;
+  final int completedQuantity;
+  final double progress;
+
+  MaintenanceDetailView({
+    required this.maintenance,
+    required this.imageProvider,
+    required this.initialQuantity,
+    required this.remainingQuantity,
+    required this.completedQuantity,
+    required this.progress,
+  });
 }

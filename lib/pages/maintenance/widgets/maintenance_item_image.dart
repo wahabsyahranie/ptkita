@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class MaintenanceItemImage extends StatelessWidget {
-  final String? imageUrl;
+  final ImageProvider imageProvider;
   final bool isLoading;
 
   const MaintenanceItemImage({
     super.key,
-    required this.imageUrl,
+    required this.imageProvider,
     required this.isLoading,
   });
 
@@ -22,49 +22,15 @@ class MaintenanceItemImage extends StatelessWidget {
       );
     }
 
-    if (imageUrl == null || imageUrl!.isEmpty) {
-      return const Icon(
-        Icons.image_not_supported,
-        size: 100,
+    return Container(
+      height: 160,
+      width: 160,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
         color: MyColors.greySoft,
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Image.network(
-        imageUrl!,
-        height: 140,
-        width: 140,
-        fit: BoxFit.cover,
-
-        /// 🔥 INI YANG PENTING
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) {
-            return child; // gambar selesai load
-          }
-
-          return SizedBox(
-            height: 180,
-            child: Center(
-              child: CircularProgressIndicator(
-                color: MyColors.secondary,
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                    : null,
-              ),
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) {
-          return const Icon(
-            Icons.broken_image,
-            size: 100,
-            color: MyColors.greySoft,
-          );
-        },
+        borderRadius: BorderRadius.circular(20),
       ),
+      child: Image(image: imageProvider, fit: BoxFit.contain),
     );
   }
 }
