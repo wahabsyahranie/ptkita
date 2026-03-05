@@ -36,9 +36,12 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   void initState() {
     super.initState();
     final it = widget.initialItem;
+    final userService = UserService(FirestoreUserRepository());
+    
     _service = MaintenanceService(
       FirestoreMaintenanceRepository(),
-      InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository())),
+      InventoryService(FirestoreInventoryRepository(), userService),
+      userService,
     );
 
     _nameCtrl = TextEditingController(text: it?.itemName ?? '');

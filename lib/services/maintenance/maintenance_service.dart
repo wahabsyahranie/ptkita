@@ -3,14 +3,30 @@ import 'package:flutter_kita/core/enum/maintenance_status.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
+import 'package:flutter_kita/models/user/user_model.dart';
 import 'package:flutter_kita/repositories/maintenance/maintenance_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
+
+class MaintenanceException implements Exception {
+  final String message;
+
+  MaintenanceException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 class MaintenanceService {
   final MaintenanceRepository _repository;
   final InventoryService _inventoryService;
+  final UserService _userService;
 
-  MaintenanceService(this._repository, this._inventoryService);
+  MaintenanceService(
+    this._repository,
+    this._inventoryService,
+    this._userService,
+  );
 
   // =========================================================
   // ====================== STREAM LIST ======================
@@ -70,11 +86,25 @@ class MaintenanceService {
       final item = detail.item;
       if (item == null) return null;
 
+      final maintenance = detail.maintenance;
+
+      final initial = maintenance.cycleInitialQuantity;
+      final remaining = maintenance.remainingQuantity;
+      final completed = initial - remaining;
+
+      final progress = initial > 0
+          ? (completed / initial).clamp(0.0, 1.0)
+          : 0.0;
+
       final imageProvider = _inventoryService.resolveImage(item);
 
       return MaintenanceDetailView(
-        maintenance: detail.maintenance,
+        maintenance: maintenance,
         imageProvider: imageProvider,
+        initialQuantity: initial,
+        remainingQuantity: remaining,
+        completedQuantity: completed,
+        progress: progress,
       );
     });
   }
@@ -218,8 +248,14 @@ class MaintenanceService {
     required Maintenance maintenance,
     required int completedQuantity,
   }) async {
+    final item = await _inventoryService
+        .streamItemById(maintenance.itemId)
+        .first;
+
+    final currentStock = item?.stock ?? 0;
+
     if (maintenance.remainingQuantity == 0) {
-      throw Exception("Maintenance sudah selesai.");
+      throw MaintenanceException("Maintenance sudah selesai.");
     }
 
     final now = DateTime.now();
@@ -230,12 +266,6 @@ class MaintenanceService {
     // ========================================
     if (maintenance.cycleInitialQuantity == 0 &&
         maintenance.remainingQuantity == 0) {
-      final item = await _inventoryService
-          .streamItemById(maintenance.itemId)
-          .first;
-
-      final currentStock = item?.stock ?? 0;
-
       final snapshotUpdate = {
         'cycleInitialQuantity': currentStock,
         'remainingQuantity': currentStock,
@@ -247,8 +277,8 @@ class MaintenanceService {
         logData: {}, // tidak buat log
       );
 
-      throw Exception(
-        "Snapshot siklus diinisialisasi ulang. Silakan ulangi proses maintenance.",
+      throw MaintenanceException(
+        "Snapshot siklus diperbarui. Silakan ulangi maintenance.",
       );
     }
 
@@ -257,11 +287,11 @@ class MaintenanceService {
     // ==============================
 
     if (completedQuantity <= 0) {
-      throw Exception("completedQuantity harus lebih dari 0");
+      throw MaintenanceException("Jumlah harus lebih dari 0");
     }
 
     if (completedQuantity > maintenance.remainingQuantity) {
-      throw Exception("Jumlah melebihi sisa maintenance");
+      throw MaintenanceException("Jumlah tidak boleh melebihi sisa");
     }
 
     final newRemaining = maintenance.remainingQuantity - completedQuantity;
@@ -270,11 +300,23 @@ class MaintenanceService {
     // SIAPKAN LOG
     // ==============================
 
+    final UserModel? currentUser = await _userService.currentUserProfile.first;
+
+    if (currentUser == null) {
+      throw Exception("User tidak ditemukan");
+    }
+
     final logData = {
       'maintenanceId': maintenance.id,
       'itemId': maintenance.itemId,
       'completedQuantity': completedQuantity,
       'completedAt': completedTimestamp,
+      'createdAt': FieldValue.serverTimestamp(),
+      'userId': currentUser.id,
+      'userName': currentUser.name,
+      'action': newRemaining > 0
+          ? 'maintenance_partial'
+          : 'maintenance_complete',
     };
 
     // ==============================
@@ -296,15 +338,9 @@ class MaintenanceService {
     // ==============================
     // CASE 2: SIKLUS SELESAI
     // ==============================
+    final baseDate = maintenance.nextMaintenanceAt?.toDate() ?? now;
 
-    // Ambil stok terbaru dari inventory
-    final item = await _inventoryService
-        .streamItemById(maintenance.itemId)
-        .first;
-
-    final currentStock = item?.stock ?? 0;
-
-    final nextMaintenanceDate = now.add(
+    final nextMaintenanceDate = baseDate.add(
       Duration(days: maintenance.intervalDays),
     );
 
@@ -327,15 +363,6 @@ class MaintenanceService {
   // =========================================================
   // ====================== DATE LOGIC =======================
   // =========================================================
-
-  // Timestamp _calculateNextMaintenance({
-  //   required DateTime? lastMaintenance,
-  //   required int intervalDays,
-  // }) {
-  //   final baseDate = lastMaintenance ?? DateTime.now();
-  //   final nextDate = baseDate.add(Duration(days: intervalDays));
-  //   return Timestamp.fromDate(nextDate);
-  // }
 
   String formatLastMaintenance(Maintenance? maintenance) {
     if (maintenance?.lastMaintenanceAt == null) {

@@ -44,12 +44,12 @@ class _MaintenancePageState extends State<MaintenancePage> {
   void initState() {
     super.initState();
 
+    final userService = UserService(FirestoreUserRepository());
+
     _service = MaintenanceService(
       _repository,
-      InventoryService(
-        FirestoreInventoryRepository(),
-        UserService(FirestoreUserRepository()),
-      ),
+      InventoryService(FirestoreInventoryRepository(), userService),
+      userService,
     );
 
     _appliedFilter = const MaintenanceFilter(

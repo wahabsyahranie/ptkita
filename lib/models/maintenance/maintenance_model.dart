@@ -159,8 +159,17 @@ class MaintenanceDetailView {
   final Maintenance maintenance;
   final ImageProvider imageProvider;
 
+  final int initialQuantity;
+  final int remainingQuantity;
+  final int completedQuantity;
+  final double progress;
+
   MaintenanceDetailView({
     required this.maintenance,
     required this.imageProvider,
+    required this.initialQuantity,
+    required this.remainingQuantity,
+    required this.completedQuantity,
+    required this.progress,
   });
 }

@@ -12,6 +12,7 @@ import 'package:flutter_kita/services/maintenance/maintenance_service.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_task_card.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_detail_header.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_item_image.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/finish_maintenance_sheet.dart';
 
 class DetailsMaintenancePage extends StatefulWidget {
   final String maintenanceId;
@@ -22,7 +23,6 @@ class DetailsMaintenancePage extends StatefulWidget {
 }
 
 class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
-  bool _isSaving = false;
   late final MaintenanceService _service;
 
   /// ✅ STATE VISUAL SAJA (TIDAK KE FIRESTORE)
@@ -31,12 +31,12 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
   @override
   void initState() {
     super.initState();
+    final userService = UserService(FirestoreUserRepository());
+
     _service = MaintenanceService(
       FirestoreMaintenanceRepository(),
-      InventoryService(
-        FirestoreInventoryRepository(),
-        UserService(FirestoreUserRepository()),
-      ),
+      InventoryService(FirestoreInventoryRepository(), userService),
+      userService,
     );
   }
 
@@ -73,8 +73,6 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
 
         final detail = snapshot.data!;
         final maintenance = detail.maintenance;
-        final imageProvider = detail.imageProvider;
-        final itemName = maintenance.itemName;
         final lastMaintenance = _service.formatLastMaintenance(maintenance);
 
         if (_taskChecked.length != maintenance.tasks.length) {
@@ -153,43 +151,58 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
           ),
           body: Column(
             children: [
-              Expanded(
-                child: _buildContent(
-                  maintenance,
-                  itemName,
-                  lastMaintenance,
-                  imageProvider,
-                ),
-              ),
+              Expanded(child: _buildContent(detail, lastMaintenance)),
 
               if (_allTasksCompleted)
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: ElevatedButton(
-                    onPressed: _isSaving
-                        ? null
-                        : () => _showFinishSheet(maintenance),
+                    onPressed: () async {
+                      final result = await showModalBottomSheet<bool>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: MyColors.white,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                        ),
+                        builder: (_) => FinishMaintenanceSheet(
+                          maintenance: maintenance,
+                          service: _service,
+                        ),
+                      );
+
+                      if (!mounted) return;
+
+                      if (result == true) {
+                        Navigator.pop(context);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Siklus selesai. Maintenance dijadwalkan ulang.',
+                            ),
+                          ),
+                        );
+                      } else if (result == false) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Progress diperbarui.')),
+                        );
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyColors.secondary,
                       minimumSize: const Size.fromHeight(50),
                     ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              color: MyColors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Selesaikan Perawatan',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: MyColors.white,
-                            ),
-                          ),
+                    child: const Text(
+                      'Selesaikan Perawatan',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: MyColors.white,
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -202,29 +215,20 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
   // =========================
   // CONTENT
   // =========================
-  Widget _buildContent(
-    Maintenance maintenance,
-    String itemName,
-    String lastMaintenance,
-    ImageProvider imageProvider,
-  ) {
-    final initial = maintenance.cycleInitialQuantity;
-    final remaining = maintenance.remainingQuantity;
-    final completed = initial - remaining;
-
-    final progress = initial > 0 ? (completed / initial).clamp(0.0, 1.0) : 0.0;
+  Widget _buildContent(MaintenanceDetailView detail, String lastMaintenance) {
+    final maintenance = detail.maintenance;
     return SingleChildScrollView(
       child: Column(
         children: [
           MaintenanceDetailHeader(
-            itemName: itemName,
+            itemName: maintenance.itemName,
             lastMaintenance: lastMaintenance,
             imageWidget: MaintenanceItemImage(
-              imageProvider: imageProvider,
+              imageProvider: detail.imageProvider,
               isLoading: false,
             ),
           ),
-          if (maintenance.cycleInitialQuantity > 0)
+          if (detail.initialQuantity > 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
@@ -236,17 +240,19 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
                   ),
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
-                    value: progress,
+                    value: detail.progress,
                     minHeight: 8,
                     backgroundColor: MyColors.greySoft,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      progress == 1 ? MyColors.success : MyColors.secondary,
+                      detail.progress == 1
+                          ? MyColors.success
+                          : MyColors.secondary,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    "$completed / $initial unit selesai "
-                    "(${(progress * 100).toStringAsFixed(0)}%)",
+                    "${detail.completedQuantity} / ${detail.initialQuantity} unit selesai "
+                    "(${(detail.progress * 100).toStringAsFixed(0)}%)",
                     style: const TextStyle(fontSize: 13),
                   ),
                 ],
@@ -270,166 +276,6 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
           ),
         ],
       ),
-    );
-  }
-
-  Future<void> _showFinishSheet(Maintenance maintenance) async {
-    final parentContext = context; // simpan context parent
-    final controller = TextEditingController(text: '1');
-    final remaining = maintenance.remainingQuantity;
-
-    await showModalBottomSheet(
-      context: parentContext,
-      isScrollControlled: true,
-      backgroundColor: MyColors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        String? localError;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 16,
-                right: 16,
-                top: 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Selesaikan Maintenance",
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text("Sisa saat ini: $remaining unit"),
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: controller,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Jumlah diselesaikan",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-
-                  if (localError != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      localError!,
-                      style: const TextStyle(color: MyColors.error),
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MyColors.secondary.withValues(
-                          alpha: 1,
-                        ),
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _isSaving
-                          ? null
-                          : () async {
-                              if (_isSaving) return;
-                              final value = int.tryParse(controller.text);
-
-                              if (value == null || value <= 0) {
-                                setModalState(() {
-                                  localError = "Jumlah tidak valid";
-                                });
-                                return;
-                              }
-
-                              if (value > remaining) {
-                                setModalState(() {
-                                  localError = "Tidak boleh melebihi sisa";
-                                });
-                                return;
-                              }
-
-                              try {
-                                setState(() {
-                                  _isSaving = true;
-                                });
-                                final isCycleFinished = await _service
-                                    .finishMaintenance(
-                                      maintenance: maintenance,
-                                      completedQuantity: value,
-                                    );
-
-                                if (!mounted) return;
-
-                                Navigator.pop(sheetContext);
-
-                                if (isCycleFinished) {
-                                  Navigator.pop(parentContext);
-
-                                  ScaffoldMessenger.of(
-                                    parentContext,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Siklus selesai. Maintenance dijadwalkan ulang.',
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(
-                                    parentContext,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Progress diperbarui.'),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                setModalState(() {
-                                  localError = e.toString();
-                                });
-                              } finally {
-                                if (mounted) {
-                                  setState(() {
-                                    _isSaving = false;
-                                  });
-                                }
-                              }
-                            },
-                      child: _isSaving
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: MyColors.white,
-                              ),
-                            )
-                          : const Text(
-                              "Selesaikan",
-                              style: TextStyle(color: MyColors.white),
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
