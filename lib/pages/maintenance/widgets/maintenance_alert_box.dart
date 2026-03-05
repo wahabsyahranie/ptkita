@@ -19,8 +19,7 @@ class MaintenanceAlertBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return MyColors.warning.withValues(alpha: 0.12);
       case MaintenanceStatus.terjadwal:
-      default:
-        return MyColors.info.withValues(alpha: 0.12);
+      return MyColors.info.withValues(alpha: 0.12);
     }
   }
 
@@ -31,8 +30,7 @@ class MaintenanceAlertBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return MyColors.warning;
       case MaintenanceStatus.terjadwal:
-      default:
-        return MyColors.info;
+      return MyColors.info;
     }
   }
 
@@ -43,8 +41,7 @@ class MaintenanceAlertBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return Icons.build_circle_outlined;
       case MaintenanceStatus.terjadwal:
-      default:
-        return Icons.event_available;
+      return Icons.event_available;
     }
   }
 
@@ -55,8 +52,7 @@ class MaintenanceAlertBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return "Maintenance Sedang Berjalan";
       case MaintenanceStatus.terjadwal:
-      default:
-        return "Maintenance Terjadwal";
+      return "Maintenance Terjadwal";
     }
   }
 
@@ -67,8 +63,7 @@ class MaintenanceAlertBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return "Checklist sedang dikerjakan";
       case MaintenanceStatus.terjadwal:
-      default:
-        return "Perawatan berikutnya pada $nextMaintenance";
+      return "Perawatan berikutnya pada $nextMaintenance";
     }
   }
 

@@ -39,16 +39,6 @@ class FirestoreHomeRepository implements HomeRepository {
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  DateTime _todayStart() {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
-  }
-
-  DateTime _todayEnd() {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
-  }
-
   @override
   Stream<int> getTotalMaintenanceToday() {
     return _firestore

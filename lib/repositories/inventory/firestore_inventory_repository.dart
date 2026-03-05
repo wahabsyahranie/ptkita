@@ -77,6 +77,7 @@ class FirestoreInventoryRepository implements InventoryRepository {
   }
 
   // PAGINATION
+  @override
   Future<PaginatedResult<Item>> fetchItemsPage({
     required InventoryFilter filter,
     required String searchQuery,

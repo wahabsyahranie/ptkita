@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/styles/colors.dart';
 
 class MaintenanceDetailHeader extends StatelessWidget {
   final String itemName;

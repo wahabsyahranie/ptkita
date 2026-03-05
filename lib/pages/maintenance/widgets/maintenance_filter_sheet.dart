@@ -223,8 +223,7 @@ class _MaintenanceFilterSheetState extends State<MaintenanceFilterSheet> {
       case MaintenanceStatus.dalamProses:
         return 'Dalam Proses';
       case MaintenanceStatus.terjadwal:
-      default:
-        return 'Terjadwal';
+      return 'Terjadwal';
     }
   }
 }

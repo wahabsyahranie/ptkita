@@ -166,24 +166,4 @@ class MaintenanceTaskCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _titleRow(String title, String status, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        Text(
-          status,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
 }

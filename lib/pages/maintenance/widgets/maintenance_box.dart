@@ -34,8 +34,7 @@ class MaintenanceBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return MyColors.warning;
       case MaintenanceStatus.terjadwal:
-      default:
-        return MyColors.success;
+      return MyColors.success;
     }
   }
 
@@ -179,8 +178,7 @@ class MaintenanceBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return 'Dalam Proses';
       case MaintenanceStatus.terjadwal:
-      default:
-        return 'Terjadwal';
+      return 'Terjadwal';
     }
   }
 }
