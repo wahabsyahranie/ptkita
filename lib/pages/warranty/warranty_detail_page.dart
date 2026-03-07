@@ -133,7 +133,7 @@ class WarrantyDetailPage extends StatelessWidget {
                         warrantyData: {
                           'buyerName': warranty.buyerName,
                           'productName': warranty.productName,
-                          'noHp': warranty.phone,
+                          'phone': warranty.phone,
                         },
                       ),
                     ),

@@ -85,8 +85,10 @@ class ItemDetailCard extends StatelessWidget {
       children: [
         Radio<bool>(
           value: value,
+          // ignore: deprecated_member_use
           groupValue: group,
           activeColor: MyColors.secondary,
+          // ignore: deprecated_member_use
           onChanged: (v) => onChanged(v!),
         ),
         Text(label),
@@ -104,8 +106,10 @@ class ItemDetailCard extends StatelessWidget {
       children: [
         Radio<int>(
           value: value,
+          // ignore: deprecated_member_use
           groupValue: group,
           activeColor: MyColors.secondary,
+          // ignore: deprecated_member_use
           onChanged: (v) => onChanged(v!),
         ),
         Text(label),
