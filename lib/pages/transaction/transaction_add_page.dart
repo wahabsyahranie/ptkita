@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/customer_form.dart';
 import 'widgets/cart_item_card.dart';
 import 'widgets/item_detail_card.dart';
+import 'widgets/item_selector.dart';
 import 'widgets/transaction_total_bar.dart';
 
 import '../../models/transaction/cart_item_model.dart';
@@ -229,27 +230,20 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
 
                     const SizedBox(height: 14),
 
-                    _label('Pilih Item / Barang'),
-
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      initialValue: _selectedItemId,
-                      items: _items.map<DropdownMenuItem<String>>((e) {
-                        return DropdownMenuItem<String>(
-                          value: e['id'],
-                          child: Text(e['name']),
-                        );
-                      }).toList(),
+                    ItemSelector(
+                      items: _items,
+                      selectedItemId: _selectedItemId,
                       onChanged: (v) {
                         setState(() {
                           _selectedItemId = v;
+
                           _selectedItem = _items.firstWhere(
                             (e) => e['id'] == v,
                           );
+
                           _generateSerialControllers();
                         });
                       },
-                      decoration: _inputDecoration(hint: 'Pilih item'),
                     ),
 
                     if (_selectedItem != null) ...[
