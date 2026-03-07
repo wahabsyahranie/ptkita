@@ -130,13 +130,12 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     final cartItem = CartItemModel(
       itemId: _selectedItem!['id'],
       name: _selectedItem!['name'],
+      type: _selectedItem!['type'], // WAJIB DITAMBAHKAN
       price: price,
       qty: _qty,
       hasWarranty: _hasWarranty,
       warrantyYear: _hasWarranty ? _warrantyYear : 0,
       warrantyType: _hasWarranty ? _warrantyType : null,
-
-      /// kirim serial number ke model
       serialNumbers: serialNumbers,
     );
 

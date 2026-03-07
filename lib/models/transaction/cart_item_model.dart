@@ -3,6 +3,7 @@ class CartItemModel {
   final String name;
   final int price;
   final int qty;
+  final String type;
 
   final bool hasWarranty;
   final int warrantyYear;
@@ -15,6 +16,7 @@ class CartItemModel {
     required this.name,
     required this.price,
     required this.qty,
+    required this.type,
     required this.hasWarranty,
     required this.warrantyYear,
     required this.warrantyType,
@@ -27,6 +29,7 @@ class CartItemModel {
     return {
       'itemId': itemId,
       'name': name,
+      'type': type, // TAMBAHKAN
       'price': price,
       'qty': qty,
       'subtotal': subtotal,
@@ -43,6 +46,7 @@ class CartItemModel {
       name: map['name'],
       price: map['price'],
       qty: map['qty'],
+      type: map['type'],
       hasWarranty: map['hasWarranty'] ?? false,
       warrantyYear: map['warrantyYear'] ?? 0,
       warrantyType: map['warrantyType'],
