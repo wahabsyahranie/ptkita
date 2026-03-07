@@ -355,25 +355,6 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     child: Text(t, style: const TextStyle(fontWeight: FontWeight.w700)),
   );
 
-  InputDecoration _inputDecoration({String? hint}) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.black, width: 1),
-      ),
-
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: MyColors.secondary, width: 1.5),
-      ),
-    );
-  }
-
   void _showAlert(String message) {
     showDialog(
       context: context,
