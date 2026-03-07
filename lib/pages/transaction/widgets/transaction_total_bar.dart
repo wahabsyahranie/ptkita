@@ -5,12 +5,14 @@ class TransactionTotalBar extends StatelessWidget {
   final int total;
   final VoidCallback? onSubmit;
   final bool isDisabled;
+  final bool isLoading;
 
   const TransactionTotalBar({
     super.key,
     required this.total,
     required this.onSubmit,
     required this.isDisabled,
+    this.isLoading = false,
   });
 
   String _fmt(int v) {
@@ -60,11 +62,23 @@ class TransactionTotalBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(28),
                 ),
               ),
-              onPressed: isDisabled ? null : onSubmit,
-              child: const Text(
-                'Simpan',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
+              onPressed: (isDisabled || isLoading) ? null : onSubmit,
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Simpan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
           ),
         ],

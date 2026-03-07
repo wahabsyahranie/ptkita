@@ -252,25 +252,51 @@ class _ItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasWarranty = item['hasWarranty'] == true;
+    final List serialNumbers = item['serialNumbers'] ?? [];
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// LEFT SIDE
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                /// PRODUCT NAME
                 Text(
                   item['name'],
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
+
                 const SizedBox(height: 4),
+
+                /// PRICE
                 Text(
                   '${item['qty']} × Rp ${item['price']}',
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
+
+                /// SERIAL NUMBERS
+                if (serialNumbers.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+
+                  ...serialNumbers.map((sn) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        "SN: $sn",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+
+                /// WARRANTY LABEL
                 if (hasWarranty)
                   const Padding(
                     padding: EdgeInsets.only(top: 4),
@@ -288,6 +314,8 @@ class _ItemRow extends StatelessWidget {
               ],
             ),
           ),
+
+          /// RIGHT SIDE (TOTAL)
           Text(
             'Rp ${item['subtotal']}',
             style: const TextStyle(fontWeight: FontWeight.w600),

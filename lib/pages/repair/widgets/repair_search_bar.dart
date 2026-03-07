@@ -18,7 +18,7 @@ class RepairSearchBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: MyColors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: MyColors.secondary.withValues(alpha: 0.22)),
+        border: Border.all(color: MyColors.secondary),
       ),
       child: Row(
         children: [
@@ -28,11 +28,9 @@ class RepairSearchBar extends StatelessWidget {
             child: TextField(
               controller: controller,
               onChanged: (_) => onChanged(),
-              decoration: InputDecoration(
-                hintText: 'Cari sesuatu',
-                hintStyle: TextStyle(
-                  color: MyColors.secondary.withValues(alpha: 0.6),
-                ),
+              decoration: const InputDecoration(
+                hintText: 'Cari riwayat perbaikan',
+                hintStyle: TextStyle(color: MyColors.secondary),
                 border: InputBorder.none,
                 isDense: true,
               ),
@@ -44,10 +42,7 @@ class RepairSearchBar extends StatelessWidget {
                 controller.clear();
                 onChanged();
               },
-              child: Icon(
-                Icons.close_rounded,
-                color: MyColors.secondary.withValues(alpha: 0.7),
-              ),
+              child: const Icon(Icons.close_rounded, color: MyColors.secondary),
             ),
         ],
       ),

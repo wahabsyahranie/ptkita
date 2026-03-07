@@ -26,8 +26,8 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   final TextEditingController _dateCtrl = TextEditingController();
   final TextEditingController _phoneCtrl = TextEditingController();
 
-  final FocusNode _nameFocus = FocusNode();
-  final FocusNode _phoneFocus = FocusNode();
+  // final FocusNode _nameFocus = FocusNode();
+  // final FocusNode _phoneFocus = FocusNode();
 
   // =========================
   // FIRESTORE
@@ -159,16 +159,16 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // =========================
   // SUBMIT
   // =========================
+  bool _isSaving = false;
+
   Future<void> _submit() async {
     if (_nameCtrl.text.trim().isEmpty) {
       _showAlert('Nama pelanggan wajib diisi');
-      _nameFocus.requestFocus();
       return;
     }
 
     if (_phoneCtrl.text.trim().isEmpty) {
-      _showAlert('No. HP wajib diisi');
-      _phoneFocus.requestFocus();
+      _showAlert('No HP wajib diisi');
       return;
     }
 
@@ -177,20 +177,32 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       return;
     }
 
-    await _transactionService.createTransaction(
-      name: _nameCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-      date: _transactionDate ?? DateTime.now(),
-      items: _cartItems,
-    );
+    setState(() {
+      _isSaving = true;
+    });
 
-    if (!mounted) return;
+    try {
+      await _transactionService.createTransaction(
+        name: _nameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+        date: _transactionDate ?? DateTime.now(),
+        items: _cartItems,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Transaksi berhasil disimpan')),
-    );
+      if (!mounted) return;
 
-    Navigator.pop(context, {'ok': true});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Transaksi berhasil disimpan')),
+      );
+
+      Navigator.pop(context, {'ok': true});
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   // =========================
@@ -303,20 +315,24 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
 
                     const SizedBox(height: 12),
 
-                    TextButton.icon(
-                      onPressed: _selectedItem == null ? null : _addToCart,
-                      icon: const Icon(
-                        Icons.add_circle_outline,
-                        color: MyColors.secondary,
-                      ),
-                      label: const Text(
-                        'Tambah Item ke Transaksi',
-                        style: TextStyle(
+                    if (_selectedItem != null) ...[
+                      const SizedBox(height: 12),
+
+                      TextButton.icon(
+                        onPressed: _addToCart,
+                        icon: const Icon(
+                          Icons.add_circle_outline,
                           color: MyColors.secondary,
-                          fontWeight: FontWeight.w600,
+                        ),
+                        label: const Text(
+                          'Tambah Item ke Transaksi',
+                          style: TextStyle(
+                            color: MyColors.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
 
                     if (_cartItems.isNotEmpty) ...[
                       const SizedBox(height: 20),
@@ -339,6 +355,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
             TransactionTotalBar(
               total: _total,
               isDisabled: _cartItems.isEmpty,
+              isLoading: _isSaving,
               onSubmit: _submit,
             ),
           ],
