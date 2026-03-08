@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'capture_page.dart';
 import 'analysis_success_page.dart';
 import 'analysis_fail_page.dart';
 import 'widget/retake_button_widget.dart';
@@ -157,6 +156,7 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
                     child: Image.file(
                       File(widget.imageFile.path),
                       fit: BoxFit.cover,
+                      cacheWidth: 800,
                     ),
                   ),
                 ),
@@ -171,10 +171,7 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
               child: PrimaryOutlineButton(
                 text: "Ambil Ulang",
                 onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CapturePage()),
-                  );
+                  Navigator.pop(context);
                 },
               ),
             ),

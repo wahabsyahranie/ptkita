@@ -14,39 +14,44 @@ class CapturePage extends StatefulWidget {
   State<CapturePage> createState() => _CapturePageState();
 }
 
-class _CapturePageState extends State<CapturePage> {
-  CameraController? controller;
-  bool isLoading = true;
-  bool hasError = false;
+class _CapturePageState extends State<CapturePage> with WidgetsBindingObserver {
+  CameraController? _controller;
 
-  bool isCapturing = false;
-  bool isPicking = false;
+  bool _isLoading = true;
+  bool _hasError = false;
+  bool _isCapturing = false;
+  bool _isPicking = false;
 
   @override
   void initState() {
     super.initState();
-    initCamera();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeCamera();
   }
 
   // ======================
   // CAMERA INITIALIZATION
   // ======================
-  Future<void> initCamera() async {
+  Future<void> _initializeCamera() async {
     try {
       final status = await Permission.camera.request();
+
       if (!status.isGranted) {
+        if (!mounted) return;
         setState(() {
-          isLoading = false;
-          hasError = true;
+          _isLoading = false;
+          _hasError = true;
         });
         return;
       }
 
       final cameras = await availableCameras();
+
       if (cameras.isEmpty) {
+        if (!mounted) return;
         setState(() {
-          isLoading = false;
-          hasError = true;
+          _isLoading = false;
+          _hasError = true;
         });
         return;
       }
@@ -56,99 +61,111 @@ class _CapturePageState extends State<CapturePage> {
         orElse: () => cameras.first,
       );
 
-      controller = CameraController(
+      _controller = CameraController(
         backCamera,
-        ResolutionPreset.high,
+        ResolutionPreset.medium,
         enableAudio: false,
       );
 
-      await controller!.initialize();
+      await _controller!.initialize();
+
       if (!mounted) return;
 
       setState(() {
-        isLoading = false;
-        hasError = false;
+        _isLoading = false;
+        _hasError = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        isLoading = false;
-        hasError = true;
+        _isLoading = false;
+        _hasError = true;
       });
     }
   }
 
   // ======================
-  // NAVIGATE
+  // TAKE PHOTO
   // ======================
-  Future<void> navigateToPreview(XFile image) async {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => PreviewCapturePage(imageFile: image)),
-    );
+  Future<void> _takePhoto() async {
+    if (_isCapturing) return;
+    if (_controller == null || !_controller!.value.isInitialized) return;
 
-    // Setelah kembali dari preview
-    if (!mounted) return;
-
-    setState(() {
-      isLoading = true;
-    });
-
-    await controller?.dispose();
-    controller = null;
-
-    await initCamera();
-  }
-
-  // ======================
-  // TAKE PHOTO (SAFE)
-  // ======================
-  Future<void> takePhoto() async {
-    if (isCapturing) return;
-    if (controller == null || !controller!.value.isInitialized) return;
-
-    isCapturing = true;
+    _isCapturing = true;
 
     try {
-      final XFile image = await controller!.takePicture();
+      final XFile image = await _controller!.takePicture();
+
+      await Future.delayed(const Duration(milliseconds: 200));
+
       if (!mounted) return;
 
-      navigateToPreview(image);
-    } catch (_) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => PreviewCapturePage(imageFile: image)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Gagal mengambil foto")));
     } finally {
-      isCapturing = false;
+      _isCapturing = false;
     }
   }
 
   // ======================
-  // OPEN GALLERY (SAFE)
+  // OPEN GALLERY
   // ======================
-  Future<void> openGallery() async {
-    if (isPicking) return;
-    isPicking = true;
+  Future<void> _openGallery() async {
+    if (_isPicking) return;
+    _isPicking = true;
 
     try {
       final picker = ImagePicker();
+
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
       if (image != null && mounted) {
-        navigateToPreview(image);
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PreviewCapturePage(imageFile: image),
+          ),
+        );
       }
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Gagal membuka galeri")));
     } finally {
-      isPicking = false;
+      _isPicking = false;
+    }
+  }
+
+  // ======================
+  // APP LIFECYCLE
+  // ======================
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_controller == null) return;
+    if (!_controller!.value.isInitialized) return;
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _controller?.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
     }
   }
 
   @override
   void dispose() {
-    controller?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -159,7 +176,7 @@ class _CapturePageState extends State<CapturePage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        await controller?.dispose();
+        await _controller?.dispose();
         return true;
       },
       child: Scaffold(
@@ -167,20 +184,21 @@ class _CapturePageState extends State<CapturePage> {
         body: SafeArea(
           child: Stack(
             children: [
-              // CAMERA PREVIEW
               Positioned.fill(
-                child: isLoading
+                child: _isLoading
                     ? const Center(
                         child: CircularProgressIndicator(color: Colors.white),
                       )
-                    : hasError
+                    : _hasError
                     ? const Center(
                         child: Text(
                           'Camera unavailable',
                           style: TextStyle(color: Colors.white),
                         ),
                       )
-                    : CameraPreview(controller!),
+                    : (_controller != null && _controller!.value.isInitialized)
+                    ? CameraPreview(_controller!)
+                    : const SizedBox(),
               ),
 
               // TOP BAR
@@ -190,8 +208,11 @@ class _CapturePageState extends State<CapturePage> {
                 child: Row(
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
+                      onTap: () async {
+                        await _controller?.dispose();
+                        if (!mounted) return;
+
+                        Navigator.popUntil(context, (route) => route.isFirst);
                       },
                       child: Container(
                         padding: const EdgeInsets.all(12),
@@ -226,17 +247,14 @@ class _CapturePageState extends State<CapturePage> {
                 bottom: 0,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 24),
-                  decoration: BoxDecoration(
-                    color: MyColors.secondary.withOpacity(0.85),
-                  ),
+                  color: MyColors.secondary.withOpacity(0.65),
                   child: SizedBox(
                     height: 120,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // CAMERA BUTTON
                         GestureDetector(
-                          onTap: takePhoto,
+                          onTap: _takePhoto,
                           child: Container(
                             width: 78,
                             height: 78,
@@ -250,12 +268,10 @@ class _CapturePageState extends State<CapturePage> {
                             ),
                           ),
                         ),
-
-                        // GALLERY BUTTON
                         Positioned(
                           left: 48,
                           child: GestureDetector(
-                            onTap: openGallery,
+                            onTap: _openGallery,
                             child: Container(
                               width: 55,
                               height: 55,

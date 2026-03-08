@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'capture_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/inventory/details_inventory_page.dart';
 
@@ -228,10 +227,7 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
               ),
             ),
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const CapturePage()),
-              );
+              Navigator.pop(context);
             },
             child: const Text(
               "Ambil Ulang",
