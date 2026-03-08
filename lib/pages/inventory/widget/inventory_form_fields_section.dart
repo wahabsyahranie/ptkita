@@ -67,6 +67,19 @@ class InventoryFormFieldsSection extends StatelessWidget {
             if (v == null || v.trim().isEmpty) {
               return 'Harga wajib diisi';
             }
+
+            final parsed = int.tryParse(
+              v.replaceAll(',', '').replaceAll('.', ''),
+            );
+
+            if (parsed == null) {
+              return 'Harga harus berupa angka';
+            }
+
+            if (parsed < 0) {
+              return 'Harga tidak boleh minus';
+            }
+
             return null;
           },
         ),
@@ -78,8 +91,25 @@ class InventoryFormFieldsSection extends StatelessWidget {
             labelText: "Jumlah Stok",
             border: OutlineInputBorder(),
           ),
-          validator: (v) =>
-              v == null || v.trim().isEmpty ? 'Jumlah wajib diisi' : null,
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) {
+              return 'Jumlah wajib diisi';
+            }
+
+            final parsed = int.tryParse(
+              v.replaceAll(',', '').replaceAll('.', ''),
+            );
+
+            if (parsed == null) {
+              return 'Jumlah harus berupa angka';
+            }
+
+            if (parsed < 0) {
+              return 'Jumlah tidak boleh minus';
+            }
+
+            return null;
+          },
         ),
         const SizedBox(height: 16),
         TextFormField(

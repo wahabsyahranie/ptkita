@@ -50,6 +50,7 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     return _firestore
         .collection('maintenance')
         .orderBy('nextMaintenanceAt')
+        .limit(500)
         .withConverter<Maintenance>(
           fromFirestore: Maintenance.fromFirestore,
           toFirestore: (Maintenance m, _) => m.toFirestore(),
