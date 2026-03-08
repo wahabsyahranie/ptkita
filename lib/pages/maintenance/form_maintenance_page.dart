@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
+import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
+import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/services/maintenance/maintenance_service.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_task_form_section.dart';
 
@@ -32,7 +36,13 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   void initState() {
     super.initState();
     final it = widget.initialItem;
-    _service = MaintenanceService(FirestoreMaintenanceRepository());
+    final userService = UserService(FirestoreUserRepository());
+    
+    _service = MaintenanceService(
+      FirestoreMaintenanceRepository(),
+      InventoryService(FirestoreInventoryRepository(), userService),
+      userService,
+    );
 
     _nameCtrl = TextEditingController(text: it?.itemName ?? '');
     _intervalCtrl = TextEditingController(
@@ -110,8 +120,8 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       sku: _selectedItemSku,
       intervalDays: intervalDays,
       priority: _selectedPriority!,
-      status: widget.initialItem?.status ?? '',
       lastMaintenanceAt: widget.initialItem?.lastMaintenanceAt,
+      nextMaintenanceAt: widget.initialItem?.nextMaintenanceAt,
       tasks: tasks,
     );
 
@@ -266,7 +276,11 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
               const Text("Jenis Perawatan"),
               const SizedBox(height: 8),
 
-              MaintenanceTaskFormSection(tasks: _tasks, onAddTask: _addTask),
+              MaintenanceTaskFormSection(
+                tasks: _tasks,
+                onAddTask: _addTask,
+                onDeleteTask: _removeTask,
+              ),
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
@@ -296,5 +310,20 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
         ),
       ),
     );
+  }
+
+  void _removeTask(TaskForm task) {
+    if (_tasks.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Minimal harus ada 1 jenis perawatan')),
+      );
+      return;
+    }
+
+    setState(() {
+      task.titleCtrl.dispose();
+      task.descCtrl.dispose();
+      _tasks.remove(task);
+    });
   }
 }

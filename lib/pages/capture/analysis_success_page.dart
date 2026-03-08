@@ -168,7 +168,7 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
               const SizedBox(height: 20),
 
               _LabelField(
-                label: "Confidence",
+                label: "Nilai Keyakinan",
                 value: "${(widget.confidence * 100).toStringAsFixed(2)} %",
               ),
             ],

@@ -5,7 +5,7 @@ import 'maintenance_repository.dart';
 
 class FirestoreMaintenanceRepository implements MaintenanceRepository {
   final FirebaseFirestore _firestore;
-  final _collection = FirebaseFirestore.instance
+  CollectionReference<Maintenance> get _collection => _firestore
       .collection('maintenance')
       .withConverter<Maintenance>(
         fromFirestore: Maintenance.fromFirestore,
@@ -32,12 +32,13 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
               .doc(maintenance.itemId)
               .get();
 
-          final imageUrl = itemSnap.data()?['imageUrl'] as String?;
+          Item? item;
 
-          return MaintenanceDetail(
-            maintenance: maintenance,
-            imageUrl: imageUrl,
-          );
+          if (itemSnap.exists) {
+            item = Item.fromFirestore(itemSnap, null);
+          }
+
+          return MaintenanceDetail(maintenance: maintenance, item: item);
         });
   }
 
@@ -49,6 +50,7 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     return _firestore
         .collection('maintenance')
         .orderBy('nextMaintenanceAt')
+        .limit(500)
         .withConverter<Maintenance>(
           fromFirestore: Maintenance.fromFirestore,
           toFirestore: (Maintenance m, _) => m.toFirestore(),
@@ -62,7 +64,9 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     if (maintenance.id.isEmpty) {
       await _collection.add(maintenance);
     } else {
-      await _collection.doc(maintenance.id).set(maintenance);
+      await _collection
+          .doc(maintenance.id)
+          .set(maintenance, SetOptions(merge: true));
     }
   }
 
@@ -72,36 +76,40 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
   }
 
   @override
-  Future<void> finishMaintenance({
-    required Maintenance maintenance,
-    required DateTime completedAt,
+  Future<void> commitMaintenanceBatch({
+    required String maintenanceId,
+    required Map<String, dynamic> maintenanceUpdate,
+    required Map<String, dynamic> logData,
+    required bool incrementCompletedToday,
   }) async {
     final batch = _firestore.batch();
 
     final maintenanceRef = _firestore
         .collection('maintenance')
-        .doc(maintenance.id);
+        .doc(maintenanceId);
 
     final logRef = _firestore.collection('maintenance_logs').doc();
 
-    final completedTimestamp = Timestamp.fromDate(completedAt);
-
-    final nextMaintenance = Timestamp.fromDate(
-      completedAt.add(Duration(days: maintenance.intervalDays)),
-    );
-
-    // 1️⃣ write log
-    batch.set(logRef, {
-      'maintenanceId': maintenance.id,
-      'completedAt': completedTimestamp,
-      'itemId': maintenance.itemId,
-    });
+    // 1️⃣ insert log
+    batch.set(logRef, logData);
 
     // 2️⃣ update maintenance
-    batch.update(maintenanceRef, {
-      'lastMaintenanceAt': completedTimestamp,
-      'nextMaintenanceAt': nextMaintenance,
-    });
+    batch.update(maintenanceRef, maintenanceUpdate);
+
+    // 3️⃣ update snapshot (hanya jika siklus selesai)
+    if (incrementCompletedToday) {
+      final now = DateTime.now();
+      final docId =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+      final snapshotRef = _firestore
+          .collection('daily_maintenance_snapshot')
+          .doc(docId);
+
+      batch.set(snapshotRef, {
+        'completedToday': FieldValue.increment(1),
+      }, SetOptions(merge: true));
+    }
 
     await batch.commit();
   }
@@ -117,7 +125,7 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     return data?['imageUrl'] as String?;
   }
 
-  final _itemCollection = FirebaseFirestore.instance
+  CollectionReference<Item> get _itemCollection => _firestore
       .collection('items')
       .withConverter<Item>(
         fromFirestore: Item.fromFirestore,

@@ -5,12 +5,14 @@ class StatisticCards extends StatelessWidget {
   final Stream<int> totalItemsStream;
   final Stream<int> outOfStockStream;
   final VoidCallback onOutOfStockTap;
+  final VoidCallback onTotalItemsTap;
 
   const StatisticCards({
     super.key,
     required this.totalItemsStream,
     required this.outOfStockStream,
     required this.onOutOfStockTap,
+    required this.onTotalItemsTap,
   });
 
   @override
@@ -24,6 +26,7 @@ class StatisticCards extends StatelessWidget {
             subtitle: 'Jenis barang terdaftar',
             icon: Icons.inventory_2_outlined,
             isAlertCondition: (value) => value < 0,
+            onTap: onTotalItemsTap,
           ),
         ),
         const SizedBox(width: 15),

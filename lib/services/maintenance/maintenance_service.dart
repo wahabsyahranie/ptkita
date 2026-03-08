@@ -1,13 +1,32 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_kita/core/enum/maintenance_status.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_filter_model.dart';
+import 'package:flutter_kita/models/user/user_model.dart';
 import 'package:flutter_kita/repositories/maintenance/maintenance_repository.dart';
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
+
+class MaintenanceException implements Exception {
+  final String message;
+
+  MaintenanceException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 class MaintenanceService {
   final MaintenanceRepository _repository;
+  final InventoryService _inventoryService;
+  final UserService _userService;
 
-  MaintenanceService(this._repository);
+  MaintenanceService(
+    this._repository,
+    this._inventoryService,
+    this._userService,
+  );
 
   // =========================================================
   // ====================== STREAM LIST ======================
@@ -19,7 +38,40 @@ class MaintenanceService {
   }) {
     return _repository.streamMaintenance().map((items) {
       final filtered = _applyFilter(items, filter);
-      return _applySearch(filtered, searchQuery);
+      final searched = _applySearch(filtered, searchQuery);
+
+      searched.sort((a, b) {
+        final statusA = computeStatus(a);
+        final statusB = computeStatus(b);
+
+        // 1️⃣ Dalam Proses paling atas
+        if (statusA == MaintenanceStatus.dalamProses &&
+            statusB != MaintenanceStatus.dalamProses) {
+          return -1;
+        }
+        if (statusB == MaintenanceStatus.dalamProses &&
+            statusA != MaintenanceStatus.dalamProses) {
+          return 1;
+        }
+
+        // 2️⃣ Terlambat berikutnya
+        if (statusA == MaintenanceStatus.terlambat &&
+            statusB != MaintenanceStatus.terlambat) {
+          return -1;
+        }
+        if (statusB == MaintenanceStatus.terlambat &&
+            statusA != MaintenanceStatus.terlambat) {
+          return 1;
+        }
+
+        // 3️⃣ Sisanya berdasarkan tanggal
+        final nextA = a.nextMaintenanceAt?.toDate() ?? DateTime(2100);
+        final nextB = b.nextMaintenanceAt?.toDate() ?? DateTime(2100);
+
+        return nextA.compareTo(nextB);
+      });
+
+      return searched;
     });
   }
 
@@ -27,21 +79,63 @@ class MaintenanceService {
     return _repository.streamItems();
   }
 
-  Stream<MaintenanceDetail?> streamMaintenanceDetail(String id) {
-    return _repository.streamMaintenanceDetail(id);
+  Stream<MaintenanceDetailView?> streamMaintenanceDetail(String id) {
+    return _repository.streamMaintenanceDetail(id).map((detail) {
+      if (detail == null) return null;
+
+      final item = detail.item;
+      if (item == null) return null;
+
+      final maintenance = detail.maintenance;
+
+      final initial = maintenance.cycleInitialQuantity;
+      final remaining = maintenance.remainingQuantity;
+      final completed = initial - remaining;
+
+      final progress = initial > 0
+          ? (completed / initial).clamp(0.0, 1.0)
+          : 0.0;
+
+      final imageProvider = _inventoryService.resolveImage(item);
+
+      return MaintenanceDetailView(
+        maintenance: maintenance,
+        imageProvider: imageProvider,
+        initialQuantity: initial,
+        remainingQuantity: remaining,
+        completedQuantity: completed,
+        progress: progress,
+      );
+    });
   }
 
   // =========================================================
   // ====================== STATUS ===========================
   // =========================================================
-
-  String computeStatus(Maintenance maintenance) {
+  MaintenanceStatus computeStatus(Maintenance maintenance) {
     final now = DateTime.now();
     final next = maintenance.nextMaintenanceAt?.toDate();
 
-    if (next == null) return 'terjadwal';
+    final initial = maintenance.cycleInitialQuantity;
+    final remaining = maintenance.remainingQuantity;
 
-    return next.isBefore(now) ? 'terlambat' : 'terjadwal';
+    // DALAM PROSES (prioritas tertinggi)
+    if (remaining < initial && remaining > 0) {
+      return MaintenanceStatus.dalamProses;
+    }
+
+    if (next == null) return MaintenanceStatus.terjadwal;
+
+    final today = DateTime(now.year, now.month, now.day);
+    final nextDate = DateTime(next.year, next.month, next.day);
+
+    final isDueOrPast = !today.isBefore(nextDate);
+
+    if (isDueOrPast && remaining == initial) {
+      return MaintenanceStatus.terlambat;
+    }
+
+    return MaintenanceStatus.terjadwal;
   }
 
   // =========================================================
@@ -73,9 +167,15 @@ class MaintenanceService {
       }
 
       // Time range filter
-      if (filter.timeRange != null &&
-          next.isAfter(now.add(filter.timeRange!))) {
-        return false;
+      // Time range filter (berbasis hari kalender)
+      if (filter.timeRange != null) {
+        final startOfToday = DateTime(now.year, now.month, now.day);
+        final endOfRange = startOfToday.add(filter.timeRange!);
+
+        // next harus di dalam range kalender
+        if (next.isBefore(startOfToday) || !next.isBefore(endOfRange)) {
+          return false;
+        }
       }
 
       return true;
@@ -103,17 +203,51 @@ class MaintenanceService {
   // =========================================================
 
   Future<void> saveMaintenance({required Maintenance maintenance}) async {
-    final nextMaintenance = _calculateNextMaintenance(
-      lastMaintenance: maintenance.lastMaintenanceAt?.toDate(),
-      intervalDays: maintenance.intervalDays,
-    );
+    final isCreate = maintenance.id.isEmpty;
 
-    final updatedMaintenance = maintenance.copyWith(
-      status: maintenance.status.isEmpty ? 'pending' : maintenance.status,
-      nextMaintenanceAt: nextMaintenance,
-    );
+    if (isCreate) {
+      final now = DateTime.now();
 
-    await _repository.save(updatedMaintenance);
+      // 1️⃣ Ambil stok item
+      final item = await _inventoryService
+          .streamItemById(maintenance.itemId)
+          .first;
+
+      final currentStock = item?.stock ?? 0;
+
+      // 2️⃣ Hitung next maintenance
+      final nextMaintenance = Timestamp.fromDate(
+        now.add(Duration(days: maintenance.intervalDays)),
+      );
+
+      // 3️⃣ Buat maintenance dengan snapshot siklus
+      final newMaintenance = maintenance.copyWith(
+        nextMaintenanceAt: nextMaintenance,
+        cycleInitialQuantity: currentStock,
+        remainingQuantity: currentStock,
+      );
+
+      await _repository.save(newMaintenance);
+    } else {
+      final detail = await _repository
+          .streamMaintenanceDetail(maintenance.id)
+          .first;
+
+      if (detail == null) {
+        throw MaintenanceException("Maintenance tidak ditemukan");
+      }
+
+      final existing = detail.maintenance;
+
+      final updatedMaintenance = maintenance.copyWith(
+        cycleInitialQuantity: existing.cycleInitialQuantity,
+        remainingQuantity: existing.remainingQuantity,
+        lastMaintenanceAt: existing.lastMaintenanceAt,
+        nextMaintenanceAt: existing.nextMaintenanceAt,
+      );
+
+      await _repository.save(updatedMaintenance);
+    }
   }
 
   // =========================================================
@@ -128,33 +262,128 @@ class MaintenanceService {
   // ====================== FINISH ===========================
   // =========================================================
 
-  Future<void> finishMaintenance(Maintenance maintenance) async {
-    final now = DateTime.now();
+  Future<bool> finishMaintenance({
+    required Maintenance maintenance,
+    required int completedQuantity,
+  }) async {
+    final item = await _inventoryService
+        .streamItemById(maintenance.itemId)
+        .first;
 
-    final updated = maintenance.copyWith(
-      status: 'selesai',
-      lastMaintenanceAt: Timestamp.fromDate(now),
-      nextMaintenanceAt: _calculateNextMaintenance(
-        lastMaintenance: now,
-        intervalDays: maintenance.intervalDays,
-      ),
+    final currentStock = item?.stock ?? 0;
+
+    if (maintenance.remainingQuantity == 0) {
+      throw MaintenanceException("Maintenance sudah selesai.");
+    }
+
+    final now = DateTime.now();
+    final completedTimestamp = Timestamp.fromDate(now);
+
+    // ========================================
+    // SAFETY GUARD UNTUK DATA LAMA
+    // ========================================
+    if (maintenance.cycleInitialQuantity == 0 &&
+        maintenance.remainingQuantity == 0) {
+      final snapshotUpdate = {
+        'cycleInitialQuantity': currentStock,
+        'remainingQuantity': currentStock,
+      };
+
+      await _repository.commitMaintenanceBatch(
+        maintenanceId: maintenance.id,
+        maintenanceUpdate: snapshotUpdate,
+        logData: {}, // tidak buat log
+        incrementCompletedToday: false,
+      );
+
+      throw MaintenanceException(
+        "Snapshot siklus diperbarui. Silakan ulangi maintenance.",
+      );
+    }
+
+    // ==============================
+    // VALIDASI
+    // ==============================
+
+    if (completedQuantity <= 0) {
+      throw MaintenanceException("Jumlah harus lebih dari 0");
+    }
+
+    if (completedQuantity > maintenance.remainingQuantity) {
+      throw MaintenanceException("Jumlah tidak boleh melebihi sisa");
+    }
+
+    final newRemaining = maintenance.remainingQuantity - completedQuantity;
+
+    // ==============================
+    // SIAPKAN LOG
+    // ==============================
+
+    final UserModel? currentUser = await _userService.currentUserProfile.first;
+
+    if (currentUser == null) {
+      throw Exception("User tidak ditemukan");
+    }
+
+    final logData = {
+      'maintenanceId': maintenance.id,
+      'itemId': maintenance.itemId,
+      'completedQuantity': completedQuantity,
+      'completedAt': completedTimestamp,
+      'createdAt': FieldValue.serverTimestamp(),
+      'userId': currentUser.id,
+      'userName': currentUser.name,
+      'action': newRemaining > 0
+          ? 'maintenance_partial'
+          : 'maintenance_complete',
+    };
+
+    // ==============================
+    // CASE 1: BELUM SELESAI SIKLUS
+    // ==============================
+
+    if (newRemaining > 0) {
+      final maintenanceUpdate = {'remainingQuantity': newRemaining};
+
+      await _repository.commitMaintenanceBatch(
+        maintenanceId: maintenance.id,
+        maintenanceUpdate: maintenanceUpdate,
+        logData: logData,
+        incrementCompletedToday: false,
+      );
+
+      return false; // siklus belum selesai
+    }
+
+    // ==============================
+    // CASE 2: SIKLUS SELESAI
+    // ==============================
+    final baseDate = maintenance.nextMaintenanceAt?.toDate() ?? now;
+
+    final nextMaintenanceDate = baseDate.add(
+      Duration(days: maintenance.intervalDays),
     );
 
-    await _repository.save(updated);
+    final maintenanceUpdate = {
+      'lastMaintenanceAt': completedTimestamp,
+      'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),
+      'cycleInitialQuantity': currentStock,
+      'remainingQuantity': currentStock,
+    };
+
+    await _repository.commitMaintenanceBatch(
+      maintenanceId: maintenance.id,
+      maintenanceUpdate: maintenanceUpdate,
+      logData: logData,
+      incrementCompletedToday: true,
+    );
+
+    return true; // siklus selesai
   }
 
   // =========================================================
   // ====================== DATE LOGIC =======================
   // =========================================================
-
-  Timestamp _calculateNextMaintenance({
-    required DateTime? lastMaintenance,
-    required int intervalDays,
-  }) {
-    final baseDate = lastMaintenance ?? DateTime.now();
-    final nextDate = baseDate.add(Duration(days: intervalDays));
-    return Timestamp.fromDate(nextDate);
-  }
 
   String formatLastMaintenance(Maintenance? maintenance) {
     if (maintenance?.lastMaintenanceAt == null) {

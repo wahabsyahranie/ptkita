@@ -12,6 +12,16 @@ class Item {
   final String? merk;
   final String? locationCode;
   final String? nameLowercase;
+  final int movementBaseScore;
+  final int movementAutoScore;
+  final int movementTotalScore;
+
+  final String? createdById;
+  final String? createdByName;
+  final DateTime? createdAt;
+  final String? lastEditedById;
+  final String? lastEditedByName;
+  final DateTime? lastEditedAt;
 
   Item({
     this.id,
@@ -25,6 +35,16 @@ class Item {
     this.merk,
     this.locationCode,
     this.nameLowercase,
+    this.movementBaseScore = 0,
+    this.movementAutoScore = 0,
+    this.movementTotalScore = 0,
+
+    this.createdById,
+    this.createdByName,
+    this.createdAt,
+    this.lastEditedById,
+    this.lastEditedByName,
+    this.lastEditedAt,
   });
 
   // factory sesuai contoh FlutterFire docs
@@ -49,8 +69,20 @@ class Item {
       merk: data?['merk'] as String?,
       locationCode: data?['locationCode'] as String?,
       nameLowercase: data?['name_lowercase'] as String?,
+      movementBaseScore: (data?['movementBaseScore'] ?? 0) as int,
+      movementAutoScore: (data?['movementAutoScore'] ?? 0) as int,
+      movementTotalScore: (data?['movementTotalScore'] ?? 0) as int,
+
+      createdById: data?['createdById'] as String?,
+      createdByName: data?['createdByName'] as String?,
+      createdAt: (data?['createdAt'] as Timestamp?)?.toDate(),
+      lastEditedById: data?['lastEditedById'] as String?,
+      lastEditedByName: data?['lastEditedByName'] as String?,
+      lastEditedAt: (data?['lastEditedAt'] as Timestamp?)?.toDate(),
     );
   }
+
+  String? get brand => null;
 
   Map<String, dynamic> toFirestore() {
     return {
@@ -64,6 +96,16 @@ class Item {
       if (merk != null) 'merk': merk,
       if (locationCode != null) 'locationCode': locationCode,
       if (nameLowercase != null) 'name_lowercase': nameLowercase,
+      'movementBaseScore': movementBaseScore,
+      'movementAutoScore': movementAutoScore,
+      'movementTotalScore': movementTotalScore,
+
+      if (createdById != null) 'createdById': createdById,
+      if (createdByName != null) 'createdByName': createdByName,
+      if (createdAt != null) 'createdAt': createdAt,
+      if (lastEditedById != null) 'lastEditedById': lastEditedById,
+      if (lastEditedByName != null) 'lastEditedByName': lastEditedByName,
+      if (lastEditedAt != null) 'lastEditedAt': lastEditedAt,
     };
   }
 
@@ -79,6 +121,16 @@ class Item {
     String? merk,
     String? imageUrl,
     String? nameLowercase,
+    int? movementBaseScore,
+    int? movementAutoScore,
+    int? movementTotalScore,
+
+    String? createdById,
+    String? createdByName,
+    DateTime? createdAt,
+    String? lastEditedById,
+    String? lastEditedByName,
+    DateTime? lastEditedAt,
   }) {
     return Item(
       id: id ?? this.id,
@@ -92,6 +144,16 @@ class Item {
       merk: merk ?? this.merk,
       imageUrl: imageUrl ?? this.imageUrl,
       nameLowercase: nameLowercase ?? this.nameLowercase,
+      movementBaseScore: movementBaseScore ?? this.movementBaseScore,
+      movementAutoScore: movementAutoScore ?? this.movementAutoScore,
+      movementTotalScore: movementTotalScore ?? this.movementTotalScore,
+
+      createdById: createdById ?? this.createdById,
+      createdByName: createdByName ?? this.createdByName,
+      createdAt: createdAt ?? this.createdAt,
+      lastEditedById: lastEditedById ?? this.lastEditedById,
+      lastEditedByName: lastEditedByName ?? this.lastEditedByName,
+      lastEditedAt: lastEditedAt ?? this.lastEditedAt,
     );
   }
 }

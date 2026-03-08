@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_form_fields_section.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_form_image_section.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_form_submit_button.dart';
+import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
@@ -20,6 +22,7 @@ class FormInventoryPage extends StatefulWidget {
 }
 
 class _InventoryFormState extends State<FormInventoryPage> {
+  int _movementBaseScore = 500; // default Normal
   // Image
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
@@ -47,6 +50,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     super.initState();
 
     final it = widget.initialItem;
+    _movementBaseScore = it?.movementBaseScore ?? 500;
 
     _nameCtrl = TextEditingController(text: it?.name ?? '');
     _skuCtrl = TextEditingController(text: it?.sku ?? '');
@@ -59,7 +63,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _selectedMerk = it?.merk;
     _existingImageUrl = it?.imageUrl;
 
-    _service = InventoryService(FirestoreInventoryRepository());
+    _service = InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository()));
   }
 
   @override
@@ -213,6 +217,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
         locationCode: location,
         type: _selectedType,
         merk: _selectedMerk,
+        movementBaseScore: _movementBaseScore,
       );
 
       await _service.saveItem(item, imageFile: _imageFile);
@@ -280,6 +285,9 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 selectedMerk: _selectedMerk,
                 onTypeChanged: (v) => setState(() => _selectedType = v),
                 onMerkChanged: (v) => setState(() => _selectedMerk = v),
+                movementBaseScore: _movementBaseScore,
+                onMovementChanged: (v) =>
+                    setState(() => _movementBaseScore = v),
               ),
 
               const SizedBox(height: 30),
