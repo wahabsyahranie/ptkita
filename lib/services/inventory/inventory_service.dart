@@ -98,6 +98,17 @@ class InventoryService extends ChangeNotifier {
   // =========================================================
 
   Future<void> saveItem(Item item, {File? imageFile}) async {
+    // ==============================
+    // BUSINESS RULE GUARD
+    // ==============================
+    if ((item.stock ?? 0) < 0) {
+      throw Exception("Stok tidak boleh minus");
+    }
+
+    if ((item.price ?? 0) < 0) {
+      throw Exception("Harga tidak boleh minus");
+    }
+
     final normalized = item.copyWith(
       type: (item.type == null || item.type!.isEmpty) ? 'unit' : item.type,
       merk: (item.merk == null || item.merk!.isEmpty) ? 'nomerk' : item.merk,
