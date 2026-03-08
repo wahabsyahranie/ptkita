@@ -18,8 +18,10 @@ class RepairHistoryPage extends StatefulWidget {
 
 class _RepairHistoryPageState extends State<RepairHistoryPage> {
   final TextEditingController _search = TextEditingController();
-  final RepairHistoryService _historyService = RepairHistoryService();
   final RepairRepository _repository = RepairRepository();
+  late final RepairHistoryService _historyService = RepairHistoryService(
+    _repository,
+  );
   final ScrollController _scrollController = ScrollController();
 
   List<RepairModel> repairs = [];
@@ -27,6 +29,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
 
   bool isLoading = false;
   bool isFirstLoad = true;
+  bool _isSearching = false;
 
   /// filter state
   String filter = 'all';
@@ -72,22 +75,32 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
     });
   }
 
-  void _onSearchChanged() {
+  void _onSearchChanged() async {
     final query = _search.text.trim();
 
     if (query.isEmpty) {
       setState(() {
         filteredRepairs = List.from(repairs);
+        _isSearching = false;
       });
       return;
     }
 
-    final ids = _repository.search(query);
+    setState(() {
+      _isSearching = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    final ids = _historyService.search(query);
 
     setState(() {
       filteredRepairs = repairs.where((r) => ids.contains(r.id)).toList();
+      _isSearching = false;
     });
   }
+  // print("IDS: $ids");
+  //   print("REPAIRS: ${repairs.map((e) => e.id)}");
 
   @override
   void dispose() {
@@ -173,18 +186,20 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () => loadRepairs(refresh: true),
-                child: isFirstLoad
+                child: _isSearching
+                    ? const Center(child: CircularProgressIndicator())
+                    : isFirstLoad
                     ? const Center(child: CircularProgressIndicator())
                     : filtered.isEmpty
                     ? const Center(child: Text('Data tidak ditemukan'))
                     : ListView.separated(
                         controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                        itemCount: filteredRepairs.length + 1,
+                        itemCount: filtered.length + 1,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, i) {
-                          if (i < filteredRepairs.length) {
-                            return RepairCard(model: filteredRepairs[i]);
+                          if (i < filtered.length) {
+                            return RepairCard(model: filtered[i]);
                           }
 
                           if (!_historyService.hasMore) {

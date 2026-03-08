@@ -44,11 +44,10 @@ class RepairRepository {
       final data = doc.data();
 
       final List<String> fields = [
-        data['customerName'] ?? "",
-        data['phone'] ?? "",
-        data['device'] ?? "",
-        data['issue'] ?? "",
-        data['status'] ?? "",
+        data['buyerName']?.toString() ?? "",
+        data['itemName']?.toString() ?? "",
+        data['techName']?.toString() ?? "",
+        data['status']?.toString() ?? "",
       ];
 
       _searchEngine.addDocument(doc.id, fields);

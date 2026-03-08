@@ -26,6 +26,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
   bool _isLoading = false;
   bool _hasMore = true;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -85,20 +86,29 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     await _loadMore();
   }
 
-  void _onSearchChanged() {
+  void _onSearchChanged() async {
     final query = _search.text.trim();
 
     if (query.isEmpty) {
       setState(() {
         _filteredDocs = List.from(_docs);
+        _isSearching = false;
       });
       return;
     }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 200));
 
     final ids = _repository.search(query);
 
     setState(() {
       _filteredDocs = _docs.where((doc) => ids.contains(doc.id)).toList();
+
+      _isSearching = false;
     });
   }
 
@@ -158,8 +168,19 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _refresh,
-                child: _docs.isEmpty && _isLoading
+                child: _isSearching
                     ? const Center(child: CircularProgressIndicator())
+                    : _filteredDocs.isEmpty
+                    ? const Center(
+                        child: Text(
+                          "Data tidak ditemukan",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
                     : ListView.builder(
                         controller: _scroll,
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),

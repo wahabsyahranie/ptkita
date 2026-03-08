@@ -26,18 +26,28 @@ class RepairModel {
   ) {
     final data = doc.data();
 
+    /// parsing date
     DateTime parsedDate = DateTime.now();
     if (data['date'] is Timestamp) {
       parsedDate = (data['date'] as Timestamp).toDate();
     }
 
+    /// normalize string helper
+    String parse(dynamic value) {
+      if (value == null) return '';
+      return value.toString();
+    }
+
     return RepairModel(
       id: doc.id,
-      buyer: data['buyerName'] ?? data['buyer'] ?? '-',
-      product: data['itemName'] ?? data['product'] ?? '-',
-      technician: data['techName'] ?? data['technician'] ?? '-',
-      status: data['status'] ?? '-',
-      repairType: data['repairType'] ?? '',
+
+      /// mapping firestore → model
+      buyer: parse(data['buyerName'] ?? data['buyer']),
+      product: parse(data['itemName'] ?? data['product']),
+      technician: parse(data['techName'] ?? data['technician']),
+      status: parse(data['status']),
+      repairType: parse(data['repairType']),
+
       date: parsedDate,
       raw: data,
     );
@@ -60,6 +70,7 @@ class RepairModel {
       'Nov',
       'Dec',
     ];
+
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }

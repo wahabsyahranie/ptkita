@@ -191,34 +191,43 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _refresh,
-                child: ListView.separated(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  itemCount: _filteredWarranties.length + 1,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) {
-                    if (i < _filteredWarranties.length) {
-                      final w = _filteredWarranties[i];
+                child: Builder(
+                  builder: (context) {
+                    List<WarrantyModel> displayList = _filteredWarranties;
 
-                      if (_statusFilter == 'active' && !w.isActive) {
-                        return const SizedBox();
-                      }
-
-                      if (_statusFilter == 'expired' && !w.isExpired) {
-                        return const SizedBox();
-                      }
-
-                      return WarrantyCard(warranty: w);
+                    if (_statusFilter == 'active') {
+                      displayList = displayList
+                          .where((w) => w.isActive)
+                          .toList();
                     }
 
-                    if (_hasMore) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(child: CircularProgressIndicator()),
-                      );
+                    if (_statusFilter == 'expired') {
+                      displayList = displayList
+                          .where((w) => w.isExpired)
+                          .toList();
                     }
 
-                    return const SizedBox();
+                    return ListView.separated(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      itemCount: displayList.length + 1,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        if (i < displayList.length) {
+                          final w = displayList[i];
+                          return WarrantyCard(warranty: w);
+                        }
+
+                        if (_hasMore) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        return const SizedBox();
+                      },
+                    );
                   },
                 ),
               ),

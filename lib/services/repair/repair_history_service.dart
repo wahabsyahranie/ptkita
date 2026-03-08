@@ -5,9 +5,10 @@ import 'package:flutter_kita/repositories/repair/repair_repository.dart';
 class RepairHistoryService {
   final _collection = FirebaseFirestore.instance.collection('repair');
 
-  final RepairRepository _repo = RepairRepository();
+  final RepairRepository _repo;
 
-  /// stream lama (biarkan dulu)
+  RepairHistoryService(this._repo);
+
   Stream<List<RepairModel>> streamRepairs() {
     return _collection
         .orderBy('date', descending: true)
@@ -19,9 +20,12 @@ class RepairHistoryService {
         );
   }
 
-  /// pagination firestore
   Future<List<RepairModel>> fetchRepairs({bool refresh = false}) {
     return _repo.fetchRepairs(refresh: refresh);
+  }
+
+  List<String> search(String query) {
+    return _repo.search(query);
   }
 
   Future<RepairModel?> getById(String id) async {
@@ -33,6 +37,5 @@ class RepairHistoryService {
     );
   }
 
-  /// cek apakah masih ada data pagination
   bool get hasMore => _repo.hasMore;
 }
