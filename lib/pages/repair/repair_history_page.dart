@@ -48,20 +48,24 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
   Future<void> loadRepairs({bool refresh = false}) async {
     if (isLoading) return;
 
+    if (refresh) {
+      repairs.clear();
+      filteredRepairs.clear();
+    }
+
     setState(() {
       isLoading = true;
+
+      if (refresh) {
+        isFirstLoad = true;
+      }
     });
 
     final data = await _historyService.fetchRepairs(refresh: refresh);
 
     setState(() {
-      if (refresh) {
-        repairs = data;
-        filteredRepairs = List.from(data);
-      } else {
-        repairs.addAll(data);
-        filteredRepairs = List.from(repairs);
-      }
+      repairs.addAll(data);
+      filteredRepairs = List.from(repairs);
 
       isLoading = false;
       isFirstLoad = false;
