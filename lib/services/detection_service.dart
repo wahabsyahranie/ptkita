@@ -5,11 +5,11 @@ import 'package:http/http.dart' as http;
 class DetectionService {
   // Untuk Emulator Android
   // static const String baseUrl = "http://10.0.2.2:5000";
-
+  // untuk emulator dan ios = http://localhost:5000
   // Untuk HP asli (nanti ganti jika pakai device fisik)
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://localhost:5000',
+    defaultValue: 'http://10.0.2.2:5000',
   );
 
   static Future<Map<String, dynamic>> detect(File imageFile) async {

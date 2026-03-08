@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'capture_page.dart';
 import 'preview_capture_page.dart';
 import 'widget/retake_button_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
@@ -124,10 +123,7 @@ class _AnalysisFailPageState extends State<AnalysisFailPage> {
               child: PrimaryOutlineButton(
                 text: "Ambil Ulang",
                 onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CapturePage()),
-                  );
+                  Navigator.pop(context);
                 },
               ),
             ),
