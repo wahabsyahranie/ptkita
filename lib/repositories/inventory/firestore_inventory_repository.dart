@@ -39,7 +39,7 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     // Category
     if (filter.category != null) {
-      query = query.where('type', isEqualTo: filter.category);
+      query = query.where('category', isEqualTo: filter.category);
     }
 
     // Brand
@@ -97,7 +97,7 @@ class FirestoreInventoryRepository implements InventoryRepository {
     }
 
     if (filter.category != null) {
-      query = query.where('type', isEqualTo: filter.category);
+      query = query.where('category', isEqualTo: filter.category);
     }
 
     if (filter.brands.isNotEmpty) {

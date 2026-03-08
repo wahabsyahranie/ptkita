@@ -34,7 +34,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
   // Form
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _skuCtrl;
+  late final TextEditingController _typeUnitCtrl;
   late final TextEditingController _priceCtrl;
   late final TextEditingController _stockCtrl;
   late final TextEditingController _descCtrl;
@@ -53,7 +53,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _movementBaseScore = it?.movementBaseScore ?? 500;
 
     _nameCtrl = TextEditingController(text: it?.name ?? '');
-    _skuCtrl = TextEditingController(text: it?.sku ?? '');
+    _typeUnitCtrl = TextEditingController(text: it?.typeUnit ?? '');
     _priceCtrl = TextEditingController(text: it?.price?.toString() ?? '');
     _stockCtrl = TextEditingController(text: it?.stock?.toString() ?? '');
     _descCtrl = TextEditingController(text: it?.description ?? '');
@@ -69,7 +69,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _skuCtrl.dispose();
+    _typeUnitCtrl.dispose();
     _priceCtrl.dispose();
     _stockCtrl.dispose();
     _descCtrl.dispose();
@@ -165,7 +165,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     setState(() => _isSaving = true);
 
     final name = _nameCtrl.text.trim();
-    final sku = _skuCtrl.text.trim();
+    final typeUnit = _typeUnitCtrl.text.trim();
     final desc = _descCtrl.text.trim();
     final location = _locationCtrl.text.trim();
 
@@ -209,7 +209,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
       final item = Item(
         id: widget.initialItem?.id,
         name: name,
-        sku: sku,
+        typeUnit: typeUnit,
         price: price,
         stock: stock,
         imageUrl: _existingImageUrl,
@@ -276,7 +276,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
 
               InventoryFormFieldsSection(
                 nameCtrl: _nameCtrl,
-                skuCtrl: _skuCtrl,
+                typeUnitCtrl: _typeUnitCtrl,
                 priceCtrl: _priceCtrl,
                 stockCtrl: _stockCtrl,
                 locationCtrl: _locationCtrl,

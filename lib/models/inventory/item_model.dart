@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Item {
   final String? id;
   final String? name;
-  final String? sku;
+  final String? typeUnit;
   final int? stock;
   final int? price;
   final String? description;
@@ -26,7 +26,7 @@ class Item {
   Item({
     this.id,
     this.name,
-    this.sku,
+    this.typeUnit,
     this.stock,
     this.price,
     this.description,
@@ -56,7 +56,7 @@ class Item {
     return Item(
       id: snapshot.id,
       name: data?['name'] as String?,
-      sku: data?['sku'] as String?,
+      typeUnit: data?['typeUnit'] as String?,
       stock: (data?['stock'] is int)
           ? data!['stock'] as int
           : (data?['stock'] is num ? (data!['stock'] as num).toInt() : null),
@@ -87,7 +87,7 @@ class Item {
   Map<String, dynamic> toFirestore() {
     return {
       if (name != null) 'name': name,
-      if (sku != null) 'sku': sku,
+      if (typeUnit != null) 'typeUnit': typeUnit,
       if (stock != null) 'stock': stock,
       if (price != null) 'price': price,
       if (description != null) 'description': description,
@@ -112,7 +112,7 @@ class Item {
   Item copyWith({
     String? id,
     String? name,
-    String? sku,
+    String? typeUnit,
     int? price,
     int? stock,
     String? description,
@@ -135,7 +135,7 @@ class Item {
     return Item(
       id: id ?? this.id,
       name: name ?? this.name,
-      sku: sku ?? this.sku,
+      typeUnit: typeUnit ?? this.typeUnit,
       price: price ?? this.price,
       stock: stock ?? this.stock,
       description: description ?? this.description,

@@ -120,7 +120,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
 
   Widget _buildContent(Item item) {
     final name = item.name ?? '-';
-    final sku = item.sku ?? '-';
+    final typeUnit = item.typeUnit ?? '-';
     final price = item.price ?? 0;
     final stock = item.stock ?? 0;
     final category = item.category ?? '-';
@@ -204,7 +204,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("SKU", sku),
+                _rowInfo("Type Unit", typeUnit),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 

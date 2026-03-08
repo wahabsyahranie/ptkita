@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class InventoryFormFieldsSection extends StatelessWidget {
   final TextEditingController nameCtrl;
-  final TextEditingController skuCtrl;
+  final TextEditingController typeUnitCtrl;
   final TextEditingController priceCtrl;
   final TextEditingController stockCtrl;
   final TextEditingController locationCtrl;
@@ -19,7 +19,7 @@ class InventoryFormFieldsSection extends StatelessWidget {
   const InventoryFormFieldsSection({
     super.key,
     required this.nameCtrl,
-    required this.skuCtrl,
+    required this.typeUnitCtrl,
     required this.priceCtrl,
     required this.stockCtrl,
     required this.locationCtrl,
@@ -48,12 +48,12 @@ class InventoryFormFieldsSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         TextFormField(
-          controller: skuCtrl,
+          controller: typeUnitCtrl,
           decoration: const InputDecoration(
-            labelText: "SKU",
+            labelText: "Type Unit",
             border: OutlineInputBorder(),
           ),
-          validator: (v) => v == null || v.isEmpty ? "SKU wajib diisi" : null,
+          validator: (v) => v == null || v.isEmpty ? "Type Unit wajib diisi" : null,
         ),
         const SizedBox(height: 16),
         TextFormField(

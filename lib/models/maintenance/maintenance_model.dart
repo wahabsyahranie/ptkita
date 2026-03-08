@@ -7,7 +7,7 @@ class Maintenance {
   final String id;
   final String itemId;
   final String itemName;
-  final String? sku;
+  final String? typeUnit;
   final Timestamp? nextMaintenanceAt;
   final Timestamp? lastMaintenanceAt;
   final int intervalDays;
@@ -20,7 +20,7 @@ class Maintenance {
     required this.id,
     required this.itemId,
     required this.itemName,
-    this.sku,
+    this.typeUnit,
     this.nextMaintenanceAt,
     this.lastMaintenanceAt,
     required this.intervalDays,
@@ -49,7 +49,7 @@ class Maintenance {
       id: doc.id,
       itemId: itemIdStr,
       itemName: data['itemName'] ?? '',
-      sku: data['sku'],
+      typeUnit: data['typeUnit'],
       nextMaintenanceAt: data['nextMaintenanceAt'],
       lastMaintenanceAt: data['lastMaintenanceAt'],
       intervalDays: (data['intervalDays'] as num?)?.toInt() ?? 0,
@@ -64,7 +64,7 @@ class Maintenance {
   Map<String, dynamic> toFirestore() => {
     'itemId': itemId,
     'itemName': itemName,
-    'sku': sku,
+    'typeUnit': typeUnit,
     'nextMaintenanceAt': nextMaintenanceAt,
     'lastMaintenanceAt': lastMaintenanceAt,
     'intervalDays': intervalDays,
@@ -78,7 +78,7 @@ class Maintenance {
     String? id,
     String? itemId,
     String? itemName,
-    String? sku,
+    String? typeUnit,
     int? intervalDays,
     String? priority,
     Timestamp? lastMaintenanceAt,
@@ -91,7 +91,7 @@ class Maintenance {
       id: id ?? this.id,
       itemId: itemId ?? this.itemId,
       itemName: itemName ?? this.itemName,
-      sku: sku ?? this.sku,
+      typeUnit: typeUnit ?? this.typeUnit,
       intervalDays: intervalDays ?? this.intervalDays,
       priority: priority ?? this.priority,
       lastMaintenanceAt: lastMaintenanceAt ?? this.lastMaintenanceAt,
