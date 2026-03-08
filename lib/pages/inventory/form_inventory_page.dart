@@ -40,7 +40,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _locationCtrl;
 
-  String? _selectedType;
+  String? _selectedcategory;
   String? _selectedMerk;
 
   bool _isSaving = false;
@@ -59,7 +59,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _descCtrl = TextEditingController(text: it?.description ?? '');
     _locationCtrl = TextEditingController(text: it?.locationCode ?? '');
 
-    _selectedType = it?.type;
+    _selectedcategory = it?.category;
     _selectedMerk = it?.merk;
     _existingImageUrl = it?.imageUrl;
 
@@ -215,7 +215,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
         imageUrl: _existingImageUrl,
         description: desc.isEmpty ? null : desc,
         locationCode: location,
-        type: _selectedType,
+        category: _selectedcategory,
         merk: _selectedMerk,
         movementBaseScore: _movementBaseScore,
       );
@@ -281,9 +281,9 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 stockCtrl: _stockCtrl,
                 locationCtrl: _locationCtrl,
                 descCtrl: _descCtrl,
-                selectedType: _selectedType,
+                selectedcategory: _selectedcategory,
                 selectedMerk: _selectedMerk,
-                onTypeChanged: (v) => setState(() => _selectedType = v),
+                oncategoryChanged: (v) => setState(() => _selectedcategory = v),
                 onMerkChanged: (v) => setState(() => _selectedMerk = v),
                 movementBaseScore: _movementBaseScore,
                 onMovementChanged: (v) =>

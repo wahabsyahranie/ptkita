@@ -7,7 +7,7 @@ class Item {
   final int? stock;
   final int? price;
   final String? description;
-  final String? type;
+  final String? category;
   final String? imageUrl;
   final String? merk;
   final String? locationCode;
@@ -30,7 +30,7 @@ class Item {
     this.stock,
     this.price,
     this.description,
-    this.type,
+    this.category,
     this.imageUrl,
     this.merk,
     this.locationCode,
@@ -64,7 +64,7 @@ class Item {
           ? data!['price'] as int
           : (data?['price'] is num ? (data!['price'] as num).toInt() : null),
       description: data?['description'] as String?,
-      type: data?['type'] as String?,
+      category: data?['category'] as String?,
       imageUrl: data?['imageUrl'] as String?,
       merk: data?['merk'] as String?,
       locationCode: data?['locationCode'] as String?,
@@ -91,7 +91,7 @@ class Item {
       if (stock != null) 'stock': stock,
       if (price != null) 'price': price,
       if (description != null) 'description': description,
-      if (type != null) 'type': type,
+      if (category != null) 'category': category,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (merk != null) 'merk': merk,
       if (locationCode != null) 'locationCode': locationCode,
@@ -117,7 +117,7 @@ class Item {
     int? stock,
     String? description,
     String? locationCode,
-    String? type,
+    String? category,
     String? merk,
     String? imageUrl,
     String? nameLowercase,
@@ -140,7 +140,7 @@ class Item {
       stock: stock ?? this.stock,
       description: description ?? this.description,
       locationCode: locationCode ?? this.locationCode,
-      type: type ?? this.type,
+      category: category ?? this.category,
       merk: merk ?? this.merk,
       imageUrl: imageUrl ?? this.imageUrl,
       nameLowercase: nameLowercase ?? this.nameLowercase,

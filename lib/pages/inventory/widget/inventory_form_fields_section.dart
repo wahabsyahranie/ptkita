@@ -8,12 +8,12 @@ class InventoryFormFieldsSection extends StatelessWidget {
   final TextEditingController locationCtrl;
   final TextEditingController descCtrl;
 
-  final String? selectedType;
+  final String? selectedcategory;
   final String? selectedMerk;
   final int movementBaseScore;
 
   final ValueChanged<int> onMovementChanged;
-  final ValueChanged<String?> onTypeChanged;
+  final ValueChanged<String?> oncategoryChanged;
   final ValueChanged<String?> onMerkChanged;
 
   const InventoryFormFieldsSection({
@@ -24,9 +24,9 @@ class InventoryFormFieldsSection extends StatelessWidget {
     required this.stockCtrl,
     required this.locationCtrl,
     required this.descCtrl,
-    required this.selectedType,
+    required this.selectedcategory,
     required this.selectedMerk,
-    required this.onTypeChanged,
+    required this.oncategoryChanged,
     required this.onMerkChanged,
     required this.movementBaseScore,
     required this.onMovementChanged,
@@ -122,17 +122,18 @@ class InventoryFormFieldsSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          initialValue: selectedType,
+          initialValue: selectedcategory,
           items: const [
             DropdownMenuItem(value: "unit", child: Text("Unit")),
             DropdownMenuItem(value: "part", child: Text("Part")),
           ],
-          onChanged: onTypeChanged,
+          onChanged: oncategoryChanged,
           decoration: const InputDecoration(
-            labelText: "Tipe Barang",
+            labelText: "Kategori Barang",
             border: OutlineInputBorder(),
           ),
-          validator: (v) => v == null || v.isEmpty ? 'Tipe wajib diisi' : null,
+          validator: (v) =>
+              v == null || v.isEmpty ? 'Kategori wajib diisi' : null,
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
