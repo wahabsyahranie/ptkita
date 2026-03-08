@@ -110,7 +110,9 @@ class InventoryService extends ChangeNotifier {
     }
 
     final normalized = item.copyWith(
-      type: (item.type == null || item.type!.isEmpty) ? 'unit' : item.type,
+      category: (item.category == null || item.category!.isEmpty)
+          ? 'unit'
+          : item.category,
       merk: (item.merk == null || item.merk!.isEmpty) ? 'nomerk' : item.merk,
     );
 

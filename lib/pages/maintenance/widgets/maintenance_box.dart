@@ -41,7 +41,7 @@ class MaintenanceBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = main.itemName;
-    final sku = main.sku ?? '-';
+    final typeUnit = main.typeUnit ?? '-';
     final intervalDays = main.intervalDays;
     final priority = main.priority;
     final initial = main.cycleInitialQuantity;
@@ -108,7 +108,7 @@ class MaintenanceBox extends StatelessWidget {
               ),
               // const SizedBox(height: 6),
               Text(
-                sku,
+                typeUnit,
                 style: TextStyle(color: MyColors.black.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 12),

@@ -3,11 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Item {
   final String? id;
   final String? name;
-  final String? sku;
+  final String? typeUnit;
   final int? stock;
   final int? price;
   final String? description;
-  final String? type;
+  final String? category;
   final String? imageUrl;
   final String? merk;
   final String? locationCode;
@@ -26,11 +26,11 @@ class Item {
   Item({
     this.id,
     this.name,
-    this.sku,
+    this.typeUnit,
     this.stock,
     this.price,
     this.description,
-    this.type,
+    this.category,
     this.imageUrl,
     this.merk,
     this.locationCode,
@@ -56,7 +56,7 @@ class Item {
     return Item(
       id: snapshot.id,
       name: data?['name'] as String?,
-      sku: data?['sku'] as String?,
+      typeUnit: data?['typeUnit'] as String?,
       stock: (data?['stock'] is int)
           ? data!['stock'] as int
           : (data?['stock'] is num ? (data!['stock'] as num).toInt() : null),
@@ -64,7 +64,7 @@ class Item {
           ? data!['price'] as int
           : (data?['price'] is num ? (data!['price'] as num).toInt() : null),
       description: data?['description'] as String?,
-      type: data?['type'] as String?,
+      category: data?['category'] as String?,
       imageUrl: data?['imageUrl'] as String?,
       merk: data?['merk'] as String?,
       locationCode: data?['locationCode'] as String?,
@@ -87,11 +87,11 @@ class Item {
   Map<String, dynamic> toFirestore() {
     return {
       if (name != null) 'name': name,
-      if (sku != null) 'sku': sku,
+      if (typeUnit != null) 'typeUnit': typeUnit,
       if (stock != null) 'stock': stock,
       if (price != null) 'price': price,
       if (description != null) 'description': description,
-      if (type != null) 'type': type,
+      if (category != null) 'category': category,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (merk != null) 'merk': merk,
       if (locationCode != null) 'locationCode': locationCode,
@@ -112,12 +112,12 @@ class Item {
   Item copyWith({
     String? id,
     String? name,
-    String? sku,
+    String? typeUnit,
     int? price,
     int? stock,
     String? description,
     String? locationCode,
-    String? type,
+    String? category,
     String? merk,
     String? imageUrl,
     String? nameLowercase,
@@ -135,12 +135,12 @@ class Item {
     return Item(
       id: id ?? this.id,
       name: name ?? this.name,
-      sku: sku ?? this.sku,
+      typeUnit: typeUnit ?? this.typeUnit,
       price: price ?? this.price,
       stock: stock ?? this.stock,
       description: description ?? this.description,
       locationCode: locationCode ?? this.locationCode,
-      type: type ?? this.type,
+      category: category ?? this.category,
       merk: merk ?? this.merk,
       imageUrl: imageUrl ?? this.imageUrl,
       nameLowercase: nameLowercase ?? this.nameLowercase,

@@ -29,7 +29,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   String? _selectedItemId;
   String? _selectedItemName;
   String? _selectedPriority;
-  String? _selectedItemSku;
+  String? _selectedItemtypeUnit;
   bool _isSaving = false;
 
   @override
@@ -52,7 +52,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
     _selectedItemId = it?.itemId;
     _selectedItemName = it?.itemName;
     _selectedPriority = it?.priority;
-    _selectedItemSku = it?.sku;
+    _selectedItemtypeUnit = it?.typeUnit;
 
     // 🔑 LOAD TASKS SAAT EDIT
     if (it != null && it.tasks.isNotEmpty) {
@@ -93,7 +93,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
     if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedItemId == null || _selectedItemSku == null) {
+    if (_selectedItemId == null || _selectedItemtypeUnit == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Barang wajib dipilih')));
@@ -117,7 +117,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       id: widget.initialItem?.id ?? '',
       itemId: _selectedItemId!,
       itemName: _selectedItemName!,
-      sku: _selectedItemSku,
+      typeUnit: _selectedItemtypeUnit,
       intervalDays: intervalDays,
       priority: _selectedPriority!,
       lastMaintenanceAt: widget.initialItem?.lastMaintenanceAt,
@@ -206,7 +206,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                       setState(() {
                         _selectedItemId = value;
                         _selectedItemName = selectedItem.name;
-                        _selectedItemSku = selectedItem.sku;
+                        _selectedItemtypeUnit = selectedItem.typeUnit;
                       });
                     },
                     decoration: const InputDecoration(

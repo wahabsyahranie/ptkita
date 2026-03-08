@@ -193,8 +193,8 @@ class MaintenanceService {
 
     return items.where((m) {
       final name = m.itemName.toLowerCase();
-      final sku = (m.sku ?? '').toLowerCase();
-      return name.contains(q) || sku.contains(q);
+      final typeUnit = (m.typeUnit ?? '').toLowerCase();
+      return name.contains(q) || typeUnit.contains(q);
     }).toList();
   }
 
