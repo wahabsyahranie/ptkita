@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/warranty/warranty_model.dart';
+import '../../core/search/search_engine.dart';
 
 class WarrantyRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  final InvertedIndex _searchEngine = InvertedIndex();
 
   Future<Map<String, dynamic>> getWarranties({
     DocumentSnapshot? lastDoc,
@@ -19,6 +22,22 @@ class WarrantyRepository {
 
     final snapshot = await query.get();
 
+    /// BUILD SEARCH INDEX
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+
+      final List<String> fields = [
+        data['buyerName'] ?? "",
+        data['phone'] ?? "",
+        data['productName'] ?? "",
+        data['serialNumber'] ?? "",
+        data['transactionId'] ?? "",
+      ];
+
+      _searchEngine.addDocument(doc.id, fields);
+    }
+
+    /// CONVERT TO MODEL
     final warranties = snapshot.docs
         .map((doc) => WarrantyModel.fromFirestore(doc))
         .toList();
@@ -30,5 +49,9 @@ class WarrantyRepository {
     }
 
     return {"data": warranties, "lastDoc": newLastDoc};
+  }
+
+  List<String> search(String query) {
+    return _searchEngine.search(query).toList();
   }
 }

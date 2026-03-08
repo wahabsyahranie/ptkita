@@ -21,6 +21,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
   final WarrantyRepository _repository = WarrantyRepository();
 
   final List<WarrantyModel> _warranties = [];
+  List<WarrantyModel> _filteredWarranties = [];
 
   DocumentSnapshot? _lastDoc;
 
@@ -76,6 +77,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
 
     setState(() {
       _warranties.addAll(newData);
+      _filteredWarranties = List.from(_warranties);
       _isLoading = false;
     });
   }
@@ -89,6 +91,25 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
     });
 
     await _loadMore();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchCtrl.text.trim();
+
+    if (query.isEmpty) {
+      setState(() {
+        _filteredWarranties = List.from(_warranties);
+      });
+      return;
+    }
+
+    final ids = _repository.search(query);
+
+    setState(() {
+      _filteredWarranties = _warranties
+          .where((w) => ids.contains(w.id))
+          .toList();
+    });
   }
 
   void _openFilterSheet() {
@@ -113,8 +134,6 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final query = _searchCtrl.text.trim().toLowerCase();
-
     return Scaffold(
       backgroundColor: MyColors.white,
 
@@ -165,7 +184,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
           children: [
             WarrantySearchSection(
               controller: _searchCtrl,
-              onSearch: (_) => setState(() {}),
+              onSearch: (_) => _onSearchChanged(),
               onFilterTap: _openFilterSheet,
             ),
 
@@ -175,22 +194,11 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
                 child: ListView.separated(
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  itemCount: _warranties.length + 1,
+                  itemCount: _filteredWarranties.length + 1,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
-                    if (i < _warranties.length) {
-                      final w = _warranties[i];
-
-                      final buyer = w.buyerName.toLowerCase();
-                      final product = w.productName.toLowerCase();
-                      final serial = w.serialNumber.toLowerCase();
-
-                      if (query.isNotEmpty &&
-                          !buyer.contains(query) &&
-                          !product.contains(query) &&
-                          !serial.contains(query)) {
-                        return const SizedBox();
-                      }
+                    if (i < _filteredWarranties.length) {
+                      final w = _filteredWarranties[i];
 
                       if (_statusFilter == 'active' && !w.isActive) {
                         return const SizedBox();

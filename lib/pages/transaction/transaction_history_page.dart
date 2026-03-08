@@ -19,6 +19,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   final TransactionRepository _repository = TransactionRepository();
 
   final List<DocumentSnapshot> _docs = [];
+  List<DocumentSnapshot> _filteredDocs = [];
   final ScrollController _scroll = ScrollController();
 
   DocumentSnapshot? _lastDoc;
@@ -67,6 +68,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     }
 
     _docs.addAll(newDocs);
+    _filteredDocs = List.from(_docs);
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -81,6 +83,23 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     });
 
     await _loadMore();
+  }
+
+  void _onSearchChanged() {
+    final query = _search.text.trim();
+
+    if (query.isEmpty) {
+      setState(() {
+        _filteredDocs = List.from(_docs);
+      });
+      return;
+    }
+
+    final ids = _repository.search(query);
+
+    setState(() {
+      _filteredDocs = _docs.where((doc) => ids.contains(doc.id)).toList();
+    });
   }
 
   @override
@@ -131,7 +150,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
               child: TransactionSearchBar(
                 controller: _search,
-                onChanged: () => setState(() {}),
+                onChanged: _onSearchChanged,
               ),
             ),
 
@@ -144,33 +163,17 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                     : ListView.builder(
                         controller: _scroll,
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                        itemCount: _docs.length + (_hasMore ? 1 : 0),
+                        itemCount: _filteredDocs.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, i) {
-                          if (i >= _docs.length) {
+                          if (i >= _filteredDocs.length) {
                             return const Padding(
                               padding: EdgeInsets.all(16),
                               child: Center(child: CircularProgressIndicator()),
                             );
                           }
 
-                          final data = _docs[i].data() as Map<String, dynamic>;
-
-                          /// SEARCH
-                          final q = _search.text.toLowerCase();
-                          if (q.isNotEmpty) {
-                            final customer = data['customer'] ?? {};
-                            final summary = data['summary'] ?? {};
-
-                            final hay = [
-                              customer['name'],
-                              customer['phone'],
-                              summary['txCode'],
-                            ].whereType<String>().join(' ').toLowerCase();
-
-                            if (!hay.contains(q)) {
-                              return const SizedBox.shrink();
-                            }
-                          }
+                          final data =
+                              _filteredDocs[i].data() as Map<String, dynamic>;
 
                           return _TransactionCardFirestore(
                             data: data,

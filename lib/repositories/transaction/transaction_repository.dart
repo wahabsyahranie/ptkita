@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_kita/core/search/search_engine.dart';
 
 class TransactionRepository {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  final InvertedIndex _searchEngine = InvertedIndex();
 
   Future<Map<String, dynamic>> getTransactions({
     DocumentSnapshot? lastDoc,
@@ -24,9 +27,35 @@ class TransactionRepository {
       newLastDoc = snapshot.docs.last;
     }
 
-    return {
-      "data": snapshot.docs, // langsung kirim DocumentSnapshot
-      "lastDoc": newLastDoc,
-    };
+    /// BUILD INDEX
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+
+      final customer = data['customer'] ?? {};
+      final summary = data['summary'] ?? {};
+      final items = data['items'] ?? [];
+
+      final List<String> fields = [];
+
+      /// customer
+      fields.add(customer['name'] ?? "");
+      fields.add(customer['phone'] ?? "");
+
+      /// transaction code
+      fields.add(summary['txCode'] ?? "");
+
+      /// items array
+      for (var item in items) {
+        fields.add(item['name'] ?? "");
+      }
+
+      _searchEngine.addDocument(doc.id, fields);
+    }
+
+    return {"data": snapshot.docs, "lastDoc": newLastDoc};
+  }
+
+  List<String> search(String query) {
+    return _searchEngine.search(query).toList();
   }
 }

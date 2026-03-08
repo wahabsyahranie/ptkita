@@ -4,6 +4,7 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/repair/repair_add_page.dart';
 import 'package:flutter_kita/services/repair/repair_history_service.dart';
 import 'package:flutter_kita/models/repair/repair_model.dart';
+import 'package:flutter_kita/repositories/repair/repair_repository.dart';
 import 'widgets/repair_card.dart';
 import 'widgets/repair_search_bar.dart';
 import 'widgets/repair_filter_sheet.dart';
@@ -18,9 +19,11 @@ class RepairHistoryPage extends StatefulWidget {
 class _RepairHistoryPageState extends State<RepairHistoryPage> {
   final TextEditingController _search = TextEditingController();
   final RepairHistoryService _historyService = RepairHistoryService();
+  final RepairRepository _repository = RepairRepository();
   final ScrollController _scrollController = ScrollController();
 
   List<RepairModel> repairs = [];
+  List<RepairModel> filteredRepairs = [];
 
   bool isLoading = false;
   bool isFirstLoad = true;
@@ -54,12 +57,31 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
     setState(() {
       if (refresh) {
         repairs = data;
+        filteredRepairs = List.from(data);
       } else {
         repairs.addAll(data);
+        filteredRepairs = List.from(repairs);
       }
 
       isLoading = false;
       isFirstLoad = false;
+    });
+  }
+
+  void _onSearchChanged() {
+    final query = _search.text.trim();
+
+    if (query.isEmpty) {
+      setState(() {
+        filteredRepairs = List.from(repairs);
+      });
+      return;
+    }
+
+    final ids = _repository.search(query);
+
+    setState(() {
+      filteredRepairs = repairs.where((r) => ids.contains(r.id)).toList();
     });
   }
 
@@ -72,10 +94,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final q = _search.text.toLowerCase();
-
-    final filtered = repairs.where((r) {
-      /// filter status
+    final filtered = filteredRepairs.where((r) {
       if (filter == 'done' && r.status != 'Selesai') {
         return false;
       }
@@ -84,10 +103,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
         return false;
       }
 
-      /// search
-      return r.buyer.toLowerCase().contains(q) ||
-          r.product.toLowerCase().contains(q) ||
-          r.technician.toLowerCase().contains(q);
+      return true;
     }).toList();
 
     return Scaffold(
@@ -115,7 +131,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
                   Expanded(
                     child: RepairSearchBar(
                       controller: _search,
-                      onChanged: () => setState(() {}),
+                      onChanged: _onSearchChanged,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -160,11 +176,11 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
                     : ListView.separated(
                         controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                        itemCount: filtered.length + 1,
+                        itemCount: filteredRepairs.length + 1,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, i) {
-                          if (i < filtered.length) {
-                            return RepairCard(model: filtered[i]);
+                          if (i < filteredRepairs.length) {
+                            return RepairCard(model: filteredRepairs[i]);
                           }
 
                           if (!_historyService.hasMore) {
