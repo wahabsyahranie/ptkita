@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/styles/colors.dart';
+import '../../../styles/colors.dart';
 
-class RepairSearchBar extends StatelessWidget {
-  const RepairSearchBar({
+class TransactionSearchBar extends StatefulWidget {
+  const TransactionSearchBar({
     super.key,
     required this.controller,
     required this.onChanged,
@@ -10,6 +10,25 @@ class RepairSearchBar extends StatelessWidget {
 
   final TextEditingController controller;
   final VoidCallback onChanged;
+
+  @override
+  State<TransactionSearchBar> createState() => _TransactionSearchBarState();
+}
+
+class _TransactionSearchBarState extends State<TransactionSearchBar> {
+  void _listener() => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_listener);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_listener);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,23 +43,25 @@ class RepairSearchBar extends StatelessWidget {
         children: [
           const Icon(Icons.search_rounded, color: MyColors.secondary),
           const SizedBox(width: 10),
+
           Expanded(
             child: TextField(
-              controller: controller,
-              onChanged: (_) => onChanged(),
+              controller: widget.controller,
+              onChanged: (_) => widget.onChanged(),
               decoration: const InputDecoration(
-                hintText: 'Cari riwayat perbaikan',
+                hintText: 'Cari transaksi',
                 hintStyle: TextStyle(color: MyColors.secondary),
                 border: InputBorder.none,
                 isDense: true,
               ),
             ),
           ),
-          if (controller.text.isNotEmpty)
+
+          if (widget.controller.text.isNotEmpty)
             GestureDetector(
               onTap: () {
-                controller.clear();
-                onChanged();
+                widget.controller.clear();
+                widget.onChanged();
               },
               child: const Icon(Icons.close_rounded, color: MyColors.secondary),
             ),

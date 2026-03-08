@@ -4,6 +4,7 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_kita/core/widgets/forms/app_text.dart';
 
 class RepairAddPage extends StatefulWidget {
   final String? warrantyId;
@@ -63,7 +64,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
 
       _buyerCtrl.text = widget.warrantyData!['buyerName'] ?? '';
       _itemCtrl.text = widget.warrantyData!['productName'] ?? '';
-      _hpCtrl.text = widget.warrantyData!['noHp'] ?? '';
+      _hpCtrl.text = widget.warrantyData!['phone'] ?? '';
       _costCtrl.text = '0';
     }
   }
@@ -104,8 +105,10 @@ class _RepairAddPageState extends State<RepairAddPage> {
         setState(() {
           _selectedWarrantyId = result['id'];
           _selectedWarrantyData = result;
-          _buyerCtrl.text = result['buyerName'];
-          _itemCtrl.text = result['productName'];
+
+          _buyerCtrl.text = result['buyerName'] ?? '';
+          _itemCtrl.text = result['productName'] ?? '';
+          _hpCtrl.text = result['phone'] ?? '';
           _costCtrl.text = '0';
         });
       }
@@ -132,7 +135,6 @@ class _RepairAddPageState extends State<RepairAddPage> {
         throw Exception('User tidak ditemukan');
       }
 
-      // Ambil nama user dari collection users
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -141,20 +143,17 @@ class _RepairAddPageState extends State<RepairAddPage> {
       final userData = userDoc.data() ?? {};
       final String userName = userData['name'] ?? 'Unknown';
 
-      final isWarranty = _repairCategory == 'warranty';
+      final bool isWarranty = _repairCategory == 'warranty';
 
       final payload = {
         'repairCategory': _repairCategory,
         'warrantyId': isWarranty ? _selectedWarrantyId : null,
-
         'buyerName': _buyerCtrl.text.trim(),
         'itemName': _itemCtrl.text.trim(),
 
-        // 🔥 Auto assign technician
         'techName': userName,
         'technicianUid': uid,
 
-        // 🔥 Metadata pembuat
         'createdByUid': uid,
         'createdByName': userName,
 
@@ -163,10 +162,8 @@ class _RepairAddPageState extends State<RepairAddPage> {
         'completeness': _completenessCtrl.text.trim(),
         'date': Timestamp.fromDate(_selectedDate),
 
-        'cost': isWarranty
-            ? 0
-            : int.tryParse(_costCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
-                  0,
+        'cost':
+            int.tryParse(_costCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
 
         if (_detailCtrl.text.trim().isNotEmpty)
           'detailPart': _detailCtrl.text.trim(),
@@ -191,11 +188,14 @@ class _RepairAddPageState extends State<RepairAddPage> {
         final bool isExpired = expireAt.toDate().isBefore(DateTime.now());
 
         if (isExpired) {
+          if (!mounted) return;
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Garansi sudah expired, tidak bisa klaim'),
             ),
           );
+
           setState(() => _saving = false);
           return;
         }
@@ -220,18 +220,23 @@ class _RepairAddPageState extends State<RepairAddPage> {
             .update({'claimCount': FieldValue.increment(1)});
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perbaikan berhasil ditambahkan')),
-        );
-        Navigator.of(context).pop({'ok': true, 'id': docRef.id});
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perbaikan berhasil ditambahkan')),
+      );
+
+      Navigator.of(context).pop({'ok': true, 'id': docRef.id});
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal menambahkan perbaikan')),
       );
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() => _saving = false);
+      }
     }
   }
 
@@ -259,7 +264,9 @@ class _RepairAddPageState extends State<RepairAddPage> {
                       child: RadioListTile<String>(
                         title: const Text('Klaim Garansi'),
                         value: 'warranty',
+                        // ignore: deprecated_member_use
                         groupValue: _repairCategory,
+                        // ignore: deprecated_member_use
                         onChanged: _isFromWarranty
                             ? null
                             : (v) {
@@ -275,7 +282,9 @@ class _RepairAddPageState extends State<RepairAddPage> {
                       child: RadioListTile<String>(
                         title: const Text('Non Garansi'),
                         value: 'non_warranty',
+                        // ignore: deprecated_member_use
                         groupValue: _repairCategory,
+                        // ignore: deprecated_member_use
                         onChanged: _isFromWarranty
                             ? null
                             : (v) {
@@ -329,74 +338,64 @@ class _RepairAddPageState extends State<RepairAddPage> {
                   const SizedBox(height: 12),
                 ],
 
-                _label('Nama Pelanggan'),
-                TextFormField(
+                AppTextFormField(
                   controller: _buyerCtrl,
-                  readOnly: widget.warrantyId != null,
+                  label: 'Nama Pelanggan',
+                  readOnly: _repairCategory == 'warranty',
                   validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                  decoration: _inputDecoration(),
                 ),
                 const SizedBox(height: 12),
 
-                _label('Nama Barang'),
-                TextFormField(
+                AppTextFormField(
                   controller: _itemCtrl,
+                  label: 'Nama Barang',
                   validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                  decoration: _inputDecoration(),
+                  readOnly: _repairCategory == 'warranty',
                 ),
                 const SizedBox(height: 12),
 
-                _label('Teknisi'),
-                TextField(
+                AppTextFormField(
                   controller: _technicianController,
+                  label: 'Teknisi',
                   readOnly: true,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                  ),
                 ),
                 const SizedBox(height: 12),
 
-                _label('Tanggal Masuk'),
-                GestureDetector(
+                AppTextFormField(
+                  controller: TextEditingController(
+                    text:
+                        '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                  ),
+                  label: 'Tanggal Masuk',
+                  readOnly: true,
                   onTap: _pickDate,
-                  child: AbsorbPointer(
-                    child: TextFormField(
-                      decoration: _inputDecoration(
-                        hint:
-                            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                      ),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 12),
 
-                _label('No Whatsapp'),
-                TextFormField(
+                AppTextFormField(
                   controller: _hpCtrl,
+                  label: 'No. Hp',
                   keyboardType: TextInputType.phone,
-                  decoration: _inputDecoration(),
+                  readOnly: _repairCategory == 'warranty',
                 ),
                 const SizedBox(height: 12),
 
-                _label('Kelengkapan'),
-                TextFormField(
+                AppTextFormField(
                   controller: _completenessCtrl,
-                  decoration: _inputDecoration(),
+                  label: 'Kelengkapan',
                 ),
                 const SizedBox(height: 12),
 
-                _label('Rincian (opsional)'),
-                TextFormField(
+                AppTextFormField(
                   controller: _detailCtrl,
+                  label: 'Rincian (opsional)',
                   maxLines: 3,
-                  decoration: _inputDecoration(),
                 ),
                 const SizedBox(height: 12),
 
                 _label('Biaya'),
                 TextFormField(
                   controller: _costCtrl,
-                  enabled: _repairCategory == 'non_warranty',
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
@@ -511,28 +510,68 @@ class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: MyColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         child: Column(
           children: [
+            /// HANDLE
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+
+            /// TITLE
             const Text(
               'Pilih Garansi Aktif',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 16),
 
-            TextField(
-              controller: _searchCtrl,
-              decoration: const InputDecoration(
-                hintText: 'Cari nama pembeli / produk',
-                prefixIcon: Icon(Icons.search),
+            /// SEARCH FIELD
+            Container(
+              decoration: BoxDecoration(
+                color: MyColors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: MyColors.secondary),
               ),
-              onChanged: (_) => setState(() {}),
+              child: TextField(
+                controller: _searchCtrl,
+                cursorColor: MyColors.secondary,
+                decoration: InputDecoration(
+                  hintText: 'Cari nama pembeli / produk',
+                  hintStyle: TextStyle(
+                    color: MyColors.secondary.withValues(alpha: 0.7),
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: MyColors.secondary,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 12,
+                  ),
+                ),
+              ),
             ),
+
             const SizedBox(height: 16),
 
+            /// LIST
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -552,6 +591,7 @@ class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
                     final buyer = (data['buyerName'] ?? '')
                         .toString()
                         .toLowerCase();
+
                     final product = (data['productName'] ?? '')
                         .toString()
                         .toLowerCase();
@@ -565,17 +605,35 @@ class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
                     return const Center(child: Text('Tidak ditemukan'));
                   }
 
-                  return ListView.builder(
+                  return ListView.separated(
                     itemCount: results.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(color: Colors.grey.shade200),
+
                     itemBuilder: (context, index) {
                       final doc = results[index];
                       final data = doc.data() as Map<String, dynamic>;
 
                       return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+
                         title: Text(
                           '${data['buyerName']} - ${data['productName']}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
-                        subtitle: const Text('Garansi Aktif'),
+
+                        subtitle: const Text(
+                          'Garansi Aktif',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: MyColors.success,
+                          ),
+                        ),
+
                         onTap: () {
                           Navigator.pop(context, {'id': doc.id, ...data});
                         },
