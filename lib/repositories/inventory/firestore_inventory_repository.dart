@@ -39,7 +39,7 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     // Category
     if (filter.category != null) {
-      query = query.where('type', isEqualTo: filter.category);
+      query = query.where('category', isEqualTo: filter.category);
     }
 
     // Brand
@@ -51,14 +51,105 @@ class FirestoreInventoryRepository implements InventoryRepository {
       }
     }
 
-    query = query.orderBy('name_lowercase');
+    // ==============================
+    // ORDERING LOGIC
+    // ==============================
 
-    if (searchQuery.isNotEmpty) {
+    if (searchQuery.isEmpty) {
+      if (filter.availability == 'tersedia') {
+        // Karena ada range query (stock > 0),
+        // Firestore wajib orderBy stock dulu
+        query = query
+            .orderBy('stock')
+            .orderBy('movementTotalScore', descending: true);
+      } else {
+        query = query.orderBy('movementTotalScore', descending: true);
+      }
+    } else {
+      query = query.orderBy('name_lowercase');
       query = query.startAt([searchQuery]).endAt(['$searchQuery\uf8ff']);
     }
 
+    ////RETURN
     return query.snapshots().map(
       (snapshot) => snapshot.docs.map((e) => e.data()).toList(),
+    );
+  }
+
+  // PAGINATION
+  @override
+  Future<PaginatedResult<Item>> fetchItemsPage({
+    required InventoryFilter filter,
+    required String searchQuery,
+    required int limit,
+    PaginationCursor? cursor,
+  }) async {
+    Query<Item> query = _collection;
+
+    // ==============================
+    // FILTER LOGIC (SAMA DENGAN STREAM)
+    // ==============================
+
+    if (filter.availability == 'tersedia') {
+      query = query.where('stock', isGreaterThan: 0);
+    } else if (filter.availability == 'habis') {
+      query = query.where('stock', isEqualTo: 0);
+    }
+
+    if (filter.category != null) {
+      query = query.where('category', isEqualTo: filter.category);
+    }
+
+    if (filter.brands.isNotEmpty) {
+      if (filter.brands.length == 1) {
+        query = query.where('merk', isEqualTo: filter.brands.first);
+      } else {
+        query = query.where('merk', whereIn: filter.brands.toList());
+      }
+    }
+
+    // ==============================
+    // ORDERING (HARUS IDENTIK)
+    // ==============================
+
+    if (searchQuery.isEmpty) {
+      if (filter.availability == 'tersedia') {
+        query = query
+            .orderBy('stock')
+            .orderBy('movementTotalScore', descending: true);
+      } else {
+        query = query.orderBy('movementTotalScore', descending: true);
+      }
+    } else {
+      query = query.orderBy('name_lowercase');
+      query = query.startAt([searchQuery]).endAt(['$searchQuery\uf8ff']);
+    }
+
+    // ==============================
+    // PAGINATION
+    // ==============================
+
+    query = query.limit(limit);
+
+    // if (lastDocument != null) {
+    //   query = query.startAfterDocument(lastDocument);
+    // }
+    if (cursor != null && cursor.raw is DocumentSnapshot) {
+      query = query.startAfterDocument(cursor.raw as DocumentSnapshot);
+    }
+
+    final snapshot = await query.get();
+
+    final items = snapshot.docs.map((e) => e.data()).toList();
+
+    final lastDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+
+    final hasMore = snapshot.docs.length == limit;
+
+    return PaginatedResult<Item>(
+      items: items,
+      cursor: lastDoc != null ? PaginationCursor(lastDoc) : null,
+      hasMore: hasMore,
     );
   }
 
@@ -125,5 +216,24 @@ class FirestoreInventoryRepository implements InventoryRepository {
     final ref = _storage.ref().child(fileName);
     final snapshot = await ref.putFile(file);
     return await snapshot.ref.getDownloadURL();
+  }
+
+  // =========================================================
+  // ====================== MIGRASI ===========================
+  // =========================================================
+  Future<void> migrateMovementFields() async {
+    final snapshot = await _firestore.collection('items').get();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+
+      if (!data.containsKey('movementTotalScore')) {
+        await doc.reference.update({
+          'movementBaseScore': 500,
+          'movementAutoScore': 0,
+          'movementTotalScore': 500,
+        });
+      }
+    }
   }
 }

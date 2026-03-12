@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/pages/transaction/transaction_add_page.dart';
 import 'package:flutter_kita/pages/transaction/transaction_detail_page.dart';
+import 'package:flutter_kita/repositories/transaction/transaction_repository.dart';
+import 'widgets/transaction_search_bar.dart';
 
 class TransactionHistoryPage extends StatefulWidget {
   const TransactionHistoryPage({super.key});
@@ -12,24 +15,23 @@ class TransactionHistoryPage extends StatefulWidget {
 }
 
 class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
-  // Search
   final TextEditingController _search = TextEditingController();
+  final TransactionRepository _repository = TransactionRepository();
 
-  // PAGINATION STATE
-  final int _limit = 10;
   final List<DocumentSnapshot> _docs = [];
+  List<DocumentSnapshot> _filteredDocs = [];
   final ScrollController _scroll = ScrollController();
 
   DocumentSnapshot? _lastDoc;
+
   bool _isLoading = false;
   bool _hasMore = true;
+  bool _isSearching = false;
 
-  // ======================
-  // STEP 2: init & dispose
-  // ======================
   @override
   void initState() {
     super.initState();
+
     _loadMore();
 
     _scroll.addListener(() {
@@ -48,45 +50,76 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     super.dispose();
   }
 
-  // ======================
-  // STEP 3: LOAD MORE
-  // ======================
   Future<void> _loadMore() async {
     if (_isLoading || !_hasMore) return;
 
     setState(() => _isLoading = true);
 
-    Query q = FirebaseFirestore.instance
-        .collection('transaction')
-        .orderBy('createdAt', descending: true)
-        .limit(_limit);
+    final result = await _repository.getTransactions(
+      lastDoc: _lastDoc,
+      limit: 20,
+    );
 
-    if (_lastDoc != null) {
-      q = q.startAfterDocument(_lastDoc!);
-    }
+    final List<DocumentSnapshot> newDocs = result["data"];
 
-    final snap = await q.get();
+    _lastDoc = result["lastDoc"];
 
-    if (snap.docs.isNotEmpty) {
-      _lastDoc = snap.docs.last;
-      _docs.addAll(snap.docs);
-    }
-
-    if (snap.docs.length < _limit) {
+    if (newDocs.length < 20) {
       _hasMore = false;
     }
 
-    setState(() => _isLoading = false);
+    _docs.addAll(newDocs);
+    _filteredDocs = List.from(_docs);
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
-  // build
+  Future<void> _refresh() async {
+    setState(() {
+      _docs.clear();
+      _lastDoc = null;
+      _hasMore = true;
+    });
+
+    await _loadMore();
+  }
+
+  void _onSearchChanged() async {
+    final query = _search.text.trim();
+
+    if (query.isEmpty) {
+      setState(() {
+        _filteredDocs = List.from(_docs);
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    final ids = _repository.search(query);
+
+    setState(() {
+      _filteredDocs = _docs.where((doc) => ids.contains(doc.id)).toList();
+
+      _isSearching = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F6F3),
+      backgroundColor: MyColors.white,
+
       appBar: AppBar(
         title: const Text('Data Transaksi'),
-        backgroundColor: const Color(0xFFF7F6F3),
+        backgroundColor: MyColors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -96,91 +129,90 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           fontWeight: FontWeight.w700,
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
+        backgroundColor: MyColors.secondary,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white),
         onPressed: () async {
-          // ambil messenger dulu (safely uses context synchronously)
           final messenger = ScaffoldMessenger.of(context);
 
-          // buka page add (kamu bisa pakai const RepairAddPage() kalau ctor const)
           final res = await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const TransactionAddPage()),
           );
 
-          // widget mungkin sudah di-unmount setelah await -> aman cek mounted
           if (!mounted) return;
 
           if (res is Map && res['ok'] == true) {
             messenger.showSnackBar(const SnackBar(content: Text('Added!')));
+
+            _refresh();
           }
         },
-        backgroundColor: MyColors.secondary,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
       ),
+
       body: SafeArea(
         child: Column(
           children: [
-            /// 🔍 SEARCH BAR (SAMA PERSIS DENGAN RepairHistoryPage)
+            /// SEARCH BAR
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-              child: _SearchBar(
+              child: TransactionSearchBar(
                 controller: _search,
-                onChanged: () => setState(() {}),
+                onChanged: _onSearchChanged,
               ),
             ),
 
             /// LIST TRANSAKSI
             Expanded(
-              child: _docs.isEmpty && _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      controller: _scroll,
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                      itemCount: _docs.length + (_hasMore ? 1 : 0),
-                      itemBuilder: (context, i) {
-                        // LOADING INDICATOR DI BAWAH
-                        if (i >= _docs.length) {
-                          return const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-
-                        final data = _docs[i].data() as Map<String, dynamic>;
-
-                        // SEARCH (client-side)
-                        final q = _search.text.toLowerCase();
-                        if (q.isNotEmpty) {
-                          final customer = data['customer'] ?? {};
-                          final summary = data['summary'] ?? {};
-                          final hay = [
-                            customer['name'],
-                            customer['phone'],
-                            summary['txCode'],
-                          ].whereType<String>().join(' ').toLowerCase();
-
-                          if (!hay.contains(q)) {
-                            return const SizedBox.shrink();
-                          }
-                        }
-
-                        return _TransactionCardFirestore(
-                          data: data,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => TransactionDetailPage(
-                                  data: data,
-                                  transactionId: _docs[i].id,
-                                ),
-                              ),
+              child: RefreshIndicator(
+                onRefresh: _refresh,
+                child: _isSearching
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredDocs.isEmpty
+                    ? const Center(
+                        child: Text(
+                          "Data tidak ditemukan",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scroll,
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                        itemCount: _filteredDocs.length + (_hasMore ? 1 : 0),
+                        itemBuilder: (context, i) {
+                          if (i >= _filteredDocs.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(child: CircularProgressIndicator()),
                             );
-                          },
-                        );
-                      },
-                    ),
+                          }
+
+                          final data =
+                              _filteredDocs[i].data() as Map<String, dynamic>;
+
+                          return _TransactionCardFirestore(
+                            data: data,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TransactionDetailPage(
+                                    data: data,
+                                    transactionId: _docs[i].id,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+              ),
             ),
           ],
         ),
@@ -189,82 +221,9 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   }
 }
 
-/// =======================
-/// SEARCH BAR (IDENTIK)
-/// =======================
-class _SearchBar extends StatefulWidget {
-  const _SearchBar({required this.controller, required this.onChanged});
-  final TextEditingController controller;
-  final VoidCallback onChanged;
-
-  @override
-  State<_SearchBar> createState() => _SearchBarState();
-}
-
-class _SearchBarState extends State<_SearchBar> {
-  void _listener() => setState(() {});
-
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_listener);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_listener);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: MyColors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: MyColors.secondary.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search_rounded, color: MyColors.secondary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: widget.controller,
-              onChanged: (_) => widget.onChanged(),
-              decoration: InputDecoration(
-                hintText: 'Cari sesuatu',
-                hintStyle: TextStyle(
-                  color: MyColors.secondary.withValues(alpha: 0.6),
-                ),
-                border: InputBorder.none,
-                isDense: true,
-              ),
-            ),
-          ),
-          if (widget.controller.text.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                widget.controller.clear();
-                widget.onChanged();
-              },
-              child: Icon(
-                Icons.close_rounded,
-                color: MyColors.secondary.withValues(alpha: 0.7),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// =======================
-/// TRANSACTION CARD
-/// =======================
 class _TransactionCardFirestore extends StatelessWidget {
   const _TransactionCardFirestore({required this.data, this.onTap});
+
   final VoidCallback? onTap;
   final Map<String, dynamic> data;
 
@@ -273,6 +232,8 @@ class _TransactionCardFirestore extends StatelessWidget {
     final customer = data['customer'];
     final summary = data['summary'];
     final date = (data['date'] as Timestamp).toDate();
+
+    final formattedDate = DateFormat('MMM d, y').format(date);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -285,7 +246,7 @@ class _TransactionCardFirestore extends StatelessWidget {
           onTap: onTap,
           child: Row(
             children: [
-              // STRIP KIRI
+              /// STRIP
               Container(
                 width: 6,
                 height: 120,
@@ -298,21 +259,37 @@ class _TransactionCardFirestore extends StatelessWidget {
                 ),
               ),
 
-              // CONTENT
+              /// CONTENT
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${date.day}/${date.month}/${date.year}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
-                        ),
+                      /// DATE + ICON
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 14,
+                            color: MyColors.secondary,
+                          ),
+
+                          const SizedBox(width: 6),
+
+                          Text(
+                            formattedDate,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: MyColors.secondary,
+                            ),
+                          ),
+                        ],
                       ),
+
                       const SizedBox(height: 6),
+
+                      /// CUSTOMER
                       Text(
                         customer['name'],
                         maxLines: 1,
@@ -322,7 +299,10 @@ class _TransactionCardFirestore extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+
                       const SizedBox(height: 4),
+
+                      /// ITEM COUNT
                       Text(
                         '${summary['totalQty']} item dibeli',
                         style: const TextStyle(
@@ -330,7 +310,10 @@ class _TransactionCardFirestore extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+
                       const SizedBox(height: 8),
+
+                      /// CODE + PRICE
                       Row(
                         children: [
                           Expanded(
@@ -342,6 +325,7 @@ class _TransactionCardFirestore extends StatelessWidget {
                               ),
                             ),
                           ),
+
                           Text(
                             'Rp ${_fmt(summary['subtotal'])}',
                             style: const TextStyle(
@@ -363,13 +347,14 @@ class _TransactionCardFirestore extends StatelessWidget {
     );
   }
 
-  // ================= FORMAT RUPIAH
   String _fmt(int v) {
     final s = v.toString().split('').reversed.toList();
     final parts = <String>[];
+
     for (var i = 0; i < s.length; i += 3) {
       parts.add(s.skip(i).take(3).toList().reversed.join());
     }
+
     return parts.reversed.join('.');
   }
 }

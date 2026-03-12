@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
+import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
+import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
+import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/services/maintenance/maintenance_service.dart';
+import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_task_form_section.dart';
 
@@ -25,14 +29,20 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   String? _selectedItemId;
   String? _selectedItemName;
   String? _selectedPriority;
-  String? _selectedItemSku;
+  String? _selectedItemtypeUnit;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     final it = widget.initialItem;
-    _service = MaintenanceService(FirestoreMaintenanceRepository());
+    final userService = UserService(FirestoreUserRepository());
+    
+    _service = MaintenanceService(
+      FirestoreMaintenanceRepository(),
+      InventoryService(FirestoreInventoryRepository(), userService),
+      userService,
+    );
 
     _nameCtrl = TextEditingController(text: it?.itemName ?? '');
     _intervalCtrl = TextEditingController(
@@ -42,7 +52,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
     _selectedItemId = it?.itemId;
     _selectedItemName = it?.itemName;
     _selectedPriority = it?.priority;
-    _selectedItemSku = it?.sku;
+    _selectedItemtypeUnit = it?.typeUnit;
 
     // 🔑 LOAD TASKS SAAT EDIT
     if (it != null && it.tasks.isNotEmpty) {
@@ -83,7 +93,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
     if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedItemId == null || _selectedItemSku == null) {
+    if (_selectedItemId == null || _selectedItemtypeUnit == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Barang wajib dipilih')));
@@ -107,11 +117,11 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       id: widget.initialItem?.id ?? '',
       itemId: _selectedItemId!,
       itemName: _selectedItemName!,
-      sku: _selectedItemSku,
+      typeUnit: _selectedItemtypeUnit,
       intervalDays: intervalDays,
       priority: _selectedPriority!,
-      status: widget.initialItem?.status ?? '',
       lastMaintenanceAt: widget.initialItem?.lastMaintenanceAt,
+      nextMaintenanceAt: widget.initialItem?.nextMaintenanceAt,
       tasks: tasks,
     );
 
@@ -196,7 +206,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                       setState(() {
                         _selectedItemId = value;
                         _selectedItemName = selectedItem.name;
-                        _selectedItemSku = selectedItem.sku;
+                        _selectedItemtypeUnit = selectedItem.typeUnit;
                       });
                     },
                     decoration: const InputDecoration(
@@ -266,7 +276,11 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
               const Text("Jenis Perawatan"),
               const SizedBox(height: 8),
 
-              MaintenanceTaskFormSection(tasks: _tasks, onAddTask: _addTask),
+              MaintenanceTaskFormSection(
+                tasks: _tasks,
+                onAddTask: _addTask,
+                onDeleteTask: _removeTask,
+              ),
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
@@ -296,5 +310,20 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
         ),
       ),
     );
+  }
+
+  void _removeTask(TaskForm task) {
+    if (_tasks.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Minimal harus ada 1 jenis perawatan')),
+      );
+      return;
+    }
+
+    setState(() {
+      task.titleCtrl.dispose();
+      task.descCtrl.dispose();
+      _tasks.remove(task);
+    });
   }
 }

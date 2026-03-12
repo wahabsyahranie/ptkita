@@ -39,16 +39,6 @@ class FirestoreHomeRepository implements HomeRepository {
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  DateTime _todayStart() {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
-  }
-
-  DateTime _todayEnd() {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
-  }
-
   @override
   Stream<int> getTotalMaintenanceToday() {
     return _firestore
@@ -65,15 +55,14 @@ class FirestoreHomeRepository implements HomeRepository {
 
   @override
   Stream<int> getCompletedMaintenanceToday() {
-    final start = Timestamp.fromDate(_todayStart());
-    final end = Timestamp.fromDate(_todayEnd());
-
     return _firestore
-        .collection('maintenance_logs')
-        .where('completedAt', isGreaterThanOrEqualTo: start)
-        .where('completedAt', isLessThanOrEqualTo: end)
+        .collection('daily_maintenance_snapshot')
+        .doc(_todayDocId())
         .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+        .map((doc) {
+          if (!doc.exists) return 0;
+          return doc.data()?['completedToday'] ?? 0;
+        });
   }
 
   // ==============================
@@ -123,37 +112,59 @@ class FirestoreHomeRepository implements HomeRepository {
         .collection('repair')
         .get();
 
-    List<int> warranty = [0, 0, 0, 0];
-    List<int> nonWarranty = [0, 0, 0, 0];
+    final now = DateTime.now();
+
+    int length = 4;
+    if (mode == 'monthly') length = 12;
+
+    List<int> warranty = List.filled(length, 0);
+    List<int> nonWarranty = List.filled(length, 0);
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
       final Timestamp? timestamp = data['date'];
-
       if (timestamp == null) continue;
 
       final DateTime date = timestamp.toDate();
       final bool isWarranty = data['repairCategory'] == 'warranty';
 
-      int index = 0;
+      int index = -1;
 
+      // ======================
+      // WEEKLY (bulan berjalan)
+      // ======================
       if (mode == 'weekly') {
-        final now = DateTime.now();
-        final firstDay = DateTime(now.year, now.month, 1);
-        final diff = date.difference(firstDay).inDays;
-        if (diff < 0) continue;
-        index = (diff ~/ 7).clamp(0, 3);
-      } else {
-        if (date.month <= 3) {
-          index = 0;
-        } else if (date.month <= 6) {
-          index = 1;
-        } else if (date.month <= 9) {
-          index = 2;
-        } else {
-          index = 3;
+        if (date.year == now.year && date.month == now.month) {
+          final week = ((date.day - 1) ~/ 7).clamp(0, 3);
+          index = week;
         }
       }
+      // ======================
+      // MONTHLY (tahun berjalan)
+      // ======================
+      else if (mode == 'monthly') {
+        if (date.year == now.year) {
+          index = date.month - 1; // Jan=0, Feb=1, dst
+        }
+      }
+      // ======================
+      // QUARTERLY (tahun berjalan)
+      // ======================
+      else if (mode == 'quarterly') {
+        if (date.year == now.year) {
+          if (date.month <= 3) {
+            index = 0;
+          } else if (date.month <= 6) {
+            index = 1;
+          } else if (date.month <= 9) {
+            index = 2;
+          } else {
+            index = 3;
+          }
+        }
+      }
+
+      if (index == -1) continue;
 
       if (isWarranty) {
         warranty[index]++;
@@ -162,7 +173,10 @@ class FirestoreHomeRepository implements HomeRepository {
       }
     }
 
-    List<int> total = List.generate(4, (i) => warranty[i] + nonWarranty[i]);
+    List<int> total = List.generate(
+      length,
+      (i) => warranty[i] + nonWarranty[i],
+    );
 
     return RepairChartModel(
       warranty: warranty,

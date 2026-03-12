@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/styles/colors.dart';
-import 'package:flutter_kita/models/warranty_model.dart';
+import 'package:flutter_kita/models/warranty/warranty_model.dart';
 import '../warranty/warranty_detail_page.dart';
 
 class TransactionDetailPage extends StatelessWidget {
@@ -197,10 +197,10 @@ class _Header extends StatelessWidget {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
-          Text(
-            status,
+          const Text(
+            'Transaksi Berhasil',
             style: TextStyle(
-              color: status == 'Sudah Dibayar' ? Colors.green : Colors.orange,
+              color: MyColors.success,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -252,46 +252,81 @@ class _ItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasWarranty = item['hasWarranty'] == true;
+    final List serialNumbers = item['serialNumbers'] ?? [];
+    final String type = item['type'] ?? 'part';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['name'],
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${item['qty']} × Rp ${item['price']}',
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-                if (hasWarranty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: Row(
-                      children: [
-                        Icon(Icons.verified, size: 14, color: Colors.green),
-                        SizedBox(width: 4),
-                        Text(
-                          'Bergaransi',
-                          style: TextStyle(fontSize: 12, color: Colors.green),
-                        ),
-                      ],
+          /// ROW UTAMA
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// LEFT SIDE
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// NAMA BARANG
+                    Text(
+                      item['name'],
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                  ),
-              ],
-            ),
+
+                    const SizedBox(height: 4),
+
+                    /// QTY × PRICE
+                    Text(
+                      '${item['qty']} × Rp ${TransactionDetailPage._fmt(item['price'])}',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+
+                    /// SERIAL NUMBER (hanya unit)
+                    if (type == 'unit' && serialNumbers.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      ...serialNumbers.map((sn) {
+                        return Text(
+                          "SN: $sn",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        );
+                      }),
+                    ],
+
+                    /// WARRANTY
+                    if (hasWarranty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.verified, size: 14, color: Colors.green),
+                            SizedBox(width: 4),
+                            Text(
+                              'Bergaransi',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              /// TOTAL PRICE
+              Text(
+                'Rp ${TransactionDetailPage._fmt(item['subtotal'])}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
           ),
-          Text(
-            'Rp ${item['subtotal']}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+
+          const SizedBox(height: 8),
         ],
       ),
     );

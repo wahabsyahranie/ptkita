@@ -35,7 +35,7 @@ class InventoryAppBar extends StatelessWidget implements PreferredSizeWidget {
               Expanded(
                 child: SearchBarWidget(
                   controller: searchController,
-                  hintText: 'Cari dengan nama',
+                  hintText: 'Cari nama',
                   onChanged: onSearchChanged,
                 ),
               ),

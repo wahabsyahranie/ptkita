@@ -155,7 +155,10 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
 
               const SizedBox(height: 16),
 
-              _LabelField(label: "SKU", value: widget.item.sku ?? '-'),
+              _LabelField(
+                label: "Type Unit",
+                value: widget.item.typeUnit ?? '-',
+              ),
 
               const SizedBox(height: 16),
 

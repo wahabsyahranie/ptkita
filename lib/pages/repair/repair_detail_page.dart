@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'widgets/repair_detail_card.dart';
+import 'package:flutter_kita/styles/colors.dart';
+import 'widgets/repair_receipt_view.dart';
 import 'package:flutter_kita/services/repair/repair_service.dart';
-import 'widgets/repair_status_badge.dart';
-import 'package:flutter_kita/utils/formatters.dart';
-import 'package:flutter_kita/services/repair/repair_receipt_service.dart';
-import 'dart:ui' as ui;
-import 'dart:typed_data';
-import 'package:flutter/rendering.dart';
+import 'package:flutter_kita/pages/repair/widgets/complete_repair_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RepairDetailPage extends StatefulWidget {
@@ -26,13 +22,10 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
   final TextEditingController _detailCtrl = TextEditingController();
   final TextEditingController _costCtrl = TextEditingController();
 
-  final GlobalKey _receiptKey = GlobalKey();
-
-  bool _showForm = false;
-
   @override
   void initState() {
     super.initState();
+
     _current = Map<String, dynamic>.from(widget.data);
     _docId = widget.docId ?? widget.data['id'];
 
@@ -47,14 +40,12 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
     super.dispose();
   }
 
-  // ================= HELPERS =================
+  // ================= STATUS =================
 
   bool get _isSelesai =>
       (_current['status'] ?? '').toString().toLowerCase() == 'selesai';
 
-  bool get _isWarranty => (_current['repairCategory'] ?? '') == 'warranty';
-
-  // ================= UPDATE STATUS =================
+  // ================= MARK SELESAI =================
 
   Future<void> _markSelesai() async {
     if (_docId == null) return;
@@ -64,6 +55,7 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
 
     if (detail.isEmpty) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Rincian wajib diisi')));
@@ -110,7 +102,6 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         _current['cost'] = costVal;
         _current['completedByName'] = result['completedByName'];
         _current['completedAt'] = result['completedAt'];
-        _showForm = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -118,26 +109,69 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
       );
     } catch (e) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Terjadi kesalahan saat menyimpan data')),
       );
     }
   }
 
-  Future<Uint8List?> _captureReceiptBytes() async {
-    try {
-      RenderRepaintBoundary boundary =
-          _receiptKey.currentContext!.findRenderObject()
-              as RenderRepaintBoundary;
+  // ================= BOTTOM SHEET =================
 
-      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
+  Future<void> _showCompleteForm() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) {
+        return CompleteRepairSheet(
+          detailCtrl: _detailCtrl,
+          costCtrl: _costCtrl,
+          onSubmit: () async {
+            Navigator.pop(context);
+            await _markSelesai();
+          },
+        );
+      },
+    );
+  }
+
+  // ================= WHATSAPP =================
+
+  Future<void> _openWhatsApp() async {
+    final phone = (_current['noHp'] ?? '').toString().trim();
+
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Nomor WhatsApp tidak tersedia")),
       );
+      return;
+    }
 
-      return byteData?.buffer.asUint8List();
-    } catch (e) {
-      return null;
+    final formattedPhone = phone.startsWith('0')
+        ? '62${phone.substring(1)}'
+        : phone;
+
+    final message =
+        "Halo ${_current['buyerName'] ?? ''},\n\n"
+        "Perbaikan barang Anda sudah selesai.\n"
+        "Silakan lihat bukti perbaikan pada gambar berikut.\n\n"
+        "Terima kasih telah menggunakan layanan kami.";
+
+    final url = Uri.parse(
+      "https://wa.me/$formattedPhone?text=${Uri.encodeComponent(message)}",
+    );
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Tidak dapat membuka WhatsApp")),
+      );
     }
   }
 
@@ -145,199 +179,78 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final dateText = Formatters.formatDate(_current['date']);
-
-    final detailPart = _current['detailPart'] ?? '';
-    final cost = _current['cost'];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Perbaikan'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: MyColors.white,
+        foregroundColor: MyColors.black,
         elevation: 0,
       ),
-      backgroundColor: const Color(0xFFF7F6F3),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // STATUS BADGE
-            Row(
-              children: [
-                if (_isWarranty)
-                  const RepairStatusBadge(
-                    text: 'Garansi',
-                    backgroundColor: Colors.blueAccent,
-                    textColor: Colors.white,
+      backgroundColor: MyColors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              /// RECEIPT UI
+              RepairReceiptView(data: _current),
+
+              /// BUTTON TANDAI SELESAI
+              if (!_isSelesai) ...[
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MyColors.secondary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: _showCompleteForm,
+                    child: const Text(
+                      "Tandai Selesai",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: MyColors.white,
+                      ),
+                    ),
                   ),
-
-                const SizedBox(width: 8),
-
-                RepairStatusBadge(
-                  text: _isSelesai ? 'Selesai' : 'Belum Selesai',
-                  backgroundColor: _isSelesai ? Colors.green : Colors.orange,
-                  textColor: Colors.white,
                 ),
               ],
-            ),
 
-            const SizedBox(height: 20),
+              /// BUTTON WHATSAPP
+              if (_isSelesai) ...[
+                const SizedBox(height: 20),
 
-            // INFO CARD
-            RepaintBoundary(
-              key: _receiptKey,
-              child: RepairDetailCard(
-                data: _current,
-                isSelesai: _isSelesai,
-                isWarranty: _isWarranty,
-                dateText: dateText,
-                detailPart: detailPart,
-                cost: cost,
-                bottomSection: !_isSelesai
-                    ? Column(
-                        children: [
-                          if (!_showForm)
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _showForm = true;
-                                  });
-                                },
-                                child: const Text("Tandai Selesai"),
-                              ),
-                            ),
-
-                          if (_showForm) ...[
-                            const SizedBox(height: 16),
-
-                            TextField(
-                              controller: _detailCtrl,
-                              decoration: const InputDecoration(
-                                labelText: "Rincian Perbaikan",
-                                border: OutlineInputBorder(),
-                              ),
-                              maxLines: 3,
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            if (!_isWarranty)
-                              TextField(
-                                controller: _costCtrl,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: "Biaya",
-                                  prefixText: "Rp ",
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-
-                            const SizedBox(height: 16),
-
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _markSelesai,
-                                child: const Text("Simpan & Tandai Selesai"),
-                              ),
-                            ),
-
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _showForm = false;
-                                });
-                              },
-                              child: const Text("Batal"),
-                            ),
-                          ],
-                        ],
-                      )
-                    : null,
-              ),
-            ),
-            if (_isSelesai) ...[
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.share),
-                  label: const Text("Kirim Bukti ke WhatsApp"),
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-
-                    final bytes = await _captureReceiptBytes();
-                    if (bytes == null) {
-                      if (!mounted) return;
-                      messenger.showSnackBar(
-                        const SnackBar(content: Text("Gagal menangkap bukti")),
-                      );
-                      return;
-                    }
-
-                    final file = await RepairReceiptService.saveReceipt(bytes);
-                    if (file == null) {
-                      if (!mounted) return;
-                      messenger.showSnackBar(
-                        const SnackBar(content: Text("Gagal menyimpan bukti")),
-                      );
-                      return;
-                    }
-
-                    final phone = (_current['noHp'] ?? '').toString().trim();
-                    if (phone.isEmpty) {
-                      if (!mounted) return;
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Nomor WhatsApp pelanggan tidak tersedia",
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    String formattedPhone = phone.startsWith('0')
-                        ? '62${phone.substring(1)}'
-                        : phone;
-
-                    final message =
-                        "Halo ${_current['buyerName']}, berikut bukti perbaikan barang Anda.\n\nTerima kasih.";
-
-                    final url = Uri.parse(
-                      "https://wa.me/$formattedPhone?text=${Uri.encodeComponent(message)}",
-                    );
-
-                    if (!mounted) return;
-
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(
-                        url,
-                        mode: LaunchMode.externalApplication,
-                      );
-
-                      if (!mounted) return;
-                      messenger.showSnackBar(
-                        const SnackBar(content: Text("Membuka WhatsApp...")),
-                      );
-                    } else {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "WhatsApp tidak tersedia di perangkat ini",
-                          ),
-                        ),
-                      );
-                    }
-                  },
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.share_rounded),
+                    label: const Text(
+                      "Bagikan Bukti ke WhatsApp",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MyColors.secondary,
+                      foregroundColor: MyColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    onPressed: _openWhatsApp,
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

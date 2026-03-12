@@ -4,11 +4,13 @@ import 'package:flutter_kita/styles/colors.dart';
 class MaintenanceCard extends StatelessWidget {
   final Stream<int> totalStream;
   final Stream<int> completedStream;
+  final VoidCallback onStreamTap;
 
   const MaintenanceCard({
     super.key,
     required this.totalStream,
     required this.completedStream,
+    required this.onStreamTap,
   });
 
   @override
@@ -57,60 +59,69 @@ class MaintenanceCard extends StatelessWidget {
     bool hasMaintenance,
     bool hasPending,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: MyColors.greySoft,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Perawatan Hari Ini',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '$done / $total perawatan selesai',
-                style: TextStyle(
-                  color: hasPending ? MyColors.secondary : MyColors.black,
-                  fontWeight: hasPending ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ],
+        onTap: onStreamTap,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: MyColors.greySoft,
+            borderRadius: BorderRadius.circular(20),
           ),
-
-          // ✅ Progress hanya muncul jika ada maintenance
-          if (hasMaintenance)
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 6,
-                    backgroundColor: MyColors.white,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      hasPending ? MyColors.secondary : MyColors.success,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Perawatan Hari Ini',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$done / $total perawatan selesai',
+                    style: TextStyle(
+                      color: hasPending ? MyColors.secondary : MyColors.black,
+                      fontWeight: hasPending
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
+                ],
+              ),
+
+              // ✅ Progress hanya muncul jika ada maintenance
+              if (hasMaintenance)
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 6,
+                        backgroundColor: MyColors.white,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          hasPending ? MyColors.secondary : MyColors.success,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${(progress * 100).round()}%',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: hasPending ? MyColors.secondary : MyColors.black,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  '${(progress * 100).round()}%',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: hasPending ? MyColors.secondary : MyColors.black,
-                  ),
-                ),
-              ],
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

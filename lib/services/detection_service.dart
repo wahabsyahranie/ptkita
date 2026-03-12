@@ -9,7 +9,7 @@ class DetectionService {
   // Untuk HP asli (nanti ganti jika pakai device fisik)
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://10.0.2.2:5000',
+    defaultValue: 'http://172.17.105.73:5000',
   );
 
   static Future<Map<String, dynamic>> detect(File imageFile) async {

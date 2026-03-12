@@ -1,29 +1,33 @@
 // lib/models/maintenance_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_kita/models/inventory/item_model.dart';
 
 class Maintenance {
   final String id;
   final String itemId;
   final String itemName;
-  final String? sku;
+  final String? typeUnit;
   final Timestamp? nextMaintenanceAt;
   final Timestamp? lastMaintenanceAt;
   final int intervalDays;
   final String priority;
-  final String status;
   final List<MaintenanceTask> tasks;
+  final int cycleInitialQuantity;
+  final int remainingQuantity;
 
   Maintenance({
     required this.id,
     required this.itemId,
     required this.itemName,
-    this.sku,
+    this.typeUnit,
     this.nextMaintenanceAt,
     this.lastMaintenanceAt,
     required this.intervalDays,
     required this.priority,
-    required this.status,
     required this.tasks,
+    this.cycleInitialQuantity = 0,
+    this.remainingQuantity = 0,
   });
 
   factory Maintenance.fromFirestore(
@@ -45,51 +49,56 @@ class Maintenance {
       id: doc.id,
       itemId: itemIdStr,
       itemName: data['itemName'] ?? '',
-      sku: data['sku'],
+      typeUnit: data['typeUnit'],
       nextMaintenanceAt: data['nextMaintenanceAt'],
       lastMaintenanceAt: data['lastMaintenanceAt'],
       intervalDays: (data['intervalDays'] as num?)?.toInt() ?? 0,
       priority: data['priority'] ?? 'rendah',
-      status: data['status'] ?? 'pending',
       tasks: tasks,
+      cycleInitialQuantity:
+          (data['cycleInitialQuantity'] as num?)?.toInt() ?? 0,
+      remainingQuantity: (data['remainingQuantity'] as num?)?.toInt() ?? 0,
     );
   }
 
   Map<String, dynamic> toFirestore() => {
     'itemId': itemId,
     'itemName': itemName,
-    'sku': sku,
+    'typeUnit': typeUnit,
     'nextMaintenanceAt': nextMaintenanceAt,
     'lastMaintenanceAt': lastMaintenanceAt,
     'intervalDays': intervalDays,
     'priority': priority,
-    'status': status,
     'tasks': tasks.map((e) => e.toMap()).toList(),
+    'cycleInitialQuantity': cycleInitialQuantity,
+    'remainingQuantity': remainingQuantity,
   };
 
   Maintenance copyWith({
     String? id,
     String? itemId,
     String? itemName,
-    String? sku,
+    String? typeUnit,
     int? intervalDays,
     String? priority,
-    String? status,
     Timestamp? lastMaintenanceAt,
     Timestamp? nextMaintenanceAt,
     List<MaintenanceTask>? tasks,
+    int? cycleInitialQuantity,
+    int? remainingQuantity,
   }) {
     return Maintenance(
       id: id ?? this.id,
       itemId: itemId ?? this.itemId,
       itemName: itemName ?? this.itemName,
-      sku: sku ?? this.sku,
+      typeUnit: typeUnit ?? this.typeUnit,
       intervalDays: intervalDays ?? this.intervalDays,
       priority: priority ?? this.priority,
-      status: status ?? this.status,
       lastMaintenanceAt: lastMaintenanceAt ?? this.lastMaintenanceAt,
       nextMaintenanceAt: nextMaintenanceAt ?? this.nextMaintenanceAt,
       tasks: tasks ?? this.tasks,
+      cycleInitialQuantity: cycleInitialQuantity ?? this.cycleInitialQuantity,
+      remainingQuantity: remainingQuantity ?? this.remainingQuantity,
     );
   }
 }
@@ -141,7 +150,26 @@ class MaintenanceTask {
 
 class MaintenanceDetail {
   final Maintenance maintenance;
-  final String? imageUrl;
+  final Item? item;
 
-  MaintenanceDetail({required this.maintenance, required this.imageUrl});
+  MaintenanceDetail({required this.maintenance, required this.item});
+}
+
+class MaintenanceDetailView {
+  final Maintenance maintenance;
+  final ImageProvider imageProvider;
+
+  final int initialQuantity;
+  final int remainingQuantity;
+  final int completedQuantity;
+  final double progress;
+
+  MaintenanceDetailView({
+    required this.maintenance,
+    required this.imageProvider,
+    required this.initialQuantity,
+    required this.remainingQuantity,
+    required this.completedQuantity,
+    required this.progress,
+  });
 }

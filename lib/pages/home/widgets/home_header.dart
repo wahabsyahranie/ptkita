@@ -22,7 +22,7 @@ class HomeHeader extends StatelessWidget {
             const Text('Selamat datang,', style: TextStyle(fontSize: 14)),
             const SizedBox(height: 8),
             Text(
-              _limitText(user.name, 25),
+              _limitText(user.name, 20),
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),

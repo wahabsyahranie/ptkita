@@ -23,9 +23,6 @@ void main() async {
   await FirebaseMessaging.instance.subscribeToTopic("maintenance");
   await FirebaseMessaging.instance.subscribeToTopic("stock");
 
-  // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-  //   print("Foreground message received: ${message.notification?.title}");
-  // });
   runApp(const MyApp());
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter_kita/models/repair/repair_summary_model.dart';
 import 'package:flutter_kita/models/repair/repair_chart_model.dart';
 import 'package:flutter_kita/models/user/user_model.dart';
 import 'package:flutter_kita/pages/capture/capture_page.dart';
+import 'package:flutter_kita/pages/maintenance/maintenance_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
 import 'package:flutter_kita/widget/navigation_drawer_widget.dart';
@@ -64,10 +65,27 @@ class _HomePageState extends State<HomePage> {
               MaintenanceCard(
                 totalStream: _homeService.totalMaintenanceToday(),
                 completedStream: _homeService.completedMaintenanceToday(),
+                onStreamTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MaintenancePage()),
+                  );
+                },
               ),
               const SizedBox(height: 20),
               StatisticCards(
                 totalItemsStream: _homeService.totalItems(),
+                onTotalItemsTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const InventoryPage(
+                        initialAvailability: 'semua',
+                        fromPush: true,
+                      ),
+                    ),
+                  );
+                },
                 outOfStockStream: _homeService.outOfStock(),
                 onOutOfStockTap: () {
                   Navigator.push(
