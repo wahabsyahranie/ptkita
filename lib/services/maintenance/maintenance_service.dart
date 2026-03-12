@@ -167,13 +167,17 @@ class MaintenanceService {
       }
 
       // Time range filter
-      // Time range filter (berbasis hari kalender)
       if (filter.timeRange != null) {
         final startOfToday = DateTime(now.year, now.month, now.day);
         final endOfRange = startOfToday.add(filter.timeRange!);
 
-        // next harus di dalam range kalender
-        if (next.isBefore(startOfToday) || !next.isBefore(endOfRange)) {
+        // overdue selalu tampil
+        if (next.isBefore(startOfToday)) {
+          return true;
+        }
+
+        // untuk tanggal ke depan harus dalam range
+        if (!next.isBefore(endOfRange)) {
           return false;
         }
       }
