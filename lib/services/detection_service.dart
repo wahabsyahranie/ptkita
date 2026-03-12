@@ -39,5 +39,5 @@ class DetectionService {
       print("Detection error: $e");
       throw Exception("Gagal menghubungi server");
     }
-  }
+  }  
 }
