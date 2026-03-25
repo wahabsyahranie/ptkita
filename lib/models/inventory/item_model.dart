@@ -11,6 +11,7 @@ class Item {
   final String? imageUrl;
   final String? merk;
   final String? locationCode;
+  final String? partNumber;
   final String? nameLowercase;
   final int movementBaseScore;
   final int movementAutoScore;
@@ -38,7 +39,7 @@ class Item {
     this.movementBaseScore = 0,
     this.movementAutoScore = 0,
     this.movementTotalScore = 0,
-
+    this.partNumber,
     this.createdById,
     this.createdByName,
     this.createdAt,
@@ -72,7 +73,7 @@ class Item {
       movementBaseScore: (data?['movementBaseScore'] ?? 0) as int,
       movementAutoScore: (data?['movementAutoScore'] ?? 0) as int,
       movementTotalScore: (data?['movementTotalScore'] ?? 0) as int,
-
+      partNumber: data?['partNumber'] as String?,
       createdById: data?['createdById'] as String?,
       createdByName: data?['createdByName'] as String?,
       createdAt: (data?['createdAt'] as Timestamp?)?.toDate(),
@@ -99,7 +100,7 @@ class Item {
       'movementBaseScore': movementBaseScore,
       'movementAutoScore': movementAutoScore,
       'movementTotalScore': movementTotalScore,
-
+      if (partNumber != null) 'partNumber': partNumber,
       if (createdById != null) 'createdById': createdById,
       if (createdByName != null) 'createdByName': createdByName,
       if (createdAt != null) 'createdAt': createdAt,
@@ -117,6 +118,7 @@ class Item {
     int? stock,
     String? description,
     String? locationCode,
+    String? partNumber,
     String? category,
     String? merk,
     String? imageUrl,
@@ -147,7 +149,7 @@ class Item {
       movementBaseScore: movementBaseScore ?? this.movementBaseScore,
       movementAutoScore: movementAutoScore ?? this.movementAutoScore,
       movementTotalScore: movementTotalScore ?? this.movementTotalScore,
-
+      partNumber: partNumber ?? this.partNumber,
       createdById: createdById ?? this.createdById,
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,

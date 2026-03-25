@@ -40,4 +40,6 @@ abstract class InventoryRepository {
     required int limit,
     PaginationCursor? cursor,
   });
+
+  Future<bool> isPartNumberExists(String partNumber, {String? excludeId});
 }

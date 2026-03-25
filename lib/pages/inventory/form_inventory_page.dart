@@ -39,6 +39,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
   late final TextEditingController _stockCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _locationCtrl;
+  late final TextEditingController _partNumberCtrl;
 
   String? _selectedcategory;
   String? _selectedMerk;
@@ -57,13 +58,17 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _priceCtrl = TextEditingController(text: it?.price?.toString() ?? '');
     _stockCtrl = TextEditingController(text: it?.stock?.toString() ?? '');
     _descCtrl = TextEditingController(text: it?.description ?? '');
+    _partNumberCtrl = TextEditingController(text: it?.partNumber ?? '');
     _locationCtrl = TextEditingController(text: it?.locationCode ?? '');
 
     _selectedcategory = it?.category;
     _selectedMerk = it?.merk;
     _existingImageUrl = it?.imageUrl;
 
-    _service = InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository()));
+    _service = InventoryService(
+      FirestoreInventoryRepository(),
+      UserService(FirestoreUserRepository()),
+    );
   }
 
   @override
@@ -74,6 +79,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _stockCtrl.dispose();
     _descCtrl.dispose();
     _locationCtrl.dispose();
+    _partNumberCtrl.dispose();
     super.dispose();
   }
 
@@ -218,6 +224,9 @@ class _InventoryFormState extends State<FormInventoryPage> {
         category: _selectedcategory,
         merk: _selectedMerk,
         movementBaseScore: _movementBaseScore,
+        partNumber: _selectedcategory == "part"
+            ? _partNumberCtrl.text.trim()
+            : null,
       );
 
       await _service.saveItem(item, imageFile: _imageFile);
@@ -288,6 +297,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 movementBaseScore: _movementBaseScore,
                 onMovementChanged: (v) =>
                     setState(() => _movementBaseScore = v),
+                partNumberCtrl: _partNumberCtrl,
               ),
 
               const SizedBox(height: 30),

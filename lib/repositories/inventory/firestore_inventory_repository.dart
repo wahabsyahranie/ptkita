@@ -236,4 +236,22 @@ class FirestoreInventoryRepository implements InventoryRepository {
       }
     }
   }
+
+  @override
+  Future<bool> isPartNumberExists(
+    String partNumber, {
+    String? excludeId,
+  }) async {
+    final query = await _collection
+        .where('partNumber', isEqualTo: partNumber)
+        .get();
+
+    for (final doc in query.docs) {
+      if (excludeId == null || doc.id != excludeId) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

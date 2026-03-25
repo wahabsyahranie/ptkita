@@ -216,6 +216,12 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
+                if (category == 'part') ...[
+                  _rowInfo("Part Number", item.partNumber ?? "-"),
+                  const DottedlineWidget(),
+                  const SizedBox(height: 10),
+                ],
+
                 _rowInfo("Merk", merk),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),

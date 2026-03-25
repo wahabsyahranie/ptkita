@@ -109,12 +109,53 @@ class InventoryService extends ChangeNotifier {
       throw Exception("Harga tidak boleh minus");
     }
 
-    final normalized = item.copyWith(
+    var normalized = item.copyWith(
       category: (item.category == null || item.category!.isEmpty)
           ? 'unit'
           : item.category,
-      merk: (item.merk == null || item.merk!.isEmpty) ? 'nomerk' : item.merk,
+      merk: (item.merk == null || item.merk!.isEmpty) ? 'No Brand' : item.merk,
+      partNumber: item.partNumber?.trim().toUpperCase(),
     );
+
+    // ==============================
+    // CATEGORY RULE VALIDATION
+    // ==============================
+
+    if (normalized.category == 'part') {
+      if (normalized.partNumber == null || normalized.partNumber!.isEmpty) {
+        throw Exception("Part Number wajib diisi untuk kategori part");
+      }
+    }
+
+    if (normalized.category == 'unit') {
+      if (normalized.partNumber != null && normalized.partNumber!.isNotEmpty) {
+        throw Exception("Unit tidak boleh memiliki Part Number");
+      }
+    }
+
+    if (normalized.category != 'unit' && normalized.category != 'part') {
+      throw Exception("Kategori tidak valid");
+    }
+
+    if (normalized.category == 'unit') {
+      // pastikan bersih total
+      normalized = normalized.copyWith(partNumber: null);
+    }
+
+    // ==============================
+    // UNIQUE PART NUMBER CHECK
+    // ==============================
+
+    if (normalized.category == 'part') {
+      final exists = await _repository.isPartNumberExists(
+        normalized.partNumber!,
+        excludeId: normalized.id,
+      );
+
+      if (exists) {
+        throw Exception("Part Number sudah digunakan");
+      }
+    }
 
     final UserModel? currentUser = await _userService.currentUserProfile.first;
 
