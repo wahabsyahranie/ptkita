@@ -50,6 +50,7 @@ dependencies:
   package_info_plus: ^9.0.0
   flutter_svg: ^2.0.10
   shared_preferences: ^2.2.2
+  shimmer: ^3.0.0
 
   # Wajib untuk capture_page.dart
   http: ^1.2.0

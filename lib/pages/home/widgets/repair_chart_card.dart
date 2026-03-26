@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_kita/pages/home/widgets/repair_card_skeleton.dart';
 import '../../../models/repair/repair_chart_model.dart';
 import '../../../styles/colors.dart';
 
@@ -48,7 +49,7 @@ class RepairChartCard extends StatelessWidget {
               future: future,
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const RepairChartSkeleton();
                 }
 
                 return _buildChart(snapshot.data!);

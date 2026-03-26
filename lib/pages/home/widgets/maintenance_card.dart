@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/pages/home/widgets/maintenance_card_skeleton.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class MaintenanceCard extends StatelessWidget {
@@ -19,14 +20,14 @@ class MaintenanceCard extends StatelessWidget {
       stream: totalStream,
       builder: (context, totalSnap) {
         if (!totalSnap.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const MaintenanceCardSkeleton();
         }
 
         return StreamBuilder<int>(
           stream: completedStream,
           builder: (context, doneSnap) {
             if (!doneSnap.hasData) {
-              return const Center(child: CircularProgressIndicator());
+              return const MaintenanceCardSkeleton();
             }
 
             final total = totalSnap.data!;

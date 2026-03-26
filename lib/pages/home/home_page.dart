@@ -3,6 +3,7 @@ import 'package:flutter_kita/models/repair/repair_summary_model.dart';
 import 'package:flutter_kita/models/repair/repair_chart_model.dart';
 import 'package:flutter_kita/models/user/user_model.dart';
 import 'package:flutter_kita/pages/capture/capture_page.dart';
+import 'package:flutter_kita/pages/home/widgets/home_header_skeleton.dart';
 import 'package:flutter_kita/pages/maintenance/maintenance_page.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/navigation_bottom_widget.dart';
@@ -48,7 +49,6 @@ class _HomePageState extends State<HomePage> {
     _repairSummaryFuture = _homeService.repairSummary(30);
     _chartFuture = _homeService.chartData(_chartMode);
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +177,7 @@ class _HomePageState extends State<HomePage> {
       stream: _userService.currentUserProfile,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == null) {
-          return const SizedBox();
+          return const HomeHeaderSkeleton();
         }
 
         return HomeHeader(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/pages/home/widgets/repair_progress_card_skeleton.dart';
 import '../../../models/repair/repair_summary_model.dart';
 import '../../../styles/colors.dart';
 
@@ -13,7 +14,7 @@ class RepairProgressCard extends StatelessWidget {
       future: future,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const RepairProgressCardSkeleton();
         }
 
         final model = snapshot.data!;
