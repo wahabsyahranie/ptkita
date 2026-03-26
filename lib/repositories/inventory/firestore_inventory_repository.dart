@@ -9,6 +9,7 @@ import 'inventory_repository.dart';
 class FirestoreInventoryRepository implements InventoryRepository {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
+  final _brandCollection = FirebaseFirestore.instance.collection('brands');
 
   FirestoreInventoryRepository({
     FirebaseFirestore? firestore,
@@ -45,9 +46,9 @@ class FirestoreInventoryRepository implements InventoryRepository {
     // Brand
     if (filter.brands.isNotEmpty) {
       if (filter.brands.length == 1) {
-        query = query.where('merk', isEqualTo: filter.brands.first);
+        query = query.where('brandName', isEqualTo: filter.brands.first);
       } else {
-        query = query.where('merk', whereIn: filter.brands.toList());
+        query = query.where('brandName', whereIn: filter.brands.toList());
       }
     }
 
@@ -71,9 +72,30 @@ class FirestoreInventoryRepository implements InventoryRepository {
     }
 
     ////RETURN
-    return query.snapshots().map(
-      (snapshot) => snapshot.docs.map((e) => e.data()).toList(),
-    );
+    return query.snapshots().asyncMap((snapshot) async {
+      final items = snapshot.docs.map((e) => e.data()).toList();
+
+      // ambil semua brand
+      final brandSnapshot = await _brandCollection.get();
+
+      final brandMap = {
+        for (var doc in brandSnapshot.docs)
+          (doc.data()['name'] as String): doc.data(),
+      };
+
+      // inject logoUrl ke item (sementara via copyWith)
+      return items.map((item) {
+        final brandData = brandMap[item.brandName];
+
+        final logoUrl = brandData?['logoUrl'] as String?;
+
+        return item.copyWith(
+          imageUrl: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+              ? item.imageUrl
+              : logoUrl,
+        );
+      }).toList();
+    });
   }
 
   // PAGINATION
@@ -102,9 +124,9 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     if (filter.brands.isNotEmpty) {
       if (filter.brands.length == 1) {
-        query = query.where('merk', isEqualTo: filter.brands.first);
+        query = query.where('brandName', isEqualTo: filter.brands.first);
       } else {
-        query = query.where('merk', whereIn: filter.brands.toList());
+        query = query.where('brandName', whereIn: filter.brands.toList());
       }
     }
 

@@ -48,6 +48,7 @@ class _HomePageState extends State<HomePage> {
     _repairSummaryFuture = _homeService.repairSummary(30);
     _chartFuture = _homeService.chartData(_chartMode);
   }
+  
 
   @override
   Widget build(BuildContext context) {

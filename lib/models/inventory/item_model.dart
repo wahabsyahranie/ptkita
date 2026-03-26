@@ -9,14 +9,14 @@ class Item {
   final String? description;
   final String? category;
   final String? imageUrl;
-  final String? merk;
+  final String? brandId;
+  final String? brandName;
   final String? locationCode;
   final String? partNumber;
   final String? nameLowercase;
   final int movementBaseScore;
   final int movementAutoScore;
   final int movementTotalScore;
-
   final String? createdById;
   final String? createdByName;
   final DateTime? createdAt;
@@ -33,7 +33,8 @@ class Item {
     this.description,
     this.category,
     this.imageUrl,
-    this.merk,
+    this.brandId,
+    this.brandName,
     this.locationCode,
     this.nameLowercase,
     this.movementBaseScore = 0,
@@ -67,7 +68,8 @@ class Item {
       description: data?['description'] as String?,
       category: data?['category'] as String?,
       imageUrl: data?['imageUrl'] as String?,
-      merk: data?['merk'] as String?,
+      brandId: data?['brandId'] as String?,
+      brandName: data?['brandName'] as String?,
       locationCode: data?['locationCode'] as String?,
       nameLowercase: data?['name_lowercase'] as String?,
       movementBaseScore: (data?['movementBaseScore'] ?? 0) as int,
@@ -94,7 +96,8 @@ class Item {
       if (description != null) 'description': description,
       if (category != null) 'category': category,
       if (imageUrl != null) 'imageUrl': imageUrl,
-      if (merk != null) 'merk': merk,
+      if (brandId != null) 'brandId': brandId,
+      if (brandName != null) 'brandName': brandName,
       if (locationCode != null) 'locationCode': locationCode,
       if (nameLowercase != null) 'name_lowercase': nameLowercase,
       'movementBaseScore': movementBaseScore,
@@ -121,12 +124,13 @@ class Item {
     String? partNumber,
     String? category,
     String? merk,
+    String? brandId,
+    String? brandName,
     String? imageUrl,
     String? nameLowercase,
     int? movementBaseScore,
     int? movementAutoScore,
     int? movementTotalScore,
-
     String? createdById,
     String? createdByName,
     DateTime? createdAt,
@@ -143,7 +147,8 @@ class Item {
       description: description ?? this.description,
       locationCode: locationCode ?? this.locationCode,
       category: category ?? this.category,
-      merk: merk ?? this.merk,
+      brandId: brandId ?? this.brandId,
+      brandName: brandName ?? this.brandName,
       imageUrl: imageUrl ?? this.imageUrl,
       nameLowercase: nameLowercase ?? this.nameLowercase,
       movementBaseScore: movementBaseScore ?? this.movementBaseScore,

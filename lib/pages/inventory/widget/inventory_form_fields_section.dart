@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/models/brand/brand_model.dart';
+import 'package:flutter_kita/services/brand/brand_service.dart';
 
 class InventoryFormFieldsSection extends StatelessWidget {
   final TextEditingController nameCtrl;
@@ -14,9 +16,12 @@ class InventoryFormFieldsSection extends StatelessWidget {
   final ValueChanged<int> onMovementChanged;
   final ValueChanged<String?> oncategoryChanged;
   final ValueChanged<String?> onMerkChanged;
+  final BrandService brandService;
+  final ValueChanged<Brand?> onBrandChanged;
 
   const InventoryFormFieldsSection({
     super.key,
+    required this.brandService,
     required this.nameCtrl,
     required this.typeUnitCtrl,
     required this.priceCtrl,
@@ -30,6 +35,7 @@ class InventoryFormFieldsSection extends StatelessWidget {
     required this.movementBaseScore,
     required this.onMovementChanged,
     required this.partNumberCtrl,
+    required this.onBrandChanged,
   });
 
   @override
@@ -155,23 +161,44 @@ class InventoryFormFieldsSection extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          initialValue: selectedMerk,
-          items: const [
-            DropdownMenuItem(value: "firman", child: Text("Firman")),
-            DropdownMenuItem(
-              value: "black+decker",
-              child: Text("Black+Decker"),
-            ),
-            DropdownMenuItem(value: "stanley", child: Text("Stanley")),
-            DropdownMenuItem(value: "dewalt", child: Text("Dewalt")),
-          ],
-          onChanged: onMerkChanged,
-          decoration: const InputDecoration(
-            labelText: "Merk",
-            border: OutlineInputBorder(),
-          ),
-          validator: (v) => v == null || v.isEmpty ? 'Merk wajib diisi' : null,
+        StreamBuilder<List<Brand>>(
+          stream: brandService.streamActiveBrands(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const CircularProgressIndicator();
+            }
+
+            final brands = snapshot.data!;
+
+            return DropdownButtonFormField<Brand>(
+              initialValue:
+                  brands
+                      .where(
+                        (b) =>
+                            b.name.toLowerCase() == selectedMerk?.toLowerCase(),
+                      )
+                      .isNotEmpty
+                  ? brands.firstWhere(
+                      (b) =>
+                          b.name.toLowerCase() == selectedMerk?.toLowerCase(),
+                    )
+                  : null,
+              items: brands.map((b) {
+                return DropdownMenuItem<Brand>(value: b, child: Text(b.name));
+              }).toList(),
+              onChanged: (brand) {
+                if (brand != null) {
+                  onMerkChanged(brand.name); // existing flow
+                  onBrandChanged(brand); // tambahan baru
+                }
+              },
+              decoration: const InputDecoration(
+                labelText: "Merk",
+                border: OutlineInputBorder(),
+              ),
+              validator: (v) => v == null ? 'Merk wajib diisi' : null,
+            );
+          },
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<int>(

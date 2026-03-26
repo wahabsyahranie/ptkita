@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
+import 'package:flutter_kita/models/brand/brand_model.dart';
+import 'package:flutter_kita/services/brand/brand_service.dart';
+import 'package:flutter_kita/repositories/brand/firestore_brand_repository.dart';
 
 class FilterSheet extends StatefulWidget {
   final InventoryFilter initialFilter;
@@ -12,19 +15,20 @@ class FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<FilterSheet> {
+  late final BrandService brandService;
+
   @override
   void initState() {
     super.initState();
     availability = widget.initialFilter.availability;
     category = widget.initialFilter.category;
     selectedBrands = {...widget.initialFilter.brands};
+    brandService = BrandService(FirestoreBrandRepository());
   }
 
   late String? availability;
   late String? category;
   late Set<String> selectedBrands;
-
-  final brands = ["firman", "stanley", "dewalt", "black+decker"];
 
   @override
   Widget build(BuildContext context) {
@@ -139,25 +143,38 @@ class _FilterSheetState extends State<FilterSheet> {
             const SizedBox(height: 20),
             const Text("Merk", style: TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 14,
-              runSpacing: 10,
-              children: brands.map((b) {
-                return FilterChip(
-                  backgroundColor: MyColors.white,
-                  selected: selectedBrands.contains(b),
-                  selectedColor: MyColors.secondary.withValues(alpha: 0.2),
-                  checkmarkColor: MyColors.secondary,
-                  label: Text(b),
-                  onSelected: (isSelected) {
-                    setState(() {
-                      isSelected
-                          ? selectedBrands.add(b)
-                          : selectedBrands.remove(b);
-                    });
-                  },
+            StreamBuilder<List<Brand>>(
+              stream: brandService.streamActiveBrands(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const CircularProgressIndicator();
+                }
+
+                final brands = snapshot.data!;
+
+                return Wrap(
+                  spacing: 14,
+                  runSpacing: 10,
+                  children: brands.map((b) {
+                    return FilterChip(
+                      backgroundColor: MyColors.white,
+                      selected: selectedBrands.contains(b.name),
+                      selectedColor: MyColors.secondary.withValues(alpha: 0.2),
+                      checkmarkColor: MyColors.secondary,
+                      label: Text(b.name),
+                      onSelected: (isSelected) {
+                        setState(() {
+                          if (isSelected) {
+                            selectedBrands.add(b.name);
+                          } else {
+                            selectedBrands.remove(b.name);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+              },
             ),
 
             const SizedBox(height: 25),

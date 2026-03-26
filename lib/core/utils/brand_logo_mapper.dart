@@ -1,20 +1,20 @@
 import 'package:flutter_kita/core/enum/item_brand.dart';
 
 // ignore: camel_case_types
-class merkLogoMapper {
+class BrandLogoMapper {
   static const _basePath = 'assets/brands/';
 
-  static String getAssetPath(Itemmerk merk) {
-    switch (merk) {
-      case Itemmerk.firman:
+  static String getAssetPath(Itembrand brand) {
+    switch (brand) {
+      case Itembrand.firman:
         return '${_basePath}firman.png';
-      case Itemmerk.stanley:
+      case Itembrand.stanley:
         return '${_basePath}stanley.png';
-      case Itemmerk.dewalt:
+      case Itembrand.dewalt:
         return '${_basePath}dewalt.png';
-      case Itemmerk.blackdecker:
+      case Itembrand.blackdecker:
         return '${_basePath}blackdecker.png';
-      case Itemmerk.unknown:
+      case Itembrand.nobrand:
         return '${_basePath}placeholder.png';
     }
   }

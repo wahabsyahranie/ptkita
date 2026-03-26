@@ -10,6 +10,8 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+import 'package:flutter_kita/services/brand/brand_service.dart';
+import 'package:flutter_kita/repositories/brand/firestore_brand_repository.dart';
 
 class FormInventoryPage extends StatefulWidget {
   final Item? initialItem;
@@ -40,6 +42,9 @@ class _InventoryFormState extends State<FormInventoryPage> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _locationCtrl;
   late final TextEditingController _partNumberCtrl;
+  late final BrandService brandService;
+  String? selectedBrandId;
+  String? selectedBrandName;
 
   String? _selectedcategory;
   String? _selectedMerk;
@@ -62,13 +67,20 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _locationCtrl = TextEditingController(text: it?.locationCode ?? '');
 
     _selectedcategory = it?.category;
-    _selectedMerk = it?.merk;
     _existingImageUrl = it?.imageUrl;
 
     _service = InventoryService(
       FirestoreInventoryRepository(),
       UserService(FirestoreUserRepository()),
     );
+
+    if (widget.initialItem != null) {
+      selectedBrandId = widget.initialItem!.brandId;
+      selectedBrandName = widget.initialItem!.brandName;
+      _selectedMerk = widget.initialItem!.brandName; 
+    }
+
+    brandService = BrandService(FirestoreBrandRepository());
   }
 
   @override
@@ -222,7 +234,8 @@ class _InventoryFormState extends State<FormInventoryPage> {
         description: desc.isEmpty ? null : desc,
         locationCode: location,
         category: _selectedcategory,
-        merk: _selectedMerk,
+        brandId: selectedBrandId,
+        brandName: selectedBrandName,
         movementBaseScore: _movementBaseScore,
         partNumber: _selectedcategory == "part"
             ? _partNumberCtrl.text.trim()
@@ -298,6 +311,11 @@ class _InventoryFormState extends State<FormInventoryPage> {
                 onMovementChanged: (v) =>
                     setState(() => _movementBaseScore = v),
                 partNumberCtrl: _partNumberCtrl,
+                brandService: brandService,
+                onBrandChanged: (brand) {
+                  selectedBrandId = brand?.id;
+                  selectedBrandName = brand?.name;
+                },
               ),
 
               const SizedBox(height: 30),

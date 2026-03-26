@@ -126,7 +126,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     final category = item.category ?? '-';
     final desc = item.description ?? '-';
     final imageProvider = _service.resolveImage(item);
-    final merk = item.merk ?? '-';
+    final brandName = item.brandName ?? '-';
     final locationCode = item.locationCode ?? '-';
     final movementLabel = _service.getMovementLabel(item);
     final movementColor = _service.getMovementColor(item);
@@ -222,7 +222,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                   const SizedBox(height: 10),
                 ],
 
-                _rowInfo("Merk", merk),
+                _rowInfo("Merk", brandName),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 

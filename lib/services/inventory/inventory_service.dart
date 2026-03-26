@@ -113,7 +113,10 @@ class InventoryService extends ChangeNotifier {
       category: (item.category == null || item.category!.isEmpty)
           ? 'unit'
           : item.category,
-      merk: (item.merk == null || item.merk!.isEmpty) ? 'No Brand' : item.merk,
+      brandName: (item.brandName == null || item.brandName!.isEmpty)
+          ? 'No Brand'
+          : item.brandName,
+      brandId: item.brandId ?? 'no_brand', // sementara default
       partNumber: item.partNumber?.trim().toUpperCase(),
     );
 
@@ -247,9 +250,8 @@ class InventoryService extends ChangeNotifier {
       return CachedNetworkImageProvider(item.imageUrl!);
     }
 
-    final merk = ItemmerkX.fromString(item.merk);
-    final assetPath = merkLogoMapper.getAssetPath(merk);
-
+    final brand = ItembrandX.fromBrandName(item.brandName);
+    final assetPath = BrandLogoMapper.getAssetPath(brand);
     return AssetImage(assetPath);
   }
 

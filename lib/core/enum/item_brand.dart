@@ -1,18 +1,20 @@
-enum Itemmerk { firman, stanley, blackdecker, dewalt, unknown }
+enum Itembrand { firman, stanley, blackdecker, dewalt, nobrand }
 
-extension ItemmerkX on Itemmerk {
-  static Itemmerk fromString(String? value) {
+extension ItembrandX on Itembrand {
+  static Itembrand fromBrandName(String? value) {
     switch (value?.toLowerCase()) {
       case 'firman':
-        return Itemmerk.firman;
+        return Itembrand.firman;
       case 'stanley':
-        return Itemmerk.stanley;
+        return Itembrand.stanley;
       case 'dewalt':
-        return Itemmerk.dewalt;
+        return Itembrand.dewalt;
       case 'black+decker':
-        return Itemmerk.blackdecker;
+        return Itembrand.blackdecker;
+      case 'no_brand':
+        return Itembrand.nobrand;
       default:
-        return Itemmerk.unknown;
+        return Itembrand.nobrand;
     }
   }
 }
