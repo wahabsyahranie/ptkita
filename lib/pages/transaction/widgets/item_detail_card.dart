@@ -194,7 +194,7 @@ class ItemDetailCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           /// SERIAL NUMBER (UNTUK UNIT)
-          if (item['type'] == 'unit' && serialControllers != null) ...[
+          if (item['category'] == 'unit' && serialControllers != null) ...[
             _subLabel('Serial Number'),
 
             const SizedBox(height: 6),

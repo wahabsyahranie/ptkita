@@ -141,18 +141,26 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
   // ================= WHATSAPP =================
 
   Future<void> _openWhatsApp() async {
-    final phone = (_current['noHp'] ?? '').toString().trim();
+    String phone = (_current['noHp'] ?? '').toString().trim();
 
     if (phone.isEmpty) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Nomor WhatsApp tidak tersedia")),
       );
       return;
     }
 
-    final formattedPhone = phone.startsWith('0')
-        ? '62${phone.substring(1)}'
-        : phone;
+    // bersihkan nomor dari spasi, +, -, dll
+    phone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // format nomor indonesia
+    if (phone.startsWith('0')) {
+      phone = '62${phone.substring(1)}';
+    } else if (phone.startsWith('8')) {
+      phone = '62$phone';
+    }
 
     final message =
         "Halo ${_current['buyerName'] ?? ''},\n\n"
@@ -160,13 +168,13 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         "Silakan lihat bukti perbaikan pada gambar berikut.\n\n"
         "Terima kasih telah menggunakan layanan kami.";
 
-    final url = Uri.parse(
-      "https://wa.me/$formattedPhone?text=${Uri.encodeComponent(message)}",
+    final Uri url = Uri.parse(
+      "https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(message)}",
     );
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

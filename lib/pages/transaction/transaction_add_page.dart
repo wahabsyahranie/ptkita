@@ -118,7 +118,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     final serialNumbers = _serialControllers.map((e) => e.text.trim()).toList();
 
     /// validasi serial number jika item = unit
-    if (_selectedItem!['type'] == 'unit') {
+    if (_selectedItem!['category'] == 'unit') {
       for (final sn in serialNumbers) {
         if (sn.isEmpty) {
           _showAlert('Serial number tidak boleh kosong');
@@ -130,7 +130,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     final cartItem = CartItemModel(
       itemId: _selectedItem!['id'],
       name: _selectedItem!['name'],
-      type: _selectedItem!['type'], // WAJIB DITAMBAHKAN
+      type: _selectedItem!['category'] ?? 'part',
       price: price,
       qty: _qty,
       hasWarranty: _hasWarranty,
