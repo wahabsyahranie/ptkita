@@ -4,7 +4,9 @@ import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_appbar.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_grid_section.dart';
+import 'package:flutter_kita/pages/inventory/widget/inventory_grid_skeleton.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_list_section.dart';
+import 'package:flutter_kita/pages/inventory/widget/inventory_list_skeleton.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
@@ -189,11 +191,9 @@ class _InventoryPageState extends State<InventoryPage> {
                 await _service.refresh();
               },
               child: _service.items.isEmpty && _service.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: MyColors.secondary,
-                      ),
-                    )
+                  ? (_isGrid
+                        ? const InventoryGridSkeleton()
+                        : const InventoryListSkeleton())
                   : _service.items.isEmpty
                   ? const Center(child: Text("Data tidak ditemukan"))
                   : CustomScrollView(
