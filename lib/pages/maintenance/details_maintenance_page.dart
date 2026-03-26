@@ -155,55 +155,59 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
           body: Column(
             children: [
               Expanded(child: _buildContent(detail, lastMaintenance)),
-
               if (_allTasksCompleted)
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final result = await showModalBottomSheet<bool>(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: MyColors.white,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
-                        ),
-                        builder: (_) => FinishMaintenanceSheet(
-                          maintenance: maintenance,
-                          service: _service,
-                        ),
-                      );
-
-                      if (!context.mounted) return;
-
-                      if (result == true) {
-                        Navigator.pop(context);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Siklus selesai. Maintenance dijadwalkan ulang.',
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final result = await showModalBottomSheet<bool>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: MyColors.white,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
                             ),
                           ),
+                          builder: (_) => FinishMaintenanceSheet(
+                            maintenance: maintenance,
+                            service: _service,
+                          ),
                         );
-                      } else if (result == false) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Progress diperbarui.')),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MyColors.secondary,
-                      minimumSize: const Size.fromHeight(50),
-                    ),
-                    child: const Text(
-                      'Selesaikan Perawatan',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: MyColors.white,
+
+                        if (!context.mounted) return;
+
+                        if (result == true) {
+                          Navigator.pop(context);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Siklus selesai. Maintenance dijadwalkan ulang.',
+                              ),
+                            ),
+                          );
+                        } else if (result == false) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Progress diperbarui.'),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MyColors.secondary,
+                        minimumSize: const Size.fromHeight(50),
+                      ),
+                      child: const Text(
+                        'Selesaikan Perawatan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: MyColors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -297,6 +301,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
               );
             },
           ),
+          const SizedBox(height: 40),
         ],
       ),
     );

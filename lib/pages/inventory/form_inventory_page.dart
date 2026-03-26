@@ -77,7 +77,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     if (widget.initialItem != null) {
       selectedBrandId = widget.initialItem!.brandId;
       selectedBrandName = widget.initialItem!.brandName;
-      _selectedMerk = widget.initialItem!.brandName; 
+      _selectedMerk = widget.initialItem!.brandName;
     }
 
     brandService = BrandService(FirestoreBrandRepository());
@@ -281,51 +281,54 @@ class _InventoryFormState extends State<FormInventoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              InventoryFormImageSection(
-                imageFile: _imageFile,
-                existingImageUrl: _existingImageUrl,
-                onTap: _showImageOptions,
-              ),
-              const SizedBox(height: 16),
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InventoryFormImageSection(
+                  imageFile: _imageFile,
+                  existingImageUrl: _existingImageUrl,
+                  onTap: _showImageOptions,
+                ),
+                const SizedBox(height: 16),
 
-              InventoryFormFieldsSection(
-                nameCtrl: _nameCtrl,
-                typeUnitCtrl: _typeUnitCtrl,
-                priceCtrl: _priceCtrl,
-                stockCtrl: _stockCtrl,
-                locationCtrl: _locationCtrl,
-                descCtrl: _descCtrl,
-                selectedcategory: _selectedcategory,
-                selectedMerk: _selectedMerk,
-                oncategoryChanged: (v) => setState(() => _selectedcategory = v),
-                onMerkChanged: (v) => setState(() => _selectedMerk = v),
-                movementBaseScore: _movementBaseScore,
-                onMovementChanged: (v) =>
-                    setState(() => _movementBaseScore = v),
-                partNumberCtrl: _partNumberCtrl,
-                brandService: brandService,
-                onBrandChanged: (brand) {
-                  selectedBrandId = brand?.id;
-                  selectedBrandName = brand?.name;
-                },
-              ),
+                InventoryFormFieldsSection(
+                  nameCtrl: _nameCtrl,
+                  typeUnitCtrl: _typeUnitCtrl,
+                  priceCtrl: _priceCtrl,
+                  stockCtrl: _stockCtrl,
+                  locationCtrl: _locationCtrl,
+                  descCtrl: _descCtrl,
+                  selectedcategory: _selectedcategory,
+                  selectedMerk: _selectedMerk,
+                  oncategoryChanged: (v) =>
+                      setState(() => _selectedcategory = v),
+                  onMerkChanged: (v) => setState(() => _selectedMerk = v),
+                  movementBaseScore: _movementBaseScore,
+                  onMovementChanged: (v) =>
+                      setState(() => _movementBaseScore = v),
+                  partNumberCtrl: _partNumberCtrl,
+                  brandService: brandService,
+                  onBrandChanged: (brand) {
+                    selectedBrandId = brand?.id;
+                    selectedBrandName = brand?.name;
+                  },
+                ),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              InventoryFormSubmitButton(
-                isSaving: _isSaving,
-                label: widget.initialItem == null ? "Simpan" : "Update",
-                onPressed: _save,
-              ),
-            ],
+                InventoryFormSubmitButton(
+                  isSaving: _isSaving,
+                  label: widget.initialItem == null ? "Simpan" : "Update",
+                  onPressed: _save,
+                ),
+              ],
+            ),
           ),
         ),
       ),

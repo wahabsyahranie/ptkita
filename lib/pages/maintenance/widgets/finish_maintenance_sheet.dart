@@ -27,70 +27,73 @@ class _FinishMaintenanceSheetState extends State<FinishMaintenanceSheet> {
   Widget build(BuildContext context) {
     final remaining = widget.maintenance.remainingQuantity;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 16,
-        right: 16,
-        top: 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Selesaikan Maintenance",
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text("Sisa saat ini: $remaining unit"),
-          const SizedBox(height: 16),
-
-          TextField(
-            controller: _controller,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: "Jumlah diselesaikan",
-              border: OutlineInputBorder(),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Selesaikan Maintenance",
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-          ),
-
-          if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: const TextStyle(color: MyColors.error)),
-          ],
+            Text("Sisa saat ini: $remaining unit"),
+            const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MyColors.secondary,
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            TextField(
+              controller: _controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Jumlah diselesaikan",
+                border: OutlineInputBorder(),
               ),
-              onPressed: _isSaving ? null : _submit,
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: MyColors.white,
-                      ),
-                    )
-                  : const Text(
-                      "Selesaikan",
-                      style: TextStyle(color: MyColors.white),
-                    ),
             ),
-          ),
 
-          const SizedBox(height: 24),
-        ],
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: const TextStyle(color: MyColors.error)),
+            ],
+
+            const SizedBox(height: 16),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MyColors.secondary,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: _isSaving ? null : _submit,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: MyColors.white,
+                        ),
+                      )
+                    : const Text(
+                        "Selesaikan",
+                        style: TextStyle(color: MyColors.white),
+                      ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
