@@ -86,13 +86,10 @@ class FirestoreInventoryRepository implements InventoryRepository {
       // inject logoUrl ke item (sementara via copyWith)
       return items.map((item) {
         final brandData = brandMap[item.brandName];
-
         final logoUrl = brandData?['logoUrl'] as String?;
 
         return item.copyWith(
-          imageUrl: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-              ? item.imageUrl
-              : logoUrl,
+          brandLogoUrl: logoUrl, // ✅ FIX DI SINI
         );
       }).toList();
     });
@@ -168,8 +165,23 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     final hasMore = snapshot.docs.length == limit;
 
+    // ambil semua brand
+    final brandSnapshot = await _brandCollection.get();
+
+    final brandMap = {
+      for (var doc in brandSnapshot.docs)
+        (doc.data()['name'] as String): doc.data(),
+    };
+
+    final enrichedItems = items.map((item) {
+      final brandData = brandMap[item.brandName];
+      final logoUrl = brandData?['logoUrl'] as String?;
+
+      return item.copyWith(brandLogoUrl: logoUrl);
+    }).toList();
+
     return PaginatedResult<Item>(
-      items: items,
+      items: enrichedItems,
       cursor: lastDoc != null ? PaginationCursor(lastDoc) : null,
       hasMore: hasMore,
     );
@@ -177,10 +189,22 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
   @override
   Stream<Item?> streamItemById(String id) {
-    return _collection
-        .doc(id)
-        .snapshots()
-        .map((snap) => snap.exists ? snap.data() : null);
+    return _collection.doc(id).snapshots().asyncMap((snap) async {
+      final item = snap.exists ? snap.data() : null;
+      if (item == null) return null;
+
+      final brandSnapshot = await _brandCollection.get();
+
+      final brandMap = {
+        for (var doc in brandSnapshot.docs)
+          (doc.data()['name'] as String): doc.data(),
+      };
+
+      final brandData = brandMap[item.brandName];
+      final logoUrl = brandData?['logoUrl'] as String?;
+
+      return item.copyWith(brandLogoUrl: logoUrl);
+    });
   }
 
   @override

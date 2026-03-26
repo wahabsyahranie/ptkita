@@ -23,6 +23,7 @@ class Item {
   final String? lastEditedById;
   final String? lastEditedByName;
   final DateTime? lastEditedAt;
+  final String? brandLogoUrl;
 
   Item({
     this.id,
@@ -47,6 +48,7 @@ class Item {
     this.lastEditedById,
     this.lastEditedByName,
     this.lastEditedAt,
+    this.brandLogoUrl,
   });
 
   // factory sesuai contoh FlutterFire docs
@@ -137,6 +139,7 @@ class Item {
     String? lastEditedById,
     String? lastEditedByName,
     DateTime? lastEditedAt,
+    String? brandLogoUrl,
   }) {
     return Item(
       id: id ?? this.id,
@@ -161,6 +164,7 @@ class Item {
       lastEditedById: lastEditedById ?? this.lastEditedById,
       lastEditedByName: lastEditedByName ?? this.lastEditedByName,
       lastEditedAt: lastEditedAt ?? this.lastEditedAt,
+      brandLogoUrl: brandLogoUrl ?? this.brandLogoUrl,
     );
   }
 }

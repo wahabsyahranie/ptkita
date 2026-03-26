@@ -5,6 +5,7 @@ class Brand {
   final String name;
   final bool isActive;
   final bool isSystem;
+  final String? logoUrl;
   final DateTime? createdAt;
 
   Brand({
@@ -12,6 +13,7 @@ class Brand {
     required this.name,
     required this.isActive,
     required this.isSystem,
+    this.logoUrl,
     this.createdAt,
   });
 
@@ -26,6 +28,7 @@ class Brand {
       name: data?['name'] as String? ?? '',
       isActive: data?['isActive'] as bool? ?? true,
       isSystem: data?['isSystem'] as bool? ?? false,
+      logoUrl: data?['logoUrl'] as String?,
       createdAt: (data?['createdAt'] as Timestamp?)?.toDate(),
     );
   }
@@ -36,6 +39,7 @@ class Brand {
       'isActive': isActive,
       'isSystem': isSystem,
       if (createdAt != null) 'createdAt': createdAt,
+      if (logoUrl != null) 'logoUrl': logoUrl,
     };
   }
 }

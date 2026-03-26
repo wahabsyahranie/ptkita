@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/core/enum/item_brand.dart';
-import 'package:flutter_kita/core/utils/brand_logo_mapper.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
@@ -250,9 +248,11 @@ class InventoryService extends ChangeNotifier {
       return CachedNetworkImageProvider(item.imageUrl!);
     }
 
-    final brand = ItembrandX.fromBrandName(item.brandName);
-    final assetPath = BrandLogoMapper.getAssetPath(brand);
-    return AssetImage(assetPath);
+    if (item.brandLogoUrl != null && item.brandLogoUrl!.isNotEmpty) {
+      return CachedNetworkImageProvider(item.brandLogoUrl!);
+    }
+
+    return const AssetImage('assets/brands/placeholder.png');
   }
 
   ////Movement Speed Label
