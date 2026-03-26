@@ -8,62 +8,50 @@ class InventoryGridSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SkeletonShimmer(
-      child: SliverGrid(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            return Container(
-              decoration: BoxDecoration(
-                color: MyColors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: MyColors.black.withValues(alpha: 0.08),
-                    blurRadius: 6,
+    return SliverGrid(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        return SkeletonShimmer(
+          // ✅ PINDAH KE SINI
+          child: Container(
+            decoration: BoxDecoration(
+              color: MyColors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: MyColors.black.withValues(alpha: 0.08),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  SkeletonBox(width: double.infinity, height: 90),
+                  SizedBox(height: 8),
+                  SkeletonBox(width: 100, height: 14),
+                  SizedBox(height: 4),
+                  SkeletonBox(width: 80, height: 12),
+                  SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: SkeletonBox(width: 60, height: 12),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: SkeletonBox(width: 80, height: 12),
                   ),
                 ],
               ),
-              child: const Padding(
-                padding: EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    // IMAGE
-                    SkeletonBox(width: double.infinity, height: 90),
-
-                    SizedBox(height: 8),
-
-                    // TITLE
-                    SkeletonBox(width: 100, height: 14),
-
-                    SizedBox(height: 4),
-
-                    // PRICE
-                    SkeletonBox(width: 80, height: 12),
-
-                    SizedBox(height: 6),
-
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: SkeletonBox(width: 60, height: 12),
-                    ),
-
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: SkeletonBox(width: 80, height: 12),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-          childCount: 6,
-        ),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.7,
-        ),
+            ),
+          ),
+        );
+      }, childCount: 6),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.7,
       ),
     );
   }

@@ -190,10 +190,18 @@ class _InventoryPageState extends State<InventoryPage> {
               onRefresh: () async {
                 await _service.refresh();
               },
-              child: _service.items.isEmpty && _service.isLoading
-                  ? (_isGrid
-                        ? const InventoryGridSkeleton()
-                        : const InventoryListSkeleton())
+              child: _service.items.isEmpty
+                  ? CustomScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          sliver: _isGrid
+                              ? const InventoryGridSkeleton()
+                              : const InventoryListSkeleton(),
+                        ),
+                      ],
+                    )
                   : _service.items.isEmpty
                   ? const Center(child: Text("Data tidak ditemukan"))
                   : CustomScrollView(

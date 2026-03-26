@@ -8,10 +8,11 @@ class InventoryListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SkeletonShimmer(
-      child: SliverList(
-        delegate: SliverChildBuilderDelegate((context, index) {
-          return Container(
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        return SkeletonShimmer(
+          // ✅ pindah ke item
+          child: Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -27,12 +28,8 @@ class InventoryListSkeleton extends StatelessWidget {
             ),
             child: const Row(
               children: [
-                // ICON
                 SkeletonBox(width: 40, height: 40),
-
                 SizedBox(width: 12),
-
-                // TEXT
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,16 +42,13 @@ class InventoryListSkeleton extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 SizedBox(width: 8),
-
-                // STATUS
                 SkeletonBox(width: 60, height: 20),
               ],
             ),
-          );
-        }, childCount: 6),
-      ),
+          ),
+        );
+      }, childCount: 6),
     );
   }
 }
