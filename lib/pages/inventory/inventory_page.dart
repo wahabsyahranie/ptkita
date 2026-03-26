@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
 import 'package:flutter_kita/pages/inventory/widget/inventory_appbar.dart';
-import 'package:flutter_kita/pages/inventory/widget/inventory_card.dart';
+import 'package:flutter_kita/pages/inventory/widget/inventory_grid_section.dart';
+import 'package:flutter_kita/pages/inventory/widget/inventory_list_section.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/services/user/user_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'widget/filter_sheet.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class InventoryPage extends StatefulWidget {
   final String? initialAvailability;
@@ -35,10 +37,12 @@ class _InventoryPageState extends State<InventoryPage> {
   Timer? _searchDebounce;
 
   late InventoryFilter _appliedFilter;
+  bool _isGrid = true;
 
   @override
   void initState() {
     super.initState();
+    _loadViewMode();
 
     _service = InventoryService(
       FirestoreInventoryRepository(),
@@ -134,6 +138,17 @@ class _InventoryPageState extends State<InventoryPage> {
     super.dispose();
   }
 
+  Future<void> _loadViewMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getBool('inventory_view_mode');
+
+    if (saved != null) {
+      setState(() {
+        _isGrid = saved;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,12 +158,32 @@ class _InventoryPageState extends State<InventoryPage> {
         onSearchChanged: _onSearchChanged,
         onAddPressed: _handleAdd,
         onFilterPressed: _openFilterSheet,
+        onToggleView: () async {
+          final newValue = !_isGrid;
+
+          setState(() {
+            _isGrid = newValue;
+          });
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('inventory_view_mode', newValue);
+        },
+        isGrid: _isGrid,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
         child: AnimatedBuilder(
           animation: _service,
           builder: (context, _) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_service.items.isNotEmpty &&
+                  !_service.isLoading &&
+                  _service.hasMore &&
+                  _scrollController.hasClients &&
+                  _scrollController.position.maxScrollExtent == 0) {
+                _service.fetchNextPage();
+              }
+            });
             return RefreshIndicator(
               onRefresh: () async {
                 await _service.refresh();
@@ -163,30 +198,20 @@ class _InventoryPageState extends State<InventoryPage> {
                   ? const Center(child: Text("Data tidak ditemukan"))
                   : CustomScrollView(
                       controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
                         SliverPadding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          sliver: SliverGrid(
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final item = _service.items[index];
-                              return InventoryCard(
-                                item: item,
-                                service: _service,
-                              );
-                            }, childCount: _service.items.length),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: 0.7,
+                          sliver: _isGrid
+                              ? InventoryGridSection(
+                                  items: _service.items,
+                                  service: _service,
+                                )
+                              : InventoryListSection(
+                                  items: _service.items,
+                                  service: _service,
                                 ),
-                          ),
                         ),
-
                         if (_service.isLoading)
                           const SliverToBoxAdapter(
                             child: Padding(
@@ -208,7 +233,8 @@ class _InventoryPageState extends State<InventoryPage> {
                               ),
                             ),
                           ),
-                        SliverToBoxAdapter(
+                        SliverFillRemaining(
+                          hasScrollBody: false,
                           child: SizedBox(
                             height: MediaQuery.of(context).padding.bottom + 50,
                           ),
