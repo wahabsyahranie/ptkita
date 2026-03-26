@@ -158,16 +158,16 @@ class _FilterSheetState extends State<FilterSheet> {
                   children: brands.map((b) {
                     return FilterChip(
                       backgroundColor: MyColors.white,
-                      selected: selectedBrands.contains(b.name),
+                      selected: selectedBrands.contains(b.id),
                       selectedColor: MyColors.secondary.withValues(alpha: 0.2),
                       checkmarkColor: MyColors.secondary,
                       label: Text(b.name),
                       onSelected: (isSelected) {
                         setState(() {
                           if (isSelected) {
-                            selectedBrands.add(b.name);
+                            selectedBrands.add(b.id);
                           } else {
-                            selectedBrands.remove(b.name);
+                            selectedBrands.remove(b.id);
                           }
                         });
                       },

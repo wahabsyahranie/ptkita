@@ -111,10 +111,8 @@ class InventoryService extends ChangeNotifier {
       category: (item.category == null || item.category!.isEmpty)
           ? 'unit'
           : item.category,
-      brandName: (item.brandName == null || item.brandName!.isEmpty)
-          ? 'No Brand'
-          : item.brandName,
-      brandId: item.brandId ?? 'no_brand', // sementara default
+      brandId: item.brandId ?? 'no_brand',
+      brandName: item.brandName ?? 'No Brand', // sementara default
       partNumber: item.partNumber?.trim().toUpperCase(),
     );
 

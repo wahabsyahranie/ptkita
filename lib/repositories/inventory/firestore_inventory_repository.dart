@@ -44,11 +44,12 @@ class FirestoreInventoryRepository implements InventoryRepository {
     }
 
     // Brand
+    // Brand
     if (filter.brands.isNotEmpty) {
       if (filter.brands.length == 1) {
-        query = query.where('brandName', isEqualTo: filter.brands.first);
+        query = query.where('brandId', isEqualTo: filter.brands.first);
       } else {
-        query = query.where('brandName', whereIn: filter.brands.toList());
+        query = query.where('brandId', whereIn: filter.brands.toList());
       }
     }
 
@@ -75,22 +76,30 @@ class FirestoreInventoryRepository implements InventoryRepository {
     return query.snapshots().asyncMap((snapshot) async {
       final items = snapshot.docs.map((e) => e.data()).toList();
 
-      // ambil semua brand
-      final brandSnapshot = await _brandCollection.get();
+      final brandIds = items
+          .map((e) => e.brandId)
+          .whereType<String>()
+          .toSet()
+          .toList();
 
-      final brandMap = {
-        for (var doc in brandSnapshot.docs)
-          (doc.data()['name'] as String): doc.data(),
-      };
+      QuerySnapshot<Map<String, dynamic>> brandSnapshot;
 
-      // inject logoUrl ke item (sementara via copyWith)
+      if (brandIds.isEmpty) {
+        brandSnapshot = await _brandCollection.limit(0).get();
+      } else {
+        brandSnapshot = await _brandCollection
+            .where(FieldPath.documentId, whereIn: brandIds)
+            .get();
+      }
+
+      final brandMap = {for (var doc in brandSnapshot.docs) doc.id: doc.data()};
+
       return items.map((item) {
-        final brandData = brandMap[item.brandName];
-        final logoUrl = brandData?['logoUrl'] as String?;
+        final brandData = brandMap[item.brandId];
 
-        return item.copyWith(
-          brandLogoUrl: logoUrl, // ✅ FIX DI SINI
-        );
+        final logoUrl = (brandData?['logoUrl'] as String?) ?? '';
+
+        return item.copyWith(brandLogoUrl: logoUrl);
       }).toList();
     });
   }
@@ -121,9 +130,9 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     if (filter.brands.isNotEmpty) {
       if (filter.brands.length == 1) {
-        query = query.where('brandName', isEqualTo: filter.brands.first);
+        query = query.where('brandId', isEqualTo: filter.brands.first);
       } else {
-        query = query.where('brandName', whereIn: filter.brands.toList());
+        query = query.where('brandId', whereIn: filter.brands.toList());
       }
     }
 
@@ -165,17 +174,27 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     final hasMore = snapshot.docs.length == limit;
 
-    // ambil semua brand
-    final brandSnapshot = await _brandCollection.get();
+    final brandIds = items
+        .map((e) => e.brandId)
+        .whereType<String>()
+        .toSet()
+        .toList();
 
-    final brandMap = {
-      for (var doc in brandSnapshot.docs)
-        (doc.data()['name'] as String): doc.data(),
-    };
+    QuerySnapshot<Map<String, dynamic>> brandSnapshot;
+
+    if (brandIds.isEmpty) {
+      brandSnapshot = await _brandCollection.limit(0).get();
+    } else {
+      brandSnapshot = await _brandCollection
+          .where(FieldPath.documentId, whereIn: brandIds)
+          .get();
+    }
+
+    final brandMap = {for (var doc in brandSnapshot.docs) doc.id: doc.data()};
 
     final enrichedItems = items.map((item) {
-      final brandData = brandMap[item.brandName];
-      final logoUrl = brandData?['logoUrl'] as String?;
+      final brandData = brandMap[item.brandId];
+      final logoUrl = (brandData?['logoUrl'] as String?) ?? '';
 
       return item.copyWith(brandLogoUrl: logoUrl);
     }).toList();
@@ -193,15 +212,25 @@ class FirestoreInventoryRepository implements InventoryRepository {
       final item = snap.exists ? snap.data() : null;
       if (item == null) return null;
 
-      final brandSnapshot = await _brandCollection.get();
+      final brandId = item.brandId;
 
-      final brandMap = {
-        for (var doc in brandSnapshot.docs)
-          (doc.data()['name'] as String): doc.data(),
-      };
+      QuerySnapshot<Map<String, dynamic>> brandSnapshot;
 
-      final brandData = brandMap[item.brandName];
-      final logoUrl = brandData?['logoUrl'] as String?;
+      if (brandId == null) {
+        brandSnapshot = await _brandCollection.limit(0).get();
+      } else {
+        brandSnapshot = await _brandCollection.doc(brandId).get().then((doc) {
+          return FirebaseFirestore.instance
+              .collection('brands')
+              .where(FieldPath.documentId, whereIn: [doc.id])
+              .get();
+        });
+      }
+
+      final brandMap = {for (var doc in brandSnapshot.docs) doc.id: doc.data()};
+
+      final brandData = brandMap[item.brandId];
+      final logoUrl = (brandData?['logoUrl'] as String?) ?? '';
 
       return item.copyWith(brandLogoUrl: logoUrl);
     });
