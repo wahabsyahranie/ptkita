@@ -40,9 +40,6 @@ class _InventoryPageState extends State<InventoryPage> {
   void initState() {
     super.initState();
 
-    // final repo = FirestoreInventoryRepository();
-    // repo.migrateMovementFields(); // panggil sekali
-
     _service = InventoryService(
       FirestoreInventoryRepository(),
       UserService(FirestoreUserRepository()),

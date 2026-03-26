@@ -293,25 +293,6 @@ class FirestoreInventoryRepository implements InventoryRepository {
     return await snapshot.ref.getDownloadURL();
   }
 
-  // =========================================================
-  // ====================== MIGRASI ===========================
-  // =========================================================
-  Future<void> migrateMovementFields() async {
-    final snapshot = await _firestore.collection('items').get();
-
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-
-      if (!data.containsKey('movementTotalScore')) {
-        await doc.reference.update({
-          'movementBaseScore': 500,
-          'movementAutoScore': 0,
-          'movementTotalScore': 500,
-        });
-      }
-    }
-  }
-
   @override
   Future<bool> isPartNumberExists(
     String partNumber, {
