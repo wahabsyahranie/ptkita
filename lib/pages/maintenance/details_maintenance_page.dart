@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/details_maintenance_skeleton.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
@@ -66,12 +67,7 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
       stream: _service.streamMaintenanceDetail(widget.maintenanceId),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Scaffold(
-            backgroundColor: MyColors.white,
-            body: Center(
-              child: CircularProgressIndicator(color: MyColors.secondary),
-            ),
-          );
+          return const DetailsMaintenanceSkeleton();
         }
 
         final detail = snapshot.data!;
