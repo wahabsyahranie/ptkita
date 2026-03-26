@@ -37,7 +37,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
     super.initState();
     final it = widget.initialItem;
     final userService = UserService(FirestoreUserRepository());
-    
+
     _service = MaintenanceService(
       FirestoreMaintenanceRepository(),
       InventoryService(FirestoreInventoryRepository(), userService),
@@ -166,146 +166,154 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Pilih Barang'),
-              const SizedBox(height: 8),
-              StreamBuilder<List<Item>>(
-                stream: _service.streamItems(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const SizedBox();
-                  }
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Pilih Barang'),
+                const SizedBox(height: 8),
+                StreamBuilder<List<Item>>(
+                  stream: _service.streamItems(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const SizedBox();
+                    }
 
-                  final items = snapshot.data!;
+                    final items = snapshot.data!;
 
-                  return DropdownButtonFormField<String>(
-                    initialValue: _selectedItemId,
-                    isExpanded: true,
-                    items: items.map((item) {
-                      return DropdownMenuItem<String>(
-                        value: item.id,
-                        child: Text(
-                          item.name ?? '-',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      final selectedItem = items.firstWhere(
-                        (i) => i.id == value,
-                      );
+                    return DropdownButtonFormField<String>(
+                      initialValue: _selectedItemId,
+                      isExpanded: true,
+                      items: items.map((item) {
+                        return DropdownMenuItem<String>(
+                          value: item.id,
+                          child: Text(
+                            item.name ?? '-',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        final selectedItem = items.firstWhere(
+                          (i) => i.id == value,
+                        );
 
-                      setState(() {
-                        _selectedItemId = value;
-                        _selectedItemName = selectedItem.name;
-                        _selectedItemtypeUnit = selectedItem.typeUnit;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      hintText: "Pilih Barang",
-                      border: OutlineInputBorder(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 15),
-              const Text("Interval Perawatan (hari)"),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _intervalCtrl,
-                cursorColor: MyColors.background,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: "Masukkan jumlah hari",
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: MyColors.secondary, width: 2),
-                  ),
-                ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Interval wajib diisi';
-                  }
-                  final n = num.tryParse(
-                    v.replaceAll(',', '').replaceAll('.', ''),
-                  );
-                  if (n == null) return 'Masukkan angka yang valid';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 15),
-              const Text('Prioritas'),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedPriority,
-                items: const [
-                  DropdownMenuItem(value: "rendah", child: Text("Rendah")),
-                  DropdownMenuItem(value: "sedang", child: Text("Sedang")),
-                  DropdownMenuItem(value: "tinggi", child: Text("Tinggi")),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPriority = value;
-                  });
-                },
-                decoration: const InputDecoration(
-                  hintText: "Pilih Prioritas",
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: MyColors.secondary, width: 2),
-                  ),
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Prioritas wajib diisi';
-                  }
-                  return null;
-                },
-                iconEnabledColor: MyColors.background,
-                dropdownColor: MyColors.white,
-              ),
-              const SizedBox(height: 15),
-              const Text("Jenis Perawatan"),
-              const SizedBox(height: 8),
-
-              MaintenanceTaskFormSection(
-                tasks: _tasks,
-                onAddTask: _addTask,
-                onDeleteTask: _removeTask,
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _isSaving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MyColors.secondary,
-                  minimumSize: const Size.fromHeight(50),
-                ),
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                          color: MyColors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        widget.initialItem == null ? "Simpan" : "Update",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: MyColors.white,
-                        ),
+                        setState(() {
+                          _selectedItemId = value;
+                          _selectedItemName = selectedItem.name;
+                          _selectedItemtypeUnit = selectedItem.typeUnit;
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        hintText: "Pilih Barang",
+                        border: OutlineInputBorder(),
                       ),
-              ),
-            ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 15),
+                const Text("Interval Perawatan (hari)"),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _intervalCtrl,
+                  cursorColor: MyColors.background,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: "Masukkan jumlah hari",
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: MyColors.secondary,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Interval wajib diisi';
+                    }
+                    final n = num.tryParse(
+                      v.replaceAll(',', '').replaceAll('.', ''),
+                    );
+                    if (n == null) return 'Masukkan angka yang valid';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 15),
+                const Text('Prioritas'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedPriority,
+                  items: const [
+                    DropdownMenuItem(value: "rendah", child: Text("Rendah")),
+                    DropdownMenuItem(value: "sedang", child: Text("Sedang")),
+                    DropdownMenuItem(value: "tinggi", child: Text("Tinggi")),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPriority = value;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    hintText: "Pilih Prioritas",
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: MyColors.secondary,
+                        width: 2,
+                      ),
+                    ),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Prioritas wajib diisi';
+                    }
+                    return null;
+                  },
+                  iconEnabledColor: MyColors.background,
+                  dropdownColor: MyColors.white,
+                ),
+                const SizedBox(height: 15),
+                const Text("Jenis Perawatan"),
+                const SizedBox(height: 8),
+
+                MaintenanceTaskFormSection(
+                  tasks: _tasks,
+                  onAddTask: _addTask,
+                  onDeleteTask: _removeTask,
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: _isSaving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MyColors.secondary,
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            color: MyColors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          widget.initialItem == null ? "Simpan" : "Update",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: MyColors.white,
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

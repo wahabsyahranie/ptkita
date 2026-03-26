@@ -7,6 +7,8 @@ class InventoryAppBar extends StatelessWidget implements PreferredSizeWidget {
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onAddPressed;
   final VoidCallback onFilterPressed;
+  final VoidCallback onToggleView;
+  final bool isGrid;
 
   const InventoryAppBar({
     super.key,
@@ -14,6 +16,8 @@ class InventoryAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onSearchChanged,
     required this.onAddPressed,
     required this.onFilterPressed,
+    required this.onToggleView,
+    required this.isGrid,
   });
 
   @override
@@ -35,7 +39,7 @@ class InventoryAppBar extends StatelessWidget implements PreferredSizeWidget {
               Expanded(
                 child: SearchBarWidget(
                   controller: searchController,
-                  hintText: 'Cari nama',
+                  hintText: 'Cari barang...',
                   onChanged: onSearchChanged,
                 ),
               ),
@@ -43,6 +47,12 @@ class InventoryAppBar extends StatelessWidget implements PreferredSizeWidget {
               _circleButton(Icons.add, onAddPressed),
               const SizedBox(width: 10),
               _circleButton(Icons.filter_alt, onFilterPressed),
+              const SizedBox(width: 10),
+              //NEW BUTTON (TOGGLE VIEW)
+              _circleButton(
+                isGrid ? Icons.view_list : Icons.grid_view,
+                onToggleView,
+              ),
             ],
           ),
         ),

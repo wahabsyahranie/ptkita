@@ -9,19 +9,21 @@ class Item {
   final String? description;
   final String? category;
   final String? imageUrl;
-  final String? merk;
+  final String? brandId;
+  final String? brandName;
   final String? locationCode;
+  final String? partNumber;
   final String? nameLowercase;
   final int movementBaseScore;
   final int movementAutoScore;
   final int movementTotalScore;
-
   final String? createdById;
   final String? createdByName;
   final DateTime? createdAt;
   final String? lastEditedById;
   final String? lastEditedByName;
   final DateTime? lastEditedAt;
+  final String? brandLogoUrl;
 
   Item({
     this.id,
@@ -32,19 +34,21 @@ class Item {
     this.description,
     this.category,
     this.imageUrl,
-    this.merk,
+    this.brandId,
+    this.brandName,
     this.locationCode,
     this.nameLowercase,
     this.movementBaseScore = 0,
     this.movementAutoScore = 0,
     this.movementTotalScore = 0,
-
+    this.partNumber,
     this.createdById,
     this.createdByName,
     this.createdAt,
     this.lastEditedById,
     this.lastEditedByName,
     this.lastEditedAt,
+    this.brandLogoUrl,
   });
 
   // factory sesuai contoh FlutterFire docs
@@ -66,13 +70,14 @@ class Item {
       description: data?['description'] as String?,
       category: data?['category'] as String?,
       imageUrl: data?['imageUrl'] as String?,
-      merk: data?['merk'] as String?,
+      brandId: data?['brandId'] as String?,
+      brandName: data?['brandName'] as String?,
       locationCode: data?['locationCode'] as String?,
       nameLowercase: data?['name_lowercase'] as String?,
       movementBaseScore: (data?['movementBaseScore'] ?? 0) as int,
       movementAutoScore: (data?['movementAutoScore'] ?? 0) as int,
       movementTotalScore: (data?['movementTotalScore'] ?? 0) as int,
-
+      partNumber: data?['partNumber'] as String?,
       createdById: data?['createdById'] as String?,
       createdByName: data?['createdByName'] as String?,
       createdAt: (data?['createdAt'] as Timestamp?)?.toDate(),
@@ -93,13 +98,14 @@ class Item {
       if (description != null) 'description': description,
       if (category != null) 'category': category,
       if (imageUrl != null) 'imageUrl': imageUrl,
-      if (merk != null) 'merk': merk,
+      if (brandId != null) 'brandId': brandId,
+      if (brandName != null) 'brandName': brandName,
       if (locationCode != null) 'locationCode': locationCode,
       if (nameLowercase != null) 'name_lowercase': nameLowercase,
       'movementBaseScore': movementBaseScore,
       'movementAutoScore': movementAutoScore,
       'movementTotalScore': movementTotalScore,
-
+      if (partNumber != null) 'partNumber': partNumber,
       if (createdById != null) 'createdById': createdById,
       if (createdByName != null) 'createdByName': createdByName,
       if (createdAt != null) 'createdAt': createdAt,
@@ -117,20 +123,23 @@ class Item {
     int? stock,
     String? description,
     String? locationCode,
+    String? partNumber,
     String? category,
     String? merk,
+    String? brandId,
+    String? brandName,
     String? imageUrl,
     String? nameLowercase,
     int? movementBaseScore,
     int? movementAutoScore,
     int? movementTotalScore,
-
     String? createdById,
     String? createdByName,
     DateTime? createdAt,
     String? lastEditedById,
     String? lastEditedByName,
     DateTime? lastEditedAt,
+    String? brandLogoUrl,
   }) {
     return Item(
       id: id ?? this.id,
@@ -141,19 +150,21 @@ class Item {
       description: description ?? this.description,
       locationCode: locationCode ?? this.locationCode,
       category: category ?? this.category,
-      merk: merk ?? this.merk,
+      brandId: brandId ?? this.brandId,
+      brandName: brandName ?? this.brandName,
       imageUrl: imageUrl ?? this.imageUrl,
       nameLowercase: nameLowercase ?? this.nameLowercase,
       movementBaseScore: movementBaseScore ?? this.movementBaseScore,
       movementAutoScore: movementAutoScore ?? this.movementAutoScore,
       movementTotalScore: movementTotalScore ?? this.movementTotalScore,
-
+      partNumber: partNumber ?? this.partNumber,
       createdById: createdById ?? this.createdById,
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,
       lastEditedById: lastEditedById ?? this.lastEditedById,
       lastEditedByName: lastEditedByName ?? this.lastEditedByName,
       lastEditedAt: lastEditedAt ?? this.lastEditedAt,
+      brandLogoUrl: brandLogoUrl ?? this.brandLogoUrl,
     );
   }
 }

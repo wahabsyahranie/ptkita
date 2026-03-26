@@ -9,6 +9,7 @@ import 'inventory_repository.dart';
 class FirestoreInventoryRepository implements InventoryRepository {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
+  final _brandCollection = FirebaseFirestore.instance.collection('brands');
 
   FirestoreInventoryRepository({
     FirebaseFirestore? firestore,
@@ -43,11 +44,12 @@ class FirestoreInventoryRepository implements InventoryRepository {
     }
 
     // Brand
+    // Brand
     if (filter.brands.isNotEmpty) {
       if (filter.brands.length == 1) {
-        query = query.where('merk', isEqualTo: filter.brands.first);
+        query = query.where('brandId', isEqualTo: filter.brands.first);
       } else {
-        query = query.where('merk', whereIn: filter.brands.toList());
+        query = query.where('brandId', whereIn: filter.brands.toList());
       }
     }
 
@@ -71,9 +73,35 @@ class FirestoreInventoryRepository implements InventoryRepository {
     }
 
     ////RETURN
-    return query.snapshots().map(
-      (snapshot) => snapshot.docs.map((e) => e.data()).toList(),
-    );
+    return query.snapshots().asyncMap((snapshot) async {
+      final items = snapshot.docs.map((e) => e.data()).toList();
+
+      final brandIds = items
+          .map((e) => e.brandId)
+          .whereType<String>()
+          .toSet()
+          .toList();
+
+      QuerySnapshot<Map<String, dynamic>> brandSnapshot;
+
+      if (brandIds.isEmpty) {
+        brandSnapshot = await _brandCollection.limit(0).get();
+      } else {
+        brandSnapshot = await _brandCollection
+            .where(FieldPath.documentId, whereIn: brandIds)
+            .get();
+      }
+
+      final brandMap = {for (var doc in brandSnapshot.docs) doc.id: doc.data()};
+
+      return items.map((item) {
+        final brandData = brandMap[item.brandId];
+
+        final logoUrl = (brandData?['logoUrl'] as String?) ?? '';
+
+        return item.copyWith(brandLogoUrl: logoUrl);
+      }).toList();
+    });
   }
 
   // PAGINATION
@@ -102,9 +130,9 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     if (filter.brands.isNotEmpty) {
       if (filter.brands.length == 1) {
-        query = query.where('merk', isEqualTo: filter.brands.first);
+        query = query.where('brandId', isEqualTo: filter.brands.first);
       } else {
-        query = query.where('merk', whereIn: filter.brands.toList());
+        query = query.where('brandId', whereIn: filter.brands.toList());
       }
     }
 
@@ -146,8 +174,33 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
     final hasMore = snapshot.docs.length == limit;
 
+    final brandIds = items
+        .map((e) => e.brandId)
+        .whereType<String>()
+        .toSet()
+        .toList();
+
+    QuerySnapshot<Map<String, dynamic>> brandSnapshot;
+
+    if (brandIds.isEmpty) {
+      brandSnapshot = await _brandCollection.limit(0).get();
+    } else {
+      brandSnapshot = await _brandCollection
+          .where(FieldPath.documentId, whereIn: brandIds)
+          .get();
+    }
+
+    final brandMap = {for (var doc in brandSnapshot.docs) doc.id: doc.data()};
+
+    final enrichedItems = items.map((item) {
+      final brandData = brandMap[item.brandId];
+      final logoUrl = (brandData?['logoUrl'] as String?) ?? '';
+
+      return item.copyWith(brandLogoUrl: logoUrl);
+    }).toList();
+
     return PaginatedResult<Item>(
-      items: items,
+      items: enrichedItems,
       cursor: lastDoc != null ? PaginationCursor(lastDoc) : null,
       hasMore: hasMore,
     );
@@ -155,10 +208,32 @@ class FirestoreInventoryRepository implements InventoryRepository {
 
   @override
   Stream<Item?> streamItemById(String id) {
-    return _collection
-        .doc(id)
-        .snapshots()
-        .map((snap) => snap.exists ? snap.data() : null);
+    return _collection.doc(id).snapshots().asyncMap((snap) async {
+      final item = snap.exists ? snap.data() : null;
+      if (item == null) return null;
+
+      final brandId = item.brandId;
+
+      QuerySnapshot<Map<String, dynamic>> brandSnapshot;
+
+      if (brandId == null) {
+        brandSnapshot = await _brandCollection.limit(0).get();
+      } else {
+        brandSnapshot = await _brandCollection.doc(brandId).get().then((doc) {
+          return FirebaseFirestore.instance
+              .collection('brands')
+              .where(FieldPath.documentId, whereIn: [doc.id])
+              .get();
+        });
+      }
+
+      final brandMap = {for (var doc in brandSnapshot.docs) doc.id: doc.data()};
+
+      final brandData = brandMap[item.brandId];
+      final logoUrl = (brandData?['logoUrl'] as String?) ?? '';
+
+      return item.copyWith(brandLogoUrl: logoUrl);
+    });
   }
 
   @override
@@ -218,22 +293,21 @@ class FirestoreInventoryRepository implements InventoryRepository {
     return await snapshot.ref.getDownloadURL();
   }
 
-  // =========================================================
-  // ====================== MIGRASI ===========================
-  // =========================================================
-  Future<void> migrateMovementFields() async {
-    final snapshot = await _firestore.collection('items').get();
+  @override
+  Future<bool> isPartNumberExists(
+    String partNumber, {
+    String? excludeId,
+  }) async {
+    final query = await _collection
+        .where('partNumber', isEqualTo: partNumber)
+        .get();
 
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-
-      if (!data.containsKey('movementTotalScore')) {
-        await doc.reference.update({
-          'movementBaseScore': 500,
-          'movementAutoScore': 0,
-          'movementTotalScore': 500,
-        });
+    for (final doc in query.docs) {
+      if (excludeId == null || doc.id != excludeId) {
+        return true;
       }
     }
+
+    return false;
   }
 }

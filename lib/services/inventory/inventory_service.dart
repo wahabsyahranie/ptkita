@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/core/enum/item_brand.dart';
-import 'package:flutter_kita/core/utils/brand_logo_mapper.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/inventory/inventory_filter_model.dart';
 import 'package:flutter_kita/repositories/inventory/inventory_repository.dart';
@@ -109,12 +107,54 @@ class InventoryService extends ChangeNotifier {
       throw Exception("Harga tidak boleh minus");
     }
 
-    final normalized = item.copyWith(
+    var normalized = item.copyWith(
       category: (item.category == null || item.category!.isEmpty)
           ? 'unit'
           : item.category,
-      merk: (item.merk == null || item.merk!.isEmpty) ? 'nomerk' : item.merk,
+      brandId: item.brandId ?? 'no_brand',
+      brandName: item.brandName ?? 'No Brand', // sementara default
+      partNumber: item.partNumber?.trim().toUpperCase(),
     );
+
+    // ==============================
+    // CATEGORY RULE VALIDATION
+    // ==============================
+
+    if (normalized.category == 'part') {
+      if (normalized.partNumber == null || normalized.partNumber!.isEmpty) {
+        throw Exception("Part Number wajib diisi untuk kategori part");
+      }
+    }
+
+    if (normalized.category == 'unit') {
+      if (normalized.partNumber != null && normalized.partNumber!.isNotEmpty) {
+        throw Exception("Unit tidak boleh memiliki Part Number");
+      }
+    }
+
+    if (normalized.category != 'unit' && normalized.category != 'part') {
+      throw Exception("Kategori tidak valid");
+    }
+
+    if (normalized.category == 'unit') {
+      // pastikan bersih total
+      normalized = normalized.copyWith(partNumber: null);
+    }
+
+    // ==============================
+    // UNIQUE PART NUMBER CHECK
+    // ==============================
+
+    if (normalized.category == 'part') {
+      final exists = await _repository.isPartNumberExists(
+        normalized.partNumber!,
+        excludeId: normalized.id,
+      );
+
+      if (exists) {
+        throw Exception("Part Number sudah digunakan");
+      }
+    }
 
     final UserModel? currentUser = await _userService.currentUserProfile.first;
 
@@ -206,10 +246,11 @@ class InventoryService extends ChangeNotifier {
       return CachedNetworkImageProvider(item.imageUrl!);
     }
 
-    final merk = ItemmerkX.fromString(item.merk);
-    final assetPath = merkLogoMapper.getAssetPath(merk);
+    if (item.brandLogoUrl != null && item.brandLogoUrl!.isNotEmpty) {
+      return CachedNetworkImageProvider(item.brandLogoUrl!);
+    }
 
-    return AssetImage(assetPath);
+    return const AssetImage('assets/brands/placeholder.png');
   }
 
   ////Movement Speed Label

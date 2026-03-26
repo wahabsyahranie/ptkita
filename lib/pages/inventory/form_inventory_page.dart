@@ -10,6 +10,8 @@ import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
+import 'package:flutter_kita/services/brand/brand_service.dart';
+import 'package:flutter_kita/repositories/brand/firestore_brand_repository.dart';
 
 class FormInventoryPage extends StatefulWidget {
   final Item? initialItem;
@@ -39,6 +41,10 @@ class _InventoryFormState extends State<FormInventoryPage> {
   late final TextEditingController _stockCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _locationCtrl;
+  late final TextEditingController _partNumberCtrl;
+  late final BrandService brandService;
+  String? selectedBrandId;
+  String? selectedBrandName;
 
   String? _selectedcategory;
   String? _selectedMerk;
@@ -57,13 +63,24 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _priceCtrl = TextEditingController(text: it?.price?.toString() ?? '');
     _stockCtrl = TextEditingController(text: it?.stock?.toString() ?? '');
     _descCtrl = TextEditingController(text: it?.description ?? '');
+    _partNumberCtrl = TextEditingController(text: it?.partNumber ?? '');
     _locationCtrl = TextEditingController(text: it?.locationCode ?? '');
 
     _selectedcategory = it?.category;
-    _selectedMerk = it?.merk;
     _existingImageUrl = it?.imageUrl;
 
-    _service = InventoryService(FirestoreInventoryRepository(), UserService(FirestoreUserRepository()));
+    _service = InventoryService(
+      FirestoreInventoryRepository(),
+      UserService(FirestoreUserRepository()),
+    );
+
+    if (widget.initialItem != null) {
+      selectedBrandId = widget.initialItem!.brandId;
+      selectedBrandName = widget.initialItem!.brandName;
+      _selectedMerk = widget.initialItem!.brandName;
+    }
+
+    brandService = BrandService(FirestoreBrandRepository());
   }
 
   @override
@@ -74,6 +91,7 @@ class _InventoryFormState extends State<FormInventoryPage> {
     _stockCtrl.dispose();
     _descCtrl.dispose();
     _locationCtrl.dispose();
+    _partNumberCtrl.dispose();
     super.dispose();
   }
 
@@ -216,8 +234,12 @@ class _InventoryFormState extends State<FormInventoryPage> {
         description: desc.isEmpty ? null : desc,
         locationCode: location,
         category: _selectedcategory,
-        merk: _selectedMerk,
+        brandId: selectedBrandId,
+        brandName: selectedBrandName,
         movementBaseScore: _movementBaseScore,
+        partNumber: _selectedcategory == "part"
+            ? _partNumberCtrl.text.trim()
+            : null,
       );
 
       await _service.saveItem(item, imageFile: _imageFile);
@@ -259,45 +281,54 @@ class _InventoryFormState extends State<FormInventoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              InventoryFormImageSection(
-                imageFile: _imageFile,
-                existingImageUrl: _existingImageUrl,
-                onTap: _showImageOptions,
-              ),
-              const SizedBox(height: 16),
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InventoryFormImageSection(
+                  imageFile: _imageFile,
+                  existingImageUrl: _existingImageUrl,
+                  onTap: _showImageOptions,
+                ),
+                const SizedBox(height: 16),
 
-              InventoryFormFieldsSection(
-                nameCtrl: _nameCtrl,
-                typeUnitCtrl: _typeUnitCtrl,
-                priceCtrl: _priceCtrl,
-                stockCtrl: _stockCtrl,
-                locationCtrl: _locationCtrl,
-                descCtrl: _descCtrl,
-                selectedcategory: _selectedcategory,
-                selectedMerk: _selectedMerk,
-                oncategoryChanged: (v) => setState(() => _selectedcategory = v),
-                onMerkChanged: (v) => setState(() => _selectedMerk = v),
-                movementBaseScore: _movementBaseScore,
-                onMovementChanged: (v) =>
-                    setState(() => _movementBaseScore = v),
-              ),
+                InventoryFormFieldsSection(
+                  nameCtrl: _nameCtrl,
+                  typeUnitCtrl: _typeUnitCtrl,
+                  priceCtrl: _priceCtrl,
+                  stockCtrl: _stockCtrl,
+                  locationCtrl: _locationCtrl,
+                  descCtrl: _descCtrl,
+                  selectedcategory: _selectedcategory,
+                  selectedMerk: _selectedMerk,
+                  oncategoryChanged: (v) =>
+                      setState(() => _selectedcategory = v),
+                  onMerkChanged: (v) => setState(() => _selectedMerk = v),
+                  movementBaseScore: _movementBaseScore,
+                  onMovementChanged: (v) =>
+                      setState(() => _movementBaseScore = v),
+                  partNumberCtrl: _partNumberCtrl,
+                  brandService: brandService,
+                  onBrandChanged: (brand) {
+                    selectedBrandId = brand?.id;
+                    selectedBrandName = brand?.name;
+                  },
+                ),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              InventoryFormSubmitButton(
-                isSaving: _isSaving,
-                label: widget.initialItem == null ? "Simpan" : "Update",
-                onPressed: _save,
-              ),
-            ],
+                InventoryFormSubmitButton(
+                  isSaving: _isSaving,
+                  label: widget.initialItem == null ? "Simpan" : "Update",
+                  onPressed: _save,
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
 import 'package:flutter_kita/pages/inventory/add_edit_inventory_page.dart';
+import 'package:flutter_kita/pages/inventory/widget/details_inventory_skeleton.dart';
 import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
@@ -40,11 +41,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
       stream: _service.streamItemById(widget.itemId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(color: MyColors.secondary),
-            ),
-          );
+          return const DetailsInventorySkeleton();
         }
 
         if (snapshot.hasError) {
@@ -126,7 +123,7 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
     final category = item.category ?? '-';
     final desc = item.description ?? '-';
     final imageProvider = _service.resolveImage(item);
-    final merk = item.merk ?? '-';
+    final brandName = item.brandName ?? '-';
     final locationCode = item.locationCode ?? '-';
     final movementLabel = _service.getMovementLabel(item);
     final movementColor = _service.getMovementColor(item);
@@ -216,7 +213,13 @@ class _DetailsInventoryPageState extends State<DetailsInventoryPage> {
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("Merk", merk),
+                if (category == 'part') ...[
+                  _rowInfo("Part Number", item.partNumber ?? "-"),
+                  const DottedlineWidget(),
+                  const SizedBox(height: 10),
+                ],
+
+                _rowInfo("Merk", brandName),
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 

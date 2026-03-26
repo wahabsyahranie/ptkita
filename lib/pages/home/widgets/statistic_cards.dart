@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/pages/home/widgets/statistic_cards_skeleton.dart';
 import '../../../styles/colors.dart';
 
 class StatisticCards extends StatelessWidget {
@@ -17,56 +18,45 @@ class StatisticCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildCard(
-            stream: totalItemsStream,
-            title: 'Total Item',
-            subtitle: 'Jenis barang terdaftar',
-            icon: Icons.inventory_2_outlined,
-            isAlertCondition: (value) => value < 0,
-            onTap: onTotalItemsTap,
-          ),
-        ),
-        const SizedBox(width: 15),
-        Expanded(
-          child: _buildCard(
-            stream: outOfStockStream,
-            title: 'Stok Habis',
-            subtitle: 'Stok yang kosong saat ini',
-            icon: Icons.production_quantity_limits_outlined,
-            isAlertCondition: (value) => value > 0,
-            onTap: onOutOfStockTap,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCard({
-    required Stream<int> stream,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool Function(int) isAlertCondition,
-    VoidCallback? onTap,
-  }) {
     return StreamBuilder<int>(
-      stream: stream,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return _statCard(title, '...', 'Memuat data', icon);
+      stream: totalItemsStream,
+      builder: (context, totalSnap) {
+        if (!totalSnap.hasData) {
+          return const StatisticCardsSkeleton();
         }
 
-        final value = snapshot.data!;
-        return _statCard(
-          title,
-          '$value',
-          subtitle,
-          icon,
-          isAlert: isAlertCondition(value),
-          onTap: onTap,
+        return StreamBuilder<int>(
+          stream: outOfStockStream,
+          builder: (context, outSnap) {
+            if (!outSnap.hasData) {
+              return const StatisticCardsSkeleton();
+            }
+
+            return Row(
+              children: [
+                Expanded(
+                  child: _statCard(
+                    'Total Item',
+                    '${totalSnap.data!}',
+                    'Jenis barang terdaftar',
+                    Icons.inventory_2_outlined,
+                    onTap: onTotalItemsTap,
+                  ),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: _statCard(
+                    'Stok Habis',
+                    '${outSnap.data!}',
+                    'Stok yang kosong saat ini',
+                    Icons.production_quantity_limits_outlined,
+                    isAlert: outSnap.data! > 0,
+                    onTap: onOutOfStockTap,
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

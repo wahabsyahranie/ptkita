@@ -7,6 +7,7 @@ import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_empty_state.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_filter_sheet.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/maintenance_list_skeleton.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
@@ -205,9 +206,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
               return Center(child: Text('Error: ${snapshot.error}'));
             }
             if (!snapshot.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(color: MyColors.secondary),
-              );
+              return const MaintenanceListSkeleton();
             }
 
             final items = snapshot.data!;
