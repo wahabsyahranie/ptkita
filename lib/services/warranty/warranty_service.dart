@@ -48,6 +48,7 @@ class WarrantyService {
           'buyerName': buyerName,
           'phone': phone,
           'productName': item.name,
+          'brandName': item.brandName,
 
           'serialNumber': serial,
 
@@ -58,6 +59,8 @@ class WarrantyService {
           'createdAt': FieldValue.serverTimestamp(),
 
           'status': 'Active',
+
+          'maxClaim': item.claimLimit,
           'claimCount': 0,
         });
       }

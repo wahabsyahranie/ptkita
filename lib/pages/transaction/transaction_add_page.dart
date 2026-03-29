@@ -53,6 +53,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   bool _hasWarranty = true;
   int _warrantyYear = 1;
   String _warrantyType = 'Jasa';
+  int? _claimLimit = 3;
 
   // =========================
   // TRANSACTION DATE
@@ -112,6 +113,16 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   void _addToCart() {
     if (_selectedItem == null) return;
 
+    if (_selectedItem!['stock'] == 0) {
+      _showAlert('Stok item habis');
+      return;
+    }
+
+    if (_qty > _selectedItem!['stock']) {
+      _showAlert('Jumlah melebihi stok tersedia');
+      return;
+    }
+
     final price = _selectedItem!['price'] as int;
 
     /// ambil serial number dari textfield
@@ -127,32 +138,56 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       }
     }
 
-    final cartItem = CartItemModel(
-      itemId: _selectedItem!['id'],
-      name: _selectedItem!['name'],
-      type: _selectedItem!['category'] ?? 'part',
-      price: price,
-      qty: _qty,
-      hasWarranty: _hasWarranty,
-      warrantyYear: _hasWarranty ? _warrantyYear : 0,
-      warrantyType: _hasWarranty ? _warrantyType : null,
-      serialNumbers: serialNumbers,
-    );
+    final isUnit = _selectedItem!['category'] == 'unit';
 
-    setState(() {
-      _cartItems.add(cartItem);
+    if (!isUnit) {
+      final index = _cartItems.indexWhere(
+        (e) => e.itemId == _selectedItem!['id'],
+      );
 
-      _selectedItem = null;
-      _selectedItemId = null;
-      _qty = 1;
+      if (index != -1) {
+        setState(() {
+          _cartItems[index] = _cartItems[index].copyWith(
+            qty: _cartItems[index].qty + _qty,
+          );
+        });
+        return;
+      }
+    }
 
-      _hasWarranty = true;
-      _warrantyYear = 1;
-      _warrantyType = 'Jasa';
+    if (isUnit) {
+      for (final sn in serialNumbers) {
+        final cartItem = CartItemModel(
+          itemId: _selectedItem!['id'],
+          name: _selectedItem!['name'],
+          type: _selectedItem!['category'] ?? 'unit',
+          brandName: _selectedItem!['brandName'],
+          price: price,
+          qty: 1,
+          hasWarranty: _hasWarranty,
+          warrantyYear: _hasWarranty ? _warrantyYear : 0,
+          warrantyType: _hasWarranty ? _warrantyType : null,
+          serialNumbers: [sn],
+          claimLimit: _hasWarranty ? _claimLimit : null,
+        );
 
-      /// reset serial controller
-      _serialControllers.clear();
-    });
+        _cartItems.add(cartItem);
+      }
+
+      setState(() {
+        _selectedItem = null;
+        _selectedItemId = null;
+        _qty = 1;
+
+        _hasWarranty = true;
+        _warrantyYear = 1;
+        _warrantyType = 'Jasa';
+
+        _serialControllers = [];
+      });
+
+      return;
+    }
   }
 
   // =========================
@@ -161,6 +196,11 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   bool _isSaving = false;
 
   Future<void> _submit() async {
+    if (_selectedItem != null) {
+      _showAlert('Selesaikan penambahan item terlebih dahulu');
+      return;
+    }
+
     if (_nameCtrl.text.trim().isEmpty) {
       _showAlert('Nama pelanggan wajib diisi');
       return;
@@ -267,7 +307,14 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                         hasWarranty: _hasWarranty,
                         warrantyYear: _warrantyYear,
                         warrantyType: _warrantyType,
+                        claimLimit: _claimLimit,
                         serialControllers: _serialControllers,
+
+                        onClaimLimitChanged: (v) {
+                          setState(() {
+                            _claimLimit = v;
+                          });
+                        },
 
                         onClose: () {
                           setState(() {
@@ -281,6 +328,8 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                         },
 
                         onQtyAdd: () {
+                          if (_selectedItem!['stock'] == 0) return;
+
                           if (_qty < _selectedItem!['stock']) {
                             setState(() {
                               _qty++;
@@ -318,7 +367,9 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                       const SizedBox(height: 12),
 
                       TextButton.icon(
-                        onPressed: _addToCart,
+                        onPressed: _selectedItem!['stock'] == 0
+                            ? null
+                            : _addToCart,
                         icon: const Icon(
                           Icons.add_circle_outline,
                           color: MyColors.secondary,
@@ -353,7 +404,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
 
             TransactionTotalBar(
               total: _total,
-              isDisabled: _cartItems.isEmpty,
+              isDisabled: _cartItems.isEmpty || _selectedItem != null,
               isLoading: _isSaving,
               onSubmit: _submit,
             ),

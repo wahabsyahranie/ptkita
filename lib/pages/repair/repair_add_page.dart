@@ -171,12 +171,13 @@ class _RepairAddPageState extends State<RepairAddPage> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      // ================= WARRANTY SNAPSHOT =================
+      // ================= WARRANTY CHECK =================
       if (isWarranty && _selectedWarrantyId != null) {
-        final warrantyDoc = await FirebaseFirestore.instance
+        final warrantyRef = FirebaseFirestore.instance
             .collection('warranty')
-            .doc(_selectedWarrantyId)
-            .get();
+            .doc(_selectedWarrantyId);
+
+        final warrantyDoc = await warrantyRef.get();
 
         if (!warrantyDoc.exists) {
           throw Exception('Garansi tidak ditemukan');
@@ -184,6 +185,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
 
         final warrantyData = warrantyDoc.data() as Map<String, dynamic>;
 
+        // cek expired
         final Timestamp expireAt = warrantyData['expireAt'];
         final bool isExpired = expireAt.toDate().isBefore(DateTime.now());
 
@@ -200,25 +202,52 @@ class _RepairAddPageState extends State<RepairAddPage> {
           return;
         }
 
+        // ================= CLAIM LIMIT CHECK =================
+        final int claimCount = warrantyData['claimCount'] ?? 0;
+        final int? maxClaim = warrantyData['maxClaim'];
+
+        if (maxClaim != null && claimCount >= maxClaim) {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Batas klaim garansi sudah tercapai')),
+          );
+
+          setState(() => _saving = false);
+          return;
+        }
+
+        // snapshot data warranty
         payload['warrantySnapshot'] = {
           'startAt': warrantyData['startAt'],
           'expireAt': warrantyData['expireAt'],
           'warrantyType': warrantyData['warrantyType'],
-          'claimCountBefore': warrantyData['claimCount'],
+          'claimCountBefore': claimCount,
+          'maxClaim': maxClaim,
         };
+
+        // buat repair
+        final docRef = await FirebaseFirestore.instance
+            .collection('repair')
+            .add(payload);
+
+        // increment claim
+        await warrantyRef.update({'claimCount': FieldValue.increment(1)});
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perbaikan berhasil ditambahkan')),
+        );
+
+        Navigator.of(context).pop({'ok': true, 'id': docRef.id});
+        return;
       }
 
+      // ================= NON WARRANTY =================
       final docRef = await FirebaseFirestore.instance
           .collection('repair')
           .add(payload);
-
-      // Update claimCount kalau warranty
-      if (isWarranty && _selectedWarrantyId != null) {
-        await FirebaseFirestore.instance
-            .collection('warranty')
-            .doc(_selectedWarrantyId)
-            .update({'claimCount': FieldValue.increment(1)});
-      }
 
       if (!mounted) return;
 

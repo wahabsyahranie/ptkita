@@ -9,7 +9,7 @@ class WarrantyModel {
   final String itemId;
   final String transactionId;
   final String warrantyType;
-  final String brand;
+  final String brandName;
 
   final DateTime startAt;
   final DateTime expireAt;
@@ -34,7 +34,7 @@ class WarrantyModel {
     required this.claimCount,
     required this.status,
     required this.createdAt,
-    required this.brand,
+    required this.brandName,
     this.maxClaim,
   });
 
@@ -54,8 +54,8 @@ class WarrantyModel {
       expireAt: (data['expireAt'] as Timestamp).toDate(),
       claimCount: data['claimCount'] ?? 0,
       status: data['status'] ?? 'Active',
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      brand: data['brand'] ?? '',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      brandName: data['brandName'] ?? data['brand'] ?? '',
       maxClaim: data['maxClaim'],
     );
   }
@@ -72,7 +72,7 @@ class WarrantyModel {
       'startAt': startAt,
       'expireAt': expireAt,
       'claimCount': claimCount,
-      'brand': brand,
+      'brandName': brandName,
       'maxClaim': maxClaim,
       'status': status,
       'createdAt': createdAt,

@@ -73,68 +73,70 @@ class TransactionDetailPage extends StatelessWidget {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        children: [
-          _Header(txCode: summary['txCode'], status: status, date: date),
-          const SizedBox(height: 16),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: [
+            _Header(txCode: summary['txCode'], status: status, date: date),
+            const SizedBox(height: 16),
 
-          _SectionCard(
-            title: 'Pelanggan',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _row('Nama', customer['name']),
-                _row('No HP', customer['phone']),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          _SectionCard(
-            title: 'Item Dibeli',
-            child: Column(
-              children: items.map((item) {
-                return _ItemRow(item: item);
-              }).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          _SectionCard(
-            title: 'Ringkasan',
-            child: Column(
-              children: [
-                _row('Total Item', '${summary['totalQty']}'),
-                const Divider(),
-                _row(
-                  'Subtotal',
-                  'Rp ${_fmt(summary['subtotal'])}',
-                  isBold: true,
-                ),
-              ],
-            ),
-          ),
-
-          if (hasWarranty) ...[
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: openWarrantyList,
-              icon: const Icon(Icons.verified_outlined),
-              label: const Text('Lihat Detail Garansi'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MyColors.secondary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+            _SectionCard(
+              title: 'Pelanggan',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _row('Nama', customer['name']),
+                  _row('No HP', customer['phone']),
+                ],
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            _SectionCard(
+              title: 'Item Dibeli',
+              child: Column(
+                children: items.map((item) {
+                  return _ItemRow(item: item);
+                }).toList(),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            _SectionCard(
+              title: 'Ringkasan',
+              child: Column(
+                children: [
+                  _row('Total Item', '${summary['totalQty']}'),
+                  const Divider(),
+                  _row(
+                    'Subtotal',
+                    'Rp ${_fmt(summary['subtotal'])}',
+                    isBold: true,
+                  ),
+                ],
+              ),
+            ),
+
+            if (hasWarranty) ...[
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: openWarrantyList,
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('Lihat Detail Garansi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MyColors.secondary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

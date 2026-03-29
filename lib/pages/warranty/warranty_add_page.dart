@@ -66,7 +66,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
       itemId: "",
       transactionId: "",
       warrantyType: "Jasa",
-      brand: _selectedBrand,
+      brandName: _selectedBrand,
       maxClaim: _maxClaim,
       startAt: _startDate!,
       expireAt: expireDate,
@@ -174,172 +174,175 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
         surfaceTintColor: Colors.transparent,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              const SizedBox(height: 6),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                const SizedBox(height: 6),
 
-              AppTextFormField(
-                controller: _buyerController,
-                label: "Nama Pelanggan",
-                validator: (value) => value == null || value.isEmpty
-                    ? "Nama pelanggan wajib diisi"
-                    : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              AppTextFormField(
-                controller: _phoneController,
-                label: "No. HP",
-                keyboardType: TextInputType.phone,
-                validator: (value) => value == null || value.isEmpty
-                    ? "Nomor HP wajib diisi"
-                    : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              AppTextFormField(
-                controller: _productController,
-                label: "Nama Barang",
-                validator: (value) => value == null || value.isEmpty
-                    ? "Nama barang wajib diisi"
-                    : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              AppTextFormField(
-                controller: _serialController,
-                label: "Nomor Seri",
-                validator: (value) => value == null || value.isEmpty
-                    ? "Nomor seri wajib diisi"
-                    : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  _startDate == null
-                      ? "Pilih Tanggal Transaksi"
-                      : "Tanggal Transaksi: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}",
+                AppTextFormField(
+                  controller: _buyerController,
+                  label: "Nama Pelanggan",
+                  validator: (value) => value == null || value.isEmpty
+                      ? "Nama pelanggan wajib diisi"
+                      : null,
                 ),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2015),
-                    lastDate: DateTime.now(),
-                  );
 
-                  if (picked != null) {
-                    setState(() {
-                      _startDate = picked;
-                    });
-                  }
-                },
-              ),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 12),
+                AppTextFormField(
+                  controller: _phoneController,
+                  label: "No. HP",
+                  keyboardType: TextInputType.phone,
+                  validator: (value) => value == null || value.isEmpty
+                      ? "Nomor HP wajib diisi"
+                      : null,
+                ),
 
-              /// BRAND
-              DropdownMenu<String>(
-                label: const Text("Brand"),
-                initialSelection: _selectedBrand,
-                inputDecorationTheme: dropdownDecoration(),
-                dropdownMenuEntries: brands
-                    .map(
-                      (brand) => DropdownMenuEntry(value: brand, label: brand),
-                    )
-                    .toList(),
-                onSelected: (value) {
-                  setState(() {
-                    _selectedBrand = value!;
-                  });
-                },
-              ),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 12),
+                AppTextFormField(
+                  controller: _productController,
+                  label: "Nama Barang",
+                  validator: (value) => value == null || value.isEmpty
+                      ? "Nama barang wajib diisi"
+                      : null,
+                ),
 
-              /// DURASI GARANSI
-              DropdownMenu<int>(
-                label: const Text("Durasi Garansi"),
-                initialSelection: _durationMonth,
-                inputDecorationTheme: dropdownDecoration(),
-                dropdownMenuEntries: const [
-                  DropdownMenuEntry(value: 12, label: "1 Tahun"),
-                  DropdownMenuEntry(value: 24, label: "2 Tahun"),
-                  DropdownMenuEntry(value: 36, label: "3 Tahun"),
-                ],
-                onSelected: (value) {
-                  setState(() {
-                    _durationMonth = value!;
-                  });
-                },
-              ),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 12),
+                AppTextFormField(
+                  controller: _serialController,
+                  label: "Nomor Seri",
+                  validator: (value) => value == null || value.isEmpty
+                      ? "Nomor seri wajib diisi"
+                      : null,
+                ),
 
-              /// BATAS KLAIM
-              DropdownMenu<int?>(
-                label: const Text("Batas Klaim"),
-                initialSelection: _maxClaim,
-                inputDecorationTheme: dropdownDecoration(),
-                dropdownMenuEntries: const [
-                  DropdownMenuEntry(value: null, label: "Tidak terbatas"),
-                  DropdownMenuEntry(value: 1, label: "1 Kali"),
-                  DropdownMenuEntry(value: 2, label: "2 Kali"),
-                  DropdownMenuEntry(value: 3, label: "3 Kali"),
-                  DropdownMenuEntry(value: 5, label: "5 Kali"),
-                ],
-                onSelected: (value) {
-                  setState(() {
-                    _maxClaim = value;
-                  });
-                },
-              ),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _confirmSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MyColors.secondary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    _startDate == null
+                        ? "Pilih Tanggal Transaksi"
+                        : "Tanggal Transaksi: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}",
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          "Simpan Garansi",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2015),
+                      lastDate: DateTime.now(),
+                    );
+
+                    if (picked != null) {
+                      setState(() {
+                        _startDate = picked;
+                      });
+                    }
+                  },
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 12),
+
+                /// BRAND
+                DropdownMenu<String>(
+                  label: const Text("Brand"),
+                  initialSelection: _selectedBrand,
+                  inputDecorationTheme: dropdownDecoration(),
+                  dropdownMenuEntries: brands
+                      .map(
+                        (brand) =>
+                            DropdownMenuEntry(value: brand, label: brand),
+                      )
+                      .toList(),
+                  onSelected: (value) {
+                    setState(() {
+                      _selectedBrand = value!;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                /// DURASI GARANSI
+                DropdownMenu<int>(
+                  label: const Text("Durasi Garansi"),
+                  initialSelection: _durationMonth,
+                  inputDecorationTheme: dropdownDecoration(),
+                  dropdownMenuEntries: const [
+                    DropdownMenuEntry(value: 12, label: "1 Tahun"),
+                    DropdownMenuEntry(value: 24, label: "2 Tahun"),
+                    DropdownMenuEntry(value: 36, label: "3 Tahun"),
+                  ],
+                  onSelected: (value) {
+                    setState(() {
+                      _durationMonth = value!;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                /// BATAS KLAIM
+                DropdownMenu<int?>(
+                  label: const Text("Batas Klaim"),
+                  initialSelection: _maxClaim,
+                  inputDecorationTheme: dropdownDecoration(),
+                  dropdownMenuEntries: const [
+                    DropdownMenuEntry(value: null, label: "Tidak terbatas"),
+                    DropdownMenuEntry(value: 1, label: "1 Kali"),
+                    DropdownMenuEntry(value: 2, label: "2 Kali"),
+                    DropdownMenuEntry(value: 3, label: "3 Kali"),
+                    DropdownMenuEntry(value: 5, label: "5 Kali"),
+                  ],
+                  onSelected: (value) {
+                    setState(() {
+                      _maxClaim = value;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _confirmSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MyColors.secondary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            "Simpan Garansi",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
