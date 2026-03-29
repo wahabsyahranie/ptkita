@@ -75,8 +75,8 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
     });
   }
 
-  void _onSearchChanged() async {
-    final query = _search.text.trim();
+  void _onSearchChanged(String text) async {
+    final query = text.trim();
 
     if (query.isEmpty) {
       setState(() {
@@ -93,6 +93,9 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
     await Future.delayed(const Duration(milliseconds: 200));
 
     final ids = _historyService.search(query);
+
+    // print("SEARCH IDS: $ids");
+    // print("REPAIRS IDS: ${repairs.map((e) => e.id).toList()}");
 
     setState(() {
       filteredRepairs = repairs.where((r) => ids.contains(r.id)).toList();
@@ -148,7 +151,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
                   Expanded(
                     child: RepairSearchBar(
                       controller: _search,
-                      onChanged: _onSearchChanged,
+                      onChanged: (text) => _onSearchChanged(text),
                     ),
                   ),
                   const SizedBox(width: 10),

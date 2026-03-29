@@ -9,7 +9,7 @@ class RepairSearchBar extends StatelessWidget {
   });
 
   final TextEditingController controller;
-  final VoidCallback onChanged;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class RepairSearchBar extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              onChanged: (_) => onChanged(),
+              onChanged: onChanged,
               decoration: const InputDecoration(
                 hintText: 'Cari riwayat perbaikan',
                 hintStyle: TextStyle(color: MyColors.secondary),
@@ -40,7 +40,7 @@ class RepairSearchBar extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 controller.clear();
-                onChanged();
+                onChanged('');
               },
               child: const Icon(Icons.close_rounded, color: MyColors.secondary),
             ),
