@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_kita/models/warranty/warranty_model.dart';
 import 'package:flutter_kita/services/warranty/warranty_service.dart';
 import 'package:flutter_kita/core/widgets/forms/app_text.dart';
@@ -15,14 +14,13 @@ class WarrantyAddPage extends StatefulWidget {
 class _WarrantyAddPageState extends State<WarrantyAddPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Brand policy (semi-dynamic)
-  static const Map<String, int?> brandClaimPolicy = {
-    "Firman": null, // unlimited
-    "Dewalt": 3,
-    "Black & Decker": 3,
-    "DCA": 3,
-    "Stanley": 3,
-  };
+  final List<String> brands = [
+    "Firman",
+    "Dewalt",
+    "Black & Decker",
+    "DCA",
+    "Stanley",
+  ];
 
   String _selectedBrand = "Firman";
 
@@ -33,6 +31,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
   DateTime? _startDate;
   int _durationMonth = 12;
+  int? _maxClaim = 3;
 
   bool _isLoading = false;
 
@@ -57,10 +56,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
     setState(() => _isLoading = true);
 
     final expireDate = calculateExpireDate();
-
     final status = DateTime.now().isAfter(expireDate) ? "Expired" : "Active";
-
-    final maxClaim = brandClaimPolicy[_selectedBrand];
 
     final warranty = WarrantyModel(
       buyerName: _buyerController.text.trim(),
@@ -71,7 +67,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
       transactionId: "",
       warrantyType: "Jasa",
       brand: _selectedBrand,
-      maxClaim: maxClaim,
+      maxClaim: _maxClaim,
       startAt: _startDate!,
       expireAt: expireDate,
       claimCount: 0,
@@ -117,34 +113,26 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
                 "Simpan Garansi?",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
-
               const SizedBox(height: 10),
-
               const Text(
                 "Data garansi yang sudah disimpan tidak dapat dihapus dari aplikasi.",
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 24),
-
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+                      onPressed: () => Navigator.pop(context),
                       child: const Text("Batal"),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        _saveWarranty(); // ← DISINI dipanggil
+                        _saveWarranty();
                       },
                       child: const Text("Simpan"),
                     ),
@@ -158,11 +146,27 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
     );
   }
 
+  InputDecorationTheme dropdownDecoration() {
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: MyColors.secondary, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyColors.white,
-
       appBar: AppBar(
         title: const Text("Tambah Garansi"),
         backgroundColor: MyColors.white,
@@ -245,121 +249,62 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
               const SizedBox(height: 12),
 
-              DropdownButtonFormField<String>(
-                initialValue: _selectedBrand,
-                decoration: InputDecoration(
-                  labelText: "Brand",
-
-                  filled: true,
-                  fillColor: Colors.white,
-
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
-                  ),
-
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: MyColors.secondary,
-                      width: 2,
-                    ),
-                  ),
-                ),
-                items: brandClaimPolicy.keys
+              /// BRAND
+              DropdownMenu<String>(
+                label: const Text("Brand"),
+                initialSelection: _selectedBrand,
+                inputDecorationTheme: dropdownDecoration(),
+                dropdownMenuEntries: brands
                     .map(
-                      (brand) =>
-                          DropdownMenuItem(value: brand, child: Text(brand)),
+                      (brand) => DropdownMenuEntry(value: brand, label: brand),
                     )
                     .toList(),
-                onChanged: (val) {
+                onSelected: (value) {
                   setState(() {
-                    _selectedBrand = val!;
+                    _selectedBrand = value!;
                   });
                 },
               ),
 
               const SizedBox(height: 12),
 
-              DropdownButtonFormField<int>(
-                initialValue: _durationMonth,
-                decoration: InputDecoration(
-                  labelText: "Durasi Garansi",
-
-                  filled: true,
-                  fillColor: Colors.white,
-
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
-                  ),
-
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: MyColors.secondary,
-                      width: 2,
-                    ),
-                  ),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 12, child: Text("1 Tahun")),
-                  DropdownMenuItem(value: 24, child: Text("2 Tahun")),
-                  DropdownMenuItem(value: 36, child: Text("3 Tahun")),
+              /// DURASI GARANSI
+              DropdownMenu<int>(
+                label: const Text("Durasi Garansi"),
+                initialSelection: _durationMonth,
+                inputDecorationTheme: dropdownDecoration(),
+                dropdownMenuEntries: const [
+                  DropdownMenuEntry(value: 12, label: "1 Tahun"),
+                  DropdownMenuEntry(value: 24, label: "2 Tahun"),
+                  DropdownMenuEntry(value: 36, label: "3 Tahun"),
                 ],
-                onChanged: (val) {
+                onSelected: (value) {
                   setState(() {
-                    _durationMonth = val!;
+                    _durationMonth = value!;
                   });
                 },
               ),
 
               const SizedBox(height: 12),
 
-              if (_startDate != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.schedule, color: Colors.blue),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "Garansi berlaku hingga: "
-                          "${calculateExpireDate().day}/"
-                          "${calculateExpireDate().month}/"
-                          "${calculateExpireDate().year}",
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              /// BATAS KLAIM
+              DropdownMenu<int?>(
+                label: const Text("Batas Klaim"),
+                initialSelection: _maxClaim,
+                inputDecorationTheme: dropdownDecoration(),
+                dropdownMenuEntries: const [
+                  DropdownMenuEntry(value: null, label: "Tidak terbatas"),
+                  DropdownMenuEntry(value: 1, label: "1 Kali"),
+                  DropdownMenuEntry(value: 2, label: "2 Kali"),
+                  DropdownMenuEntry(value: 3, label: "3 Kali"),
+                  DropdownMenuEntry(value: 5, label: "5 Kali"),
+                ],
+                onSelected: (value) {
+                  setState(() {
+                    _maxClaim = value;
+                  });
+                },
+              ),
 
               const SizedBox(height: 24),
 
@@ -367,7 +312,6 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _confirmSave,
-
                   style: ElevatedButton.styleFrom(
                     backgroundColor: MyColors.secondary,
                     foregroundColor: Colors.white,
@@ -377,7 +321,6 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
