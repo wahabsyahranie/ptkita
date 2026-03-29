@@ -37,19 +37,17 @@ class TransactionRepository {
 
       final List<String> fields = [];
 
-      /// customer
-      fields.add(customer['name'] ?? "");
-      fields.add(customer['phone'] ?? "");
+      fields.add((customer['name'] ?? "").toString().toLowerCase());
+      fields.add((customer['phone'] ?? "").toString().toLowerCase());
+      fields.add((summary['txCode'] ?? "").toString().toLowerCase());
 
-      /// transaction code
-      fields.add(summary['txCode'] ?? "");
-
-      /// items array
       for (var item in items) {
-        fields.add(item['name'] ?? "");
+        fields.add((item['name'] ?? "").toString().toLowerCase());
       }
 
-      _searchEngine.addDocument(doc.id, fields);
+      if (fields.any((f) => f.trim().isNotEmpty)) {
+        _searchEngine.addDocument(doc.id, fields);
+      }
     }
 
     return {"data": snapshot.docs, "lastDoc": newLastDoc};

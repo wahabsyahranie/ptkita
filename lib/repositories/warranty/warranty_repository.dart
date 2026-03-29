@@ -38,7 +38,9 @@ class WarrantyRepository {
         (data['transactionId'] ?? "").toString().toLowerCase(),
       ];
 
-      _searchEngine.addDocument(doc.id, fields);
+      if (fields.any((f) => f.trim().isNotEmpty)) {
+        _searchEngine.addDocument(doc.id, fields);
+      }
     }
 
     final warranties = snapshot.docs

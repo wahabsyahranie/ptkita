@@ -51,7 +51,9 @@ class RepairRepository {
       ];
       // print("INDEX BUILD: ${doc.id} -> $fields");
 
-      _searchEngine.addDocument(doc.id, fields);
+      if (fields.any((f) => f.trim().isNotEmpty)) {
+        _searchEngine.addDocument(doc.id, fields);
+      }
     }
 
     return snap.docs.map((doc) => RepairModel.fromFirestore(doc)).toList();
