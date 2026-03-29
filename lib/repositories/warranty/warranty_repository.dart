@@ -4,13 +4,17 @@ import '../../core/search/search_engine.dart';
 
 class WarrantyRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   final InvertedIndex _searchEngine = InvertedIndex();
 
   Future<Map<String, dynamic>> getWarranties({
     DocumentSnapshot? lastDoc,
     int limit = 20,
+    bool refresh = false,
   }) async {
+    if (refresh) {
+      _searchEngine.clear();
+    }
+
     Query query = _firestore
         .collection('warranty')
         .orderBy('createdAt', descending: true)
@@ -27,17 +31,16 @@ class WarrantyRepository {
       final data = doc.data() as Map<String, dynamic>;
 
       final List<String> fields = [
-        data['buyerName'] ?? "",
-        data['phone'] ?? "",
-        data['productName'] ?? "",
-        data['serialNumber'] ?? "",
-        data['transactionId'] ?? "",
+        (data['buyerName'] ?? "").toString().toLowerCase(),
+        (data['phone'] ?? "").toString().toLowerCase(),
+        (data['productName'] ?? "").toString().toLowerCase(),
+        (data['serialNumber'] ?? "").toString().toLowerCase(),
+        (data['transactionId'] ?? "").toString().toLowerCase(),
       ];
 
       _searchEngine.addDocument(doc.id, fields);
     }
 
-    /// CONVERT TO MODEL
     final warranties = snapshot.docs
         .map((doc) => WarrantyModel.fromFirestore(doc))
         .toList();
@@ -52,6 +55,6 @@ class WarrantyRepository {
   }
 
   List<String> search(String query) {
-    return _searchEngine.search(query).toList();
+    return _searchEngine.search(query.toLowerCase()).toList();
   }
 }

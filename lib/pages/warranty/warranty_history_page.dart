@@ -93,8 +93,8 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
     await _loadMore();
   }
 
-  void _onSearchChanged() {
-    final query = _searchCtrl.text.trim();
+  void _onSearchChanged(String text) async {
+    final query = text.trim().toLowerCase();
 
     if (query.isEmpty) {
       setState(() {
@@ -184,7 +184,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
           children: [
             WarrantySearchSection(
               controller: _searchCtrl,
-              onSearch: (_) => _onSearchChanged(),
+              onSearch: _onSearchChanged,
               onFilterTap: _openFilterSheet,
             ),
 
@@ -210,7 +210,9 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
                     return ListView.separated(
                       controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      itemCount: displayList.length + 1,
+                      itemCount: _searchCtrl.text.isEmpty
+                          ? displayList.length + 1
+                          : displayList.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, i) {
                         if (i < displayList.length) {
@@ -218,7 +220,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
                           return WarrantyCard(warranty: w);
                         }
 
-                        if (_hasMore) {
+                        if (_searchCtrl.text.isEmpty && _hasMore) {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 20),
                             child: Center(child: CircularProgressIndicator()),
