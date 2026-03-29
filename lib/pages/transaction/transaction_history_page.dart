@@ -30,7 +30,9 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   bool _isSearching = false;
   String _dateFilter = "all";
 
+  // ignore: unused_field
   DateTime? _startDate;
+  // ignore: unused_field
   DateTime? _endDate;
 
   @override

@@ -11,6 +11,8 @@ import 'widgets/transaction_total_bar.dart';
 import '../../models/transaction/cart_item_model.dart';
 import '../../services/transaction/transaction_service.dart';
 
+import 'package:flutter_kita/core/search/search_engine.dart';
+
 class TransactionAddPage extends StatefulWidget {
   const TransactionAddPage({super.key});
 
@@ -45,6 +47,11 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   List<Map<String, dynamic>> _items = [];
   String? _selectedItemId;
   Map<String, dynamic>? _selectedItem;
+
+  // =========================
+  // INVERTED INDEC SEARCH ENGINE
+  // =========================
+  final InvertedIndex _itemSearch = InvertedIndex();
 
   // =========================
   // ITEM FORM STATE
@@ -89,10 +96,30 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   Future<void> _loadItems() async {
     final snap = await _db.collection('items').get();
 
+    final loaded = snap.docs.map((d) {
+      return {'id': d.id, ...d.data()};
+    }).toList();
+
+    /// reset index
+    _itemSearch.clear();
+
+    /// build inverted index
+    for (final item in loaded) {
+      final fields = [
+        item['name'],
+        item['brandName'],
+        item['category'],
+        item['typeUnit'],
+        item['rack'],
+      ].whereType<String>().toList();
+
+      if (fields.isNotEmpty) {
+        _itemSearch.addDocument(item['id'].toString(), fields);
+      }
+    }
+
     setState(() {
-      _items = snap.docs.map((d) {
-        return {'id': d.id, ...d.data()};
-      }).toList();
+      _items = loaded;
     });
   }
 
@@ -283,6 +310,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
 
                     ItemSelector(
                       items: _items,
+                      searchEngine: _itemSearch,
                       selectedItemId: _selectedItemId,
                       onChanged: (v) {
                         setState(() {

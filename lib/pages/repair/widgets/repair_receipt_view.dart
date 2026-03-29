@@ -158,6 +158,7 @@ class RepairReceiptView extends StatelessWidget {
 
   /// ================= BADGE WARRANTY =================
   Widget _buildWarrantyBadge() {
+    // ignore: prefer_const_declarations
     final baseColor = MyColors.info;
 
     return Container(
