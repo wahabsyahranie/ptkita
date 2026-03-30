@@ -202,7 +202,12 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, i) {
                           if (i < filtered.length) {
-                            return RepairCard(model: filtered[i]);
+                            return RepairCard(
+                              model: filtered[i],
+                              onUpdated: () {
+                                loadRepairs(refresh: true);
+                              },
+                            );
                           }
 
                           if (!_historyService.hasMore) {

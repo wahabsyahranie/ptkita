@@ -119,7 +119,7 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
   // ================= BOTTOM SHEET =================
 
   Future<void> _showCompleteForm() async {
-    showModalBottomSheet(
+    final res = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -130,12 +130,18 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
           detailCtrl: _detailCtrl,
           costCtrl: _costCtrl,
           onSubmit: () async {
-            Navigator.pop(context);
             await _markSelesai();
+            if (!mounted) return;
+            Navigator.pop(context, true);
           },
         );
       },
     );
+
+    if (res == true) {
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    }
   }
 
   // ================= WHATSAPP =================
