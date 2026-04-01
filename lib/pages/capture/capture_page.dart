@@ -96,6 +96,7 @@ class _CapturePageState extends State<CapturePage> with WidgetsBindingObserver {
     try {
       final XFile image = await _controller!.takePicture();
 
+      // 🔥 kasih delay biar camera release dulu
       await Future.delayed(const Duration(milliseconds: 200));
 
       if (!mounted) return;
@@ -197,11 +198,25 @@ class _CapturePageState extends State<CapturePage> with WidgetsBindingObserver {
                         ),
                       )
                     : (_controller != null && _controller!.value.isInitialized)
-                    ? CameraPreview(_controller!)
+                    ? ClipRect(
+                        child: OverflowBox(
+                          alignment: Alignment.center,
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: SizedBox(
+                              width: _controller!.value.previewSize!.height,
+                              height: _controller!.value.previewSize!.width,
+                              child: CameraPreview(_controller!),
+                            ),
+                          ),
+                        ),
+                      )
                     : const SizedBox(),
               ),
 
+              // ======================
               // TOP BAR
+              // ======================
               Positioned(
                 top: 16,
                 left: 20,
@@ -240,7 +255,9 @@ class _CapturePageState extends State<CapturePage> with WidgetsBindingObserver {
                 ),
               ),
 
+              // ======================
               // BOTTOM BAR
+              // ======================
               Positioned(
                 left: 0,
                 right: 0,
@@ -253,6 +270,7 @@ class _CapturePageState extends State<CapturePage> with WidgetsBindingObserver {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
+                        // CAPTURE BUTTON
                         GestureDetector(
                           onTap: _takePhoto,
                           child: Container(
@@ -268,6 +286,8 @@ class _CapturePageState extends State<CapturePage> with WidgetsBindingObserver {
                             ),
                           ),
                         ),
+
+                        // GALLERY BUTTON
                         Positioned(
                           left: 48,
                           child: GestureDetector(

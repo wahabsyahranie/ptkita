@@ -7,8 +7,15 @@ import 'package:flutter_kita/styles/colors.dart';
 
 class AnalysisFailPage extends StatefulWidget {
   final XFile imageFile;
+  final String status;
+  final String? detectedLabel; // 🔥 tambahan
 
-  const AnalysisFailPage({super.key, required this.imageFile});
+  const AnalysisFailPage({
+    super.key,
+    required this.imageFile,
+    required this.status,
+    this.detectedLabel,
+  });
 
   @override
   State<AnalysisFailPage> createState() => _AnalysisFailPageState();
@@ -34,9 +41,9 @@ class _AnalysisFailPageState extends State<AnalysisFailPage> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Gagal membuka galeri")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Gagal membuka galeri")),
+      );
     } finally {
       isPicking = false;
     }
@@ -44,38 +51,62 @@ class _AnalysisFailPageState extends State<AnalysisFailPage> {
 
   @override
   Widget build(BuildContext context) {
+    String title;
+    String message;
+
+    // 🔥 warna & icon beda
+    Color mainColor =
+        widget.status == 'failed' ? Colors.orange : Colors.red;
+
+    IconData iconData =
+        widget.status == 'failed'
+            ? Icons.warning_amber_rounded
+            : Icons.search_off;
+
+    // ===============================
+    // LOGIC STATUS
+    // ===============================
+    if (widget.status == 'failed') {
+      title = "Tidak Ada Objek Terdeteksi";
+      message =
+          "Kami tidak dapat mengidentifikasi objek dalam gambar.\n"
+          "Coba gunakan pencahayaan yang lebih baik.";
+    } else {
+      title = "Barang Tidak Ditemukan";
+      message =
+          "Barang terdeteksi (${widget.detectedLabel ?? '-'})\n"
+          "tetapi tidak tersedia di inventory.";
+    }
+
     return Scaffold(
       backgroundColor: MyColors.white,
       body: SafeArea(
         child: Column(
           children: [
-            // ======================
-            //   KONTEN UTAMA
-            // ======================
             Expanded(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // ICON X
+                    // 🔥 ICON
                     Container(
                       width: 150,
                       height: 150,
                       decoration: BoxDecoration(
-                        color: MyColors.secondary.withValues(alpha: 0.25),
+                        color: mainColor.withOpacity(0.2),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: Container(
                           width: 100,
                           height: 100,
-                          decoration: const BoxDecoration(
-                            color: MyColors.secondary,
+                          decoration: BoxDecoration(
+                            color: mainColor,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.close,
-                            color: MyColors.white,
+                          child: Icon(
+                            iconData,
+                            color: Colors.white,
                             size: 52,
                           ),
                         ),
@@ -84,26 +115,26 @@ class _AnalysisFailPageState extends State<AnalysisFailPage> {
 
                     const SizedBox(height: 32),
 
-                    const Text(
-                      "Tidak Ada Objek Terdeteksi",
+                    // TITLE
+                    Text(
+                      title,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
+                        color: mainColor,
                       ),
                     ),
 
                     const SizedBox(height: 14),
 
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 42),
+                    // MESSAGE
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 42),
                       child: Text(
-                        "Kami tidak dapat mengidentifikasi objek\n"
-                        "apapun dalam gambar Anda. Coba\n"
-                        "posisikan kamera dengan pencahayaan\n"
-                        "yang lebih baik",
+                        message,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.black54,
                           height: 1.5,
@@ -115,9 +146,7 @@ class _AnalysisFailPageState extends State<AnalysisFailPage> {
               ),
             ),
 
-            // ======================
-            //   AMBIL ULANG
-            // ======================
+            // 🔁 RETAKE BUTTON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: PrimaryOutlineButton(
@@ -130,9 +159,7 @@ class _AnalysisFailPageState extends State<AnalysisFailPage> {
 
             const SizedBox(height: 14),
 
-            // ======================
-            //   PILIH DARI GALERI
-            // ======================
+            // 🖼️ GALLERY BUTTON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: GestureDetector(

@@ -7,8 +7,6 @@ import 'analysis_fail_page.dart';
 import 'widget/retake_button_widget.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/services/detection_service.dart';
-import 'package:flutter_kita/services/firestore_service.dart';
-import 'package:flutter_kita/models/inventory/item_model.dart';
 
 class PreviewCapturePage extends StatefulWidget {
   final XFile imageFile;
@@ -23,6 +21,22 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
   bool isLoading = false;
 
   // ===============================
+  // HELPER NAVIGATION
+  // ===============================
+  void goToFail(String status, {String? detectedLabel}) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AnalysisFailPage(
+          imageFile: widget.imageFile,
+          status: status,
+          detectedLabel: detectedLabel, // 🔥 kirim label kalau ada
+        ),
+      ),
+    );
+  }
+
+  // ===============================
   // ANALYZE IMAGE
   // ===============================
   Future<void> analyzeImage() async {
@@ -33,30 +47,45 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
     try {
       final file = File(widget.imageFile.path);
 
-      // 1️⃣ Kirim ke Flask
       final result = await DetectionService.detect(file);
 
       if (!mounted) return;
 
-      print("DECODE RESULT: $result");
+      print("RESULT API: $result");
 
-      final List predictions = result['predictions'] ?? [];
+      final status = result['status'];
 
-      // 2️⃣ Jika tidak ada prediksi
-      if (predictions.isEmpty) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AnalysisFailPage(imageFile: widget.imageFile),
-          ),
-        );
-        return;
+      // ===============================
+      // ❌ FAILED (tidak terdeteksi)
+      // ===============================
+      if (status == 'failed') {
+        return goToFail('failed');
       }
 
-      // 3️⃣ Ambil detection pertama
+      // ===============================
+      // ⚠️ NOT FOUND (tidak ada di DB)
+      // ===============================
+      if (status == 'not_found') {
+        return goToFail(
+          'not_found',
+          detectedLabel: result['part_number'], // 🔥 penting
+        );
+      }
+
+      // ===============================
+      // ✅ SUCCESS
+      // ===============================
+      final data = result['data'];
+      final predictions = result['predictions'] ?? [];
+
+      // safety fallback
+      if (predictions.isEmpty) {
+        return goToFail('failed');
+      }
+
       final first = predictions.first;
 
-      final String label = first['class'];
+      final String label = result['part_number'];
       final double confidence = (first['confidence'] as num).toDouble();
 
       final Map<String, dynamic> box = {
@@ -66,24 +95,6 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
         'y2': first['y2'],
       };
 
-      print("Label YOLO: $label");
-
-      // 4️⃣ Query Firestore
-      final Item? item = await FirestoreService.getItemByName(label);
-
-      if (!mounted) return;
-
-      if (item == null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AnalysisFailPage(imageFile: widget.imageFile),
-          ),
-        );
-        return;
-      }
-
-      // 5️⃣ Success
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -92,7 +103,7 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
             label: label,
             confidence: confidence,
             box: box,
-            item: item,
+            data: data,
           ),
         ),
       );
@@ -101,9 +112,9 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Gagal menghubungi server")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Gagal menghubungi server")),
+      );
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -119,101 +130,113 @@ class _PreviewCapturePageState extends State<PreviewCapturePage> {
     return Scaffold(
       backgroundColor: MyColors.white,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            const SizedBox(height: 16),
+            Column(
+              children: [
+                const SizedBox(height: 16),
 
-            // BACK BUTTON
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: MyColors.secondary,
-                      size: 38,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            // IMAGE PREVIEW
-            Expanded(
-              child: Center(
-                child: Container(
-                  width: 325,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: MyColors.secondary, width: 1),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.file(
-                      File(widget.imageFile.path),
-                      fit: BoxFit.cover,
-                      cacheWidth: 800,
-                    ),
+                // BACK BUTTON
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: MyColors.secondary,
+                          size: 38,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
-            // RETAKE BUTTON
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: PrimaryOutlineButton(
-                text: "Ambil Ulang",
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ANALYZE BUTTON
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: GestureDetector(
-                onTap: isLoading ? null : analyzeImage,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: MyColors.secondary,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
+                // IMAGE PREVIEW
+                Expanded(
                   child: Center(
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            "Analisis",
-                            style: TextStyle(
-                              color: MyColors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    child: Container(
+                      width: 325,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: MyColors.secondary, width: 1),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.file(
+                          File(widget.imageFile.path),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 20),
+
+                // RETAKE BUTTON
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  child: PrimaryOutlineButton(
+                    text: "Ambil Ulang",
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ANALYZE BUTTON
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  child: GestureDetector(
+                    onTap: isLoading ? null : analyzeImage,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: MyColors.secondary,
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: Center(
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                "Analisis",
+                                style: TextStyle(
+                                  color: MyColors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+              ],
             ),
 
-            const SizedBox(height: 32),
+            // 🔥 LOADING OVERLAY (lebih profesional)
+            if (isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.4),
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+              ),
           ],
         ),
       ),
