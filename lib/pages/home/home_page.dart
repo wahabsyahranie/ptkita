@@ -31,6 +31,12 @@ class _HomePageState extends State<HomePage> {
   late final Future<RepairSummaryModel> _repairSummaryFuture;
   late Future<RepairChartModel> _chartFuture;
 
+  // ✅ TAMBAHKAN INI
+  late final Stream<int> _totalMaintenanceStream;
+  late final Stream<int> _completedMaintenanceStream;
+  late final Stream<int> _totalItemsStream;
+  late final Stream<int> _outOfStockStream;
+
   //menambah controller search bar di sini
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
@@ -45,9 +51,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+
     _homeService = HomeService(FirestoreHomeRepository());
+
     _repairSummaryFuture = _homeService.repairSummary(30);
     _chartFuture = _homeService.chartData(_chartMode);
+
+    // ✅ CACHE STREAM (INI YANG PALING PENTING)
+    _totalMaintenanceStream = _homeService.totalMaintenanceToday();
+    _completedMaintenanceStream = _homeService.completedMaintenanceToday();
+    _totalItemsStream = _homeService.totalItems();
+    _outOfStockStream = _homeService.outOfStock();
   }
 
   @override
@@ -64,8 +78,8 @@ class _HomePageState extends State<HomePage> {
               _header(),
               const SizedBox(height: 25),
               MaintenanceCard(
-                totalStream: _homeService.totalMaintenanceToday(),
-                completedStream: _homeService.completedMaintenanceToday(),
+                totalStream: _totalMaintenanceStream,
+                completedStream: _completedMaintenanceStream,
                 onStreamTap: () {
                   Navigator.push(
                     context,
@@ -75,7 +89,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
               StatisticCards(
-                totalItemsStream: _homeService.totalItems(),
+                totalItemsStream: _totalItemsStream,
                 onTotalItemsTap: () {
                   Navigator.push(
                     context,
@@ -87,7 +101,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   );
                 },
-                outOfStockStream: _homeService.outOfStock(),
+                outOfStockStream: _outOfStockStream,
                 onOutOfStockTap: () {
                   Navigator.push(
                     context,

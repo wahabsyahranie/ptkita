@@ -50,6 +50,7 @@ class MaintenanceCard extends StatelessWidget {
         );
       },
     );
+  
   }
 
   Widget _buildCard(
