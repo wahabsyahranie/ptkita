@@ -242,7 +242,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                     final n = num.tryParse(
                       v.replaceAll(',', '').replaceAll('.', ''),
                     );
-                    if (n == null) return 'Masukkan angka yang valid';
+                    if (n == null || n <= 0) return 'Interval tidak valid';
                     return null;
                   },
                 ),

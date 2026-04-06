@@ -93,7 +93,7 @@ class _AnalysisFailPageState extends State<AnalysisFailPage> {
                       width: 150,
                       height: 150,
                       decoration: BoxDecoration(
-                        color: mainColor.withOpacity(0.2),
+                        color: mainColor.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
