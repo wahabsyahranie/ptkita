@@ -76,7 +76,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     }
 
     _docs.addAll(newDocs);
-    _filteredDocs = List.from(_docs);
+    _applyDateFilter();
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -117,6 +117,58 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
       _isSearching = false;
     });
+  }
+
+  void _applyDateFilter() {
+    final now = DateTime.now();
+
+    if (_dateFilter == "all") {
+      _filteredDocs = List.from(_docs);
+      return;
+    }
+
+    if (_dateFilter == "today") {
+      _filteredDocs = _docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final date = (data['date'] as Timestamp).toDate();
+
+        return date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day;
+      }).toList();
+    }
+
+    if (_dateFilter == "7days") {
+      final last7 = now.subtract(const Duration(days: 7));
+
+      _filteredDocs = _docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final date = (data['date'] as Timestamp).toDate();
+
+        return date.isAfter(last7);
+      }).toList();
+    }
+
+    if (_dateFilter == "30days") {
+      final last30 = now.subtract(const Duration(days: 30));
+
+      _filteredDocs = _docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final date = (data['date'] as Timestamp).toDate();
+
+        return date.isAfter(last30);
+      }).toList();
+    }
+
+    if (_dateFilter == "custom" && _startDate != null && _endDate != null) {
+      _filteredDocs = _docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final date = (data['date'] as Timestamp).toDate();
+
+        return date.isAfter(_startDate!.subtract(const Duration(days: 1))) &&
+            date.isBefore(_endDate!.add(const Duration(days: 1)));
+      }).toList();
+    }
   }
 
   @override
@@ -188,10 +240,10 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                             onApply: (value, start, end) {
                               setState(() {
                                 _dateFilter = value;
-
-                                // optional kalau mau dipakai nanti
                                 _startDate = start;
                                 _endDate = end;
+
+                                _applyDateFilter(); // <-- ini yang bikin filter jalan
                               });
                             },
                           );

@@ -207,12 +207,25 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
                           .toList();
                     }
 
+                    if (displayList.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          "Data tidak ditemukan",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      );
+                    }
+
                     return ListView.separated(
                       controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      itemCount: _searchCtrl.text.isEmpty
-                          ? displayList.length + 1
-                          : displayList.length,
+                      itemCount:
+                          displayList.length +
+                          (_searchCtrl.text.isEmpty && _hasMore ? 1 : 0),
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, i) {
                         if (i < displayList.length) {
@@ -220,7 +233,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
                           return WarrantyCard(warranty: w);
                         }
 
-                        if (_searchCtrl.text.isEmpty && _hasMore) {
+                        if (_hasMore) {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 20),
                             child: Center(child: CircularProgressIndicator()),
