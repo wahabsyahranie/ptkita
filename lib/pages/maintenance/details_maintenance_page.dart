@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/widgets/confirmation_sheet.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/skip_maintenance_sheet.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/details_maintenance_skeleton.dart';
@@ -156,55 +157,111 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
                   top: false,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final result = await showModalBottomSheet<bool>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: MyColors.white,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(20),
+                    child: Row(
+                      children: [
+                        // 🔴 SKIP BUTTON
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () async {
+                              final result = await showModalBottomSheet<bool>(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: MyColors.white,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(20),
+                                  ),
+                                ),
+                                builder: (_) => SkipMaintenanceSheet(
+                                  maintenance: maintenance,
+                                  service: _service,
+                                ),
+                              );
+
+                              if (!context.mounted) return;
+
+                              if (result == true) {
+                                Navigator.pop(context);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Maintenance dilewati. Siklus diperbarui.',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(50),
+                              side: const BorderSide(color: MyColors.secondary),
                             ),
-                          ),
-                          builder: (_) => FinishMaintenanceSheet(
-                            maintenance: maintenance,
-                            service: _service,
-                          ),
-                        );
-
-                        if (!context.mounted) return;
-
-                        if (result == true) {
-                          Navigator.pop(context);
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Siklus selesai. Maintenance dijadwalkan ulang.',
+                            child: const Text(
+                              'Skip',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: MyColors.secondary,
                               ),
                             ),
-                          );
-                        } else if (result == false) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Progress diperbarui.'),
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MyColors.secondary,
-                        minimumSize: const Size.fromHeight(50),
-                      ),
-                      child: const Text(
-                        'Selesaikan Perawatan',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: MyColors.white,
+                          ),
                         ),
-                      ),
+
+                        const SizedBox(width: 12),
+
+                        // 🟢 FINISH BUTTON
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final result = await showModalBottomSheet<bool>(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: MyColors.white,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(20),
+                                  ),
+                                ),
+                                builder: (_) => FinishMaintenanceSheet(
+                                  maintenance: maintenance,
+                                  service: _service,
+                                ),
+                              );
+
+                              if (!context.mounted) return;
+
+                              if (result == true) {
+                                Navigator.pop(context);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Siklus selesai. Maintenance dijadwalkan ulang.',
+                                    ),
+                                  ),
+                                );
+                              } else if (result == false) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Progress diperbarui.'),
+                                  ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: MyColors.secondary,
+                              minimumSize: const Size.fromHeight(50),
+                            ),
+                            child: const Text(
+                              'Selesaikan',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: MyColors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

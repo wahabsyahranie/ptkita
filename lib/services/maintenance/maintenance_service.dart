@@ -386,6 +386,75 @@ class MaintenanceService {
   }
 
   // =========================================================
+  // ====================== SKIP =============================
+  // =========================================================
+
+  Future<bool> skipMaintenance({
+    required Maintenance maintenance,
+    required String reason,
+  }) async {
+    final item = await _inventoryService
+        .streamItemById(maintenance.itemId)
+        .first;
+
+    final currentStock = item?.stock ?? 0;
+
+    final now = DateTime.now();
+    final skippedTimestamp = Timestamp.fromDate(now);
+
+    // VALIDASI
+    if (reason.trim().isEmpty) {
+      throw MaintenanceException("Alasan skip wajib diisi");
+    }
+
+    // AMBIL USER
+    final UserModel? currentUser = await _userService.currentUserProfile.first;
+
+    if (currentUser == null) {
+      throw Exception("User tidak ditemukan");
+    }
+
+    // AMBIL SKIP QUANTITY
+    final skipQuantity = maintenance.remainingQuantity;
+
+    // SIAPKAN LOG
+    final logData = {
+      'maintenanceId': maintenance.id,
+      'itemId': maintenance.itemId,
+      'skipQuantity': skipQuantity,
+      'skipReason': reason,
+      'skippedAt': skippedTimestamp,
+      'createdAt': FieldValue.serverTimestamp(),
+      'userId': currentUser.id,
+      'userName': currentUser.name,
+      'action': 'maintenance_skipped',
+    };
+
+    // RESET SIKLUS (SAMA SEPERTI COMPLETE)
+    final baseDate = maintenance.nextMaintenanceAt?.toDate() ?? now;
+
+    final nextMaintenanceDate = baseDate.add(
+      Duration(days: maintenance.intervalDays),
+    );
+
+    final maintenanceUpdate = {
+      'lastMaintenanceAt': skippedTimestamp,
+      'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),
+      'cycleInitialQuantity': currentStock,
+      'remainingQuantity': currentStock,
+    };
+
+    await _repository.commitMaintenanceBatch(
+      maintenanceId: maintenance.id,
+      maintenanceUpdate: maintenanceUpdate,
+      logData: logData,
+      incrementCompletedToday: true,
+    );
+
+    return true;
+  }
+
+  // =========================================================
   // ====================== DATE LOGIC =======================
   // =========================================================
 
