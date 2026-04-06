@@ -4,7 +4,9 @@ import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 abstract class MaintenanceRepository {
   Stream<List<Maintenance>> streamMaintenance();
 
-  Stream<List<Item>> streamItems();
+  Future<List<Item>> getTopItems({int limit = 4});
+
+  Future<List<Item>> searchItems(String query, {int limit = 10});
 
   Future<void> save(Maintenance maintenance);
 
@@ -20,4 +22,6 @@ abstract class MaintenanceRepository {
   Future<String?> getItemImageUrl(String itemId);
 
   Stream<MaintenanceDetail?> streamMaintenanceDetail(String id);
+
+  Future<Maintenance?> getByItemId(String itemId);
 }

@@ -15,6 +15,7 @@ class Maintenance {
   final List<MaintenanceTask> tasks;
   final int cycleInitialQuantity;
   final int remainingQuantity;
+  final String? partNumber;
 
   Maintenance({
     required this.id,
@@ -28,6 +29,7 @@ class Maintenance {
     required this.tasks,
     this.cycleInitialQuantity = 0,
     this.remainingQuantity = 0,
+    this.partNumber,
   });
 
   factory Maintenance.fromFirestore(
@@ -58,6 +60,7 @@ class Maintenance {
       cycleInitialQuantity:
           (data['cycleInitialQuantity'] as num?)?.toInt() ?? 0,
       remainingQuantity: (data['remainingQuantity'] as num?)?.toInt() ?? 0,
+      partNumber: data['partNumber'],
     );
   }
 
@@ -72,6 +75,7 @@ class Maintenance {
     'tasks': tasks.map((e) => e.toMap()).toList(),
     'cycleInitialQuantity': cycleInitialQuantity,
     'remainingQuantity': remainingQuantity,
+    'partNumber': partNumber,
   };
 
   Maintenance copyWith({
@@ -86,6 +90,7 @@ class Maintenance {
     List<MaintenanceTask>? tasks,
     int? cycleInitialQuantity,
     int? remainingQuantity,
+    String? partNumber,
   }) {
     return Maintenance(
       id: id ?? this.id,
@@ -99,6 +104,7 @@ class Maintenance {
       tasks: tasks ?? this.tasks,
       cycleInitialQuantity: cycleInitialQuantity ?? this.cycleInitialQuantity,
       remainingQuantity: remainingQuantity ?? this.remainingQuantity,
+      partNumber: partNumber ?? this.partNumber,
     );
   }
 }
