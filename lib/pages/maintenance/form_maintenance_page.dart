@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/item_picker_sheet.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
@@ -93,7 +94,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
     if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedItemId == null || _selectedItemtypeUnit == null) {
+    if (_selectedItemId == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Barang wajib dipilih')));
@@ -177,45 +178,41 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
               children: [
                 const Text('Pilih Barang'),
                 const SizedBox(height: 8),
-                StreamBuilder<List<Item>>(
-                  stream: _service.streamItems(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const SizedBox();
-                    }
-
-                    final items = snapshot.data!;
-
-                    return DropdownButtonFormField<String>(
-                      initialValue: _selectedItemId,
-                      isExpanded: true,
-                      items: items.map((item) {
-                        return DropdownMenuItem<String>(
-                          value: item.id,
-                          child: Text(
-                            item.name ?? '-',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        final selectedItem = items.firstWhere(
-                          (i) => i.id == value,
-                        );
-
-                        setState(() {
-                          _selectedItemId = value;
-                          _selectedItemName = selectedItem.name;
-                          _selectedItemtypeUnit = selectedItem.typeUnit;
-                        });
-                      },
-                      decoration: const InputDecoration(
-                        hintText: "Pilih Barang",
-                        border: OutlineInputBorder(),
+                InkWell(
+                  onTap: () async {
+                    final selected = await showModalBottomSheet<Item>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
                       ),
+                      builder: (_) => ItemPickerSheet(service: _service),
                     );
+
+                    if (selected != null) {
+                      setState(() {
+                        _selectedItemId = selected.id;
+                        _selectedItemName = selected.name;
+                        _selectedItemtypeUnit = selected.typeUnit;
+                      });
+                    }
                   },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _selectedItemName ?? 'Pilih Barang',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 15),
                 const Text("Interval Perawatan (hari)"),

@@ -133,9 +133,51 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
       );
 
   @override
-  Stream<List<Item>> streamItems() {
-    return _itemCollection.snapshots().map(
-      (snapshot) => snapshot.docs.map((doc) => doc.data()).toList(),
-    );
+  Future<List<Item>> getTopItems({int limit = 5}) async {
+    final snapshot = await _firestore
+        .collection('items')
+        .orderBy('movementTotalScore', descending: true)
+        .limit(limit)
+        .withConverter<Item>(
+          fromFirestore: Item.fromFirestore,
+          toFirestore: (i, _) => i.toFirestore(),
+        )
+        .get();
+
+    return snapshot.docs.map((doc) => doc.data()).toList();
+  }
+
+  @override
+  Future<List<Item>> searchItems(String query, {int limit = 10}) async {
+    final snapshot = await _firestore
+        .collection('items')
+        .orderBy('name_lowercase')
+        .startAt([query])
+        .endAt([query + '\uf8ff'])
+        .limit(limit)
+        .withConverter<Item>(
+          fromFirestore: Item.fromFirestore,
+          toFirestore: (i, _) => i.toFirestore(),
+        )
+        .get();
+
+    return snapshot.docs.map((doc) => doc.data()).toList();
+  }
+
+  @override
+  Future<Maintenance?> getByItemId(String itemId) async {
+    final snapshot = await _firestore
+        .collection('maintenance')
+        .where('itemId', isEqualTo: itemId)
+        .limit(1)
+        .withConverter<Maintenance>(
+          fromFirestore: Maintenance.fromFirestore,
+          toFirestore: (m, _) => m.toFirestore(),
+        )
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+
+    return snapshot.docs.first.data();
   }
 }
