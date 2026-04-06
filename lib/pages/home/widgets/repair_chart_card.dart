@@ -75,6 +75,7 @@ class RepairChartCard extends StatelessWidget {
         DropdownButton<String>(
           value: chartMode,
           underline: const SizedBox(),
+          style: const TextStyle(fontSize: 14, color: MyColors.background),
           items: const [
             DropdownMenuItem(value: "weekly", child: Text("Mingguan")),
             DropdownMenuItem(value: "monthly", child: Text("Bulanan")),
