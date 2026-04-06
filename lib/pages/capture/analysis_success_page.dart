@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:flutter_kita/styles/colors.dart';
@@ -12,7 +11,7 @@ class AnalysisSuccessPage extends StatefulWidget {
   final String label;
   final double confidence;
   final Map<String, dynamic> box;
-  final Item item;
+  final Map<String, dynamic> data;
 
   const AnalysisSuccessPage({
     super.key,
@@ -20,7 +19,7 @@ class AnalysisSuccessPage extends StatefulWidget {
     required this.label,
     required this.confidence,
     required this.box,
-    required this.item,
+    required this.data,
   });
 
   @override
@@ -51,6 +50,8 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
 
   @override
   Widget build(BuildContext context) {
+    final data = widget.data;
+
     return Scaffold(
       backgroundColor: MyColors.white,
       body: SafeArea(
@@ -60,23 +61,42 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
             children: [
               const SizedBox(height: 24),
 
-              /// =========================
-              /// IMAGE + BOUNDING BOX
-              /// =========================
+              // 🔥 STATUS HEADER
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.check_circle, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text(
+                      "Barang Ditemukan",
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
               _buildImageSection(),
 
               const SizedBox(height: 32),
 
-              /// =========================
-              /// DATA CARD
-              /// =========================
-              _buildInfoCard(),
+              _buildInfoCard(data),
 
               const SizedBox(height: 32),
 
-              /// =========================
-              /// BUTTONS
-              /// =========================
               _buildButtons(),
 
               const SizedBox(height: 32),
@@ -87,9 +107,9 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
     );
   }
 
-  /// =============================================
-  /// IMAGE SECTION
-  /// =============================================
+  // =========================
+  // IMAGE + BBOX
+  // =========================
   Widget _buildImageSection() {
     return SizedBox(
       width: double.infinity,
@@ -97,9 +117,7 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: _imageInfo == null
-            ? const Center(
-                child: CircularProgressIndicator(color: MyColors.secondary),
-              )
+            ? const Center(child: CircularProgressIndicator())
             : FittedBox(
                 fit: BoxFit.contain,
                 child: SizedBox(
@@ -114,7 +132,7 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                         fit: BoxFit.fill,
                       ),
 
-                      /// Bounding Box (Fix All Device)
+                      // 🔴 BOUNDING BOX
                       Positioned(
                         left: widget.box['x1'].toDouble(),
                         top: widget.box['y1'].toDouble(),
@@ -126,6 +144,26 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                           ),
                         ),
                       ),
+
+                      // 🔥 LABEL BOX
+                      Positioned(
+                        left: widget.box['x1'].toDouble(),
+                        top: widget.box['y1'].toDouble() - 24,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          color: Colors.red,
+                          child: Text(
+                            widget.label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -134,59 +172,78 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
     );
   }
 
-  /// =============================================
-  /// INFO CARD
-  /// =============================================
-  Widget _buildInfoCard() {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: MyColors.secondary),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _LabelField(label: "Nama Barang", value: widget.item.name ?? '-'),
+  // =========================
+  // INFO CARD
+  // =========================
+  Widget _buildInfoCard(Map<String, dynamic> data) {
+  // 🔥 AMAN: ambil part number
+  final partNumber = data['partNumber']?.toString();
 
-              const SizedBox(height: 16),
+  // 🔥 AMAN: ambil type unit
+  final typeUnit = data['typeUnit']?.toString();
 
-              _LabelField(
-                label: "Type Unit",
-                value: widget.item.typeUnit ?? '-',
-              ),
+  // 🔥 LOGIC AMAN
+  final isPart = partNumber != null && partNumber.isNotEmpty;
 
-              const SizedBox(height: 16),
+  final code = isPart ? partNumber : (typeUnit ?? '-');
+  final codeLabel = isPart ? "Part Number" : "Type Unit";
 
-              _LabelField(
-                label: "Stok",
-                value: (widget.item.stock ?? 0).toString(),
-              ),
-
-              const SizedBox(height: 20),
-
-              _LabelField(
-                label: "Nilai Keyakinan",
-                value: "${(widget.confidence * 100).toStringAsFixed(2)} %",
-              ),
-            ],
-          ),
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ✅ NAMA
+        _LabelField(
+          label: "Nama Barang",
+          value: data['name']?.toString() ?? '-',
+        ),
+        const SizedBox(height: 16),
 
-  /// =============================================
-  /// BUTTON SECTION
-  /// =============================================
+        // ✅ PART / UNIT (AMAN)
+        _LabelField(
+          label: codeLabel,
+          value: code,
+        ),
+        const SizedBox(height: 16),
+
+        // ✅ STOCK
+        _LabelField(
+          label: "Stock",
+          value: (data['stock'] ?? 0).toString(),
+        ),
+        const SizedBox(height: 16),
+
+        // ✅ CONFIDENCE
+        _LabelField(
+          label: "Akurasi",
+          value: "${(widget.confidence * 100).toStringAsFixed(2)} %",
+        ),
+      ],
+    ),
+  );
+}
+
+  // =========================
+  // BUTTONS
+  // =========================
   Widget _buildButtons() {
+    final itemId = widget.data['id'];
+
     return Column(
       children: [
-        /// DETAIL BUTTON
+        // 🔥 DETAIL BARANG
         SizedBox(
           width: double.infinity,
           height: 55,
@@ -198,47 +255,38 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
               ),
             ),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => DetailsInventoryPage(itemId: widget.item.id!),
-                ),
-              );
+              if (itemId != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DetailsInventoryPage(itemId: itemId),
+                  ),
+                );
+              }
             },
             child: const Text(
               "Detail Barang",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: MyColors.white,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ),
 
         const SizedBox(height: 16),
 
-        /// RETAKE BUTTON
+        // 🔙 KEMBALI
         SizedBox(
           width: double.infinity,
           height: 55,
           child: OutlinedButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: MyColors.secondary),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(40),
               ),
             ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text(
-              "Ambil Ulang",
-              style: TextStyle(
-                color: MyColors.secondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: const Text("Kembali"),
           ),
         ),
       ],
@@ -246,9 +294,9 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
   }
 }
 
-/// =============================================
-/// LABEL FIELD WIDGET
-/// =============================================
+// =========================
+// LABEL FIELD
+// =========================
 class _LabelField extends StatelessWidget {
   final String label;
   final String value;
@@ -260,25 +308,16 @@ class _LabelField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 13, color: Colors.black54),
-        ),
-
+        Text(label, style: const TextStyle(color: Colors.black54)),
         const SizedBox(height: 8),
-
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: MyColors.secondary.withOpacity(0.4)),
-            color: MyColors.tertiary.withOpacity(0.35),
+            border: Border.all(color: MyColors.secondary),
           ),
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-          ),
+          child: Text(value),
         ),
       ],
     );

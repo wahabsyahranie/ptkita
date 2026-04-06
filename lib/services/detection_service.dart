@@ -3,41 +3,62 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class DetectionService {
-  // Untuk Emulator Android
-  // static const String baseUrl = "http://10.0.2.2:5000";
-  // untuk emulator dan ios = http://localhost:5000
-  // Untuk HP asli (nanti ganti jika pakai device fisik)
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://172.17.105.73:5000',
+    defaultValue: 'http://192.168.18.113:5000',
   );
 
   static Future<Map<String, dynamic>> detect(File imageFile) async {
     try {
       final uri = Uri.parse("$baseUrl/detect");
 
-      final request = http.MultipartRequest('POST', uri);
+      var request = http.MultipartRequest('POST', uri);
 
       request.files.add(
         await http.MultipartFile.fromPath('image', imageFile.path),
       );
 
-      final response = await request.send();
+      var response = await request.send();
 
-      // Cek status server
+      var responseBody = await response.stream.bytesToString();
+
+      print("Response server: $responseBody");
+
+      // ===============================
+      // HANDLE ERROR STATUS CODE
+      // ===============================
       if (response.statusCode != 200) {
-        throw Exception("Server error: ${response.statusCode}");
+        return {
+          "status": "failed",
+          "message": "Server error ${response.statusCode}"
+        };
       }
 
-      final responseBody = await response.stream.bytesToString();
+      final decoded = json.decode(responseBody);
 
-      // Debug print
-      print("Response dari server: $responseBody");
+      // ===============================
+      // VALIDASI RESPONSE
+      // ===============================
+      if (decoded == null || decoded['status'] == null) {
+        return {
+          "status": "failed",
+          "message": "Response tidak valid"
+        };
+      }
 
-      return json.decode(responseBody);
+      return decoded;
     } catch (e) {
       print("Detection error: $e");
-      throw Exception("Gagal menghubungi server");
+
+      return {
+        "status": "failed",
+        "message": "Tidak bisa terhubung ke server"
+      };
     }
-  }  
+  }
 }
+
+// Untuk Emulator Android
+  // static const String baseUrl = "http://10.0.2.2:5000";
+  // untuk emulator dan ios = http://localhost:5000
+  // Untuk HP asli (nanti ganti jika pakai device fisik)
