@@ -44,13 +44,16 @@ class RepairRepository {
       final data = doc.data();
 
       final List<String> fields = [
-        data['buyerName']?.toString() ?? "",
-        data['itemName']?.toString() ?? "",
-        data['techName']?.toString() ?? "",
-        data['status']?.toString() ?? "",
+        (data['buyerName'] ?? data['buyer'] ?? "").toString(),
+        (data['itemName'] ?? data['product'] ?? "").toString(),
+        (data['techName'] ?? data['technician'] ?? "").toString(),
+        (data['status'] ?? "").toString(),
       ];
+      // print("INDEX BUILD: ${doc.id} -> $fields");
 
-      _searchEngine.addDocument(doc.id, fields);
+      if (fields.any((f) => f.trim().isNotEmpty)) {
+        _searchEngine.addDocument(doc.id, fields);
+      }
     }
 
     return snap.docs.map((doc) => RepairModel.fromFirestore(doc)).toList();

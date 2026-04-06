@@ -6,6 +6,7 @@ import 'package:flutter_kita/pages/transaction/transaction_add_page.dart';
 import 'package:flutter_kita/pages/transaction/transaction_detail_page.dart';
 import 'package:flutter_kita/repositories/transaction/transaction_repository.dart';
 import 'widgets/transaction_search_bar.dart';
+import 'widgets/transaction_filter_sheet.dart';
 
 class TransactionHistoryPage extends StatefulWidget {
   const TransactionHistoryPage({super.key});
@@ -27,6 +28,12 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   bool _isLoading = false;
   bool _hasMore = true;
   bool _isSearching = false;
+  String _dateFilter = "all";
+
+  // ignore: unused_field
+  DateTime? _startDate;
+  // ignore: unused_field
+  DateTime? _endDate;
 
   @override
   void initState() {
@@ -158,9 +165,49 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             /// SEARCH BAR
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-              child: TransactionSearchBar(
-                controller: _search,
-                onChanged: _onSearchChanged,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TransactionSearchBar(
+                      controller: _search,
+                      onChanged: _onSearchChanged,
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  /// BUTTON FILTER
+                  GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) {
+                          return TransactionFilterSheet(
+                            currentFilter: _dateFilter,
+                            onApply: (value, start, end) {
+                              setState(() {
+                                _dateFilter = value;
+
+                                // optional kalau mau dipakai nanti
+                                _startDate = start;
+                                _endDate = end;
+                              });
+                            },
+                          );
+                        },
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: const BoxDecoration(
+                        color: MyColors.secondary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.filter_alt, color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ),
 

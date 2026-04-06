@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_kita/core/widgets/forms/app_text.dart';
 import '../../../styles/colors.dart';
 
 class ItemDetailCard extends StatelessWidget {
@@ -9,6 +10,9 @@ class ItemDetailCard extends StatelessWidget {
   final bool hasWarranty;
   final int warrantyYear;
   final String warrantyType;
+
+  final int? claimLimit;
+  final ValueChanged<int?> onClaimLimitChanged;
 
   final List<TextEditingController>? serialControllers;
 
@@ -28,6 +32,8 @@ class ItemDetailCard extends StatelessWidget {
     required this.hasWarranty,
     required this.warrantyYear,
     required this.warrantyType,
+    required this.claimLimit,
+    required this.onClaimLimitChanged,
     this.serialControllers,
     required this.onClose,
     required this.onQtyAdd,
@@ -96,44 +102,6 @@ class ItemDetailCard extends StatelessWidget {
     );
   }
 
-  Widget _radioInt({
-    required String label,
-    required int value,
-    required int group,
-    required ValueChanged<int> onChanged,
-  }) {
-    return Row(
-      children: [
-        Radio<int>(
-          value: value,
-          // ignore: deprecated_member_use
-          groupValue: group,
-          activeColor: MyColors.secondary,
-          // ignore: deprecated_member_use
-          onChanged: (v) => onChanged(v!),
-        ),
-        Text(label),
-      ],
-    );
-  }
-
-  InputDecoration _inputDecoration({String? hint}) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.black, width: 1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: MyColors.secondary, width: 1.5),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final price = item['price'] as int;
@@ -163,7 +131,16 @@ class ItemDetailCard extends StatelessWidget {
                     'Rp ${_fmt(price)}',
                     style: const TextStyle(fontSize: 12),
                   ),
-                  Text('Stok: $stock', style: const TextStyle(fontSize: 12)),
+                  Text(
+                    stock == 0 ? 'Stok: Habis' : 'Stok: $stock',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: stock == 0 ? Colors.red : Colors.black,
+                      fontWeight: stock == 0
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
                 ],
               ),
               IconButton(icon: const Icon(Icons.close), onPressed: onClose),
@@ -193,84 +170,100 @@ class ItemDetailCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          /// SERIAL NUMBER (UNTUK UNIT)
-          if (item['category'] == 'unit' && serialControllers != null) ...[
-            _subLabel('Serial Number'),
-
-            const SizedBox(height: 6),
-
-            ...List.generate(serialControllers!.length, (i) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: TextField(
-                  controller: serialControllers![i],
-                  decoration: _inputDecoration(hint: 'Serial Number ${i + 1}'),
-                ),
-              );
-            }),
-
-            const SizedBox(height: 14),
-          ],
-
-          /// WARRANTY
-          _subLabel('Garansi'),
-
-          Row(
-            children: [
-              _radioBool(
-                label: 'Ada',
-                value: true,
-                group: hasWarranty,
-                onChanged: onWarrantyChanged,
-              ),
-              _radioBool(
-                label: 'Tidak Ada',
-                value: false,
-                group: hasWarranty,
-                onChanged: onWarrantyChanged,
-              ),
-            ],
-          ),
-
-          if (hasWarranty) ...[
-            const SizedBox(height: 14),
-
-            _subLabel('Durasi Garansi'),
+          /// WARRANTY (HANYA UNTUK UNIT)
+          if (item['category'] == 'unit') ...[
+            _subLabel('Garansi'),
 
             Row(
               children: [
-                _radioInt(
-                  label: '1 Tahun',
-                  value: 1,
-                  group: warrantyYear,
-                  onChanged: onWarrantyYearChanged,
+                _radioBool(
+                  label: 'Ada',
+                  value: true,
+                  group: hasWarranty,
+                  onChanged: onWarrantyChanged,
                 ),
-                _radioInt(
-                  label: '2 Tahun',
-                  value: 2,
-                  group: warrantyYear,
-                  onChanged: onWarrantyYearChanged,
+                _radioBool(
+                  label: 'Tidak Ada',
+                  value: false,
+                  group: hasWarranty,
+                  onChanged: onWarrantyChanged,
                 ),
               ],
             ),
 
-            const SizedBox(height: 14),
+            /// SERIAL NUMBER (UNTUK UNIT)
+            if (item['category'] == 'unit' && serialControllers != null) ...[
+              const SizedBox(height: 6),
 
-            _subLabel('Jenis Garansi'),
+              ...List.generate(serialControllers!.length, (i) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: AppTextFormField(
+                    controller: serialControllers![i],
+                    label: 'Serial Number ${i + 1}',
+                  ),
+                );
+              }),
+            ],
 
-            DropdownButtonFormField<String>(
-              initialValue: warrantyType,
-              items: const [
-                DropdownMenuItem(value: 'Jasa', child: Text('Jasa')),
-                DropdownMenuItem(value: 'SparePart', child: Text('SparePart')),
-                DropdownMenuItem(
-                  value: 'Jasa & SparePart',
-                  child: Text('Jasa & SparePart'),
-                ),
-              ],
-              onChanged: (v) => onWarrantyTypeChanged(v!),
-              decoration: _inputDecoration(hint: 'Pilih jenis garansi'),
-            ),
+            if (hasWarranty) ...[
+              const SizedBox(height: 14),
+
+              const SizedBox(height: 14),
+
+              DropdownMenu<int>(
+                width: MediaQuery.of(context).size.width * 0.5,
+                label: const Text("Durasi Garansi"),
+                initialSelection: warrantyYear,
+                dropdownMenuEntries: const [
+                  DropdownMenuEntry(value: 1, label: "1 Tahun"),
+                  DropdownMenuEntry(value: 2, label: "2 Tahun"),
+                  DropdownMenuEntry(value: 3, label: "3 Tahun"),
+                ],
+                onSelected: (v) {
+                  if (v != null) {
+                    onWarrantyYearChanged(v);
+                  }
+                },
+              ),
+
+              const SizedBox(height: 14),
+
+              DropdownMenu<String>(
+                width: MediaQuery.of(context).size.width * 0.5,
+                label: const Text("Jenis Garansi"),
+                initialSelection: warrantyType,
+                dropdownMenuEntries: const [
+                  DropdownMenuEntry(value: 'Jasa', label: 'Jasa'),
+                  DropdownMenuEntry(value: 'SparePart', label: 'SparePart'),
+                  DropdownMenuEntry(
+                    value: 'Jasa & SparePart',
+                    label: 'Jasa & SparePart',
+                  ),
+                ],
+                onSelected: (v) {
+                  if (v != null) {
+                    onWarrantyTypeChanged(v);
+                  }
+                },
+              ),
+
+              const SizedBox(height: 14),
+
+              DropdownMenu<int?>(
+                width: MediaQuery.of(context).size.width * 0.5,
+                label: const Text("Batas Klaim"),
+                initialSelection: claimLimit,
+                dropdownMenuEntries: const [
+                  DropdownMenuEntry(value: null, label: "Tidak terbatas"),
+                  DropdownMenuEntry(value: 1, label: "1 Kali"),
+                  DropdownMenuEntry(value: 2, label: "2 Kali"),
+                  DropdownMenuEntry(value: 3, label: "3 Kali"),
+                  DropdownMenuEntry(value: 5, label: "5 Kali"),
+                ],
+                onSelected: onClaimLimitChanged,
+              ),
+            ],
           ],
         ],
       ),

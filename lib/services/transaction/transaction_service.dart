@@ -65,10 +65,19 @@ class TransactionService {
       transactionDate: date,
     );
 
-    for (final item in items) {
-      await db.collection('items').doc(item.itemId).update({
-        'stock': FieldValue.increment(-item.qty),
-      });
-    }
+    await db.runTransaction((transaction) async {
+      for (final item in items) {
+        final ref = db.collection('items').doc(item.itemId);
+        final snapshot = await transaction.get(ref);
+
+        final currentStock = snapshot['stock'] as int;
+
+        if (currentStock < item.qty) {
+          throw Exception("Stok tidak cukup untuk ${item.name}");
+        }
+
+        transaction.update(ref, {'stock': currentStock - item.qty});
+      }
+    });
   }
 }

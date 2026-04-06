@@ -4,9 +4,10 @@ import 'package:flutter_kita/models/repair/repair_model.dart';
 import '../repair_detail_page.dart';
 
 class RepairCard extends StatelessWidget {
-  const RepairCard({super.key, required this.model});
-
   final RepairModel model;
+  final VoidCallback? onUpdated;
+
+  const RepairCard({super.key, required this.model, this.onUpdated});
 
   @override
   Widget build(BuildContext context) {
@@ -17,14 +18,18 @@ class RepairCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) =>
                   RepairDetailPage(data: model.raw, docId: model.id),
             ),
           );
+
+          if (result == true) {
+            onUpdated?.call();
+          }
         },
         child: Container(
           decoration: BoxDecoration(

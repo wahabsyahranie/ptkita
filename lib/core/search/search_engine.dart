@@ -12,21 +12,28 @@ class InvertedIndex {
       final tokens = _tokenize(field);
 
       for (final token in tokens) {
+        // print("TOKEN: $token");
+
         _index.putIfAbsent(token, () => <String>{});
         _index[token]!.add(id);
       }
     }
   }
 
-  /// search
+  /// search with prefix and exmacth
   Set<String> search(String query) {
     final tokens = _tokenize(query);
+
+    // print("QUERY TOKENS: $tokens");
 
     final Set<String> results = {};
 
     for (final token in tokens) {
-      if (_index.containsKey(token)) {
-        results.addAll(_index[token]!);
+      for (final key in _index.keys) {
+        if (key.startsWith(token)) {
+          // print("MATCH: $key");
+          results.addAll(_index[key]!);
+        }
       }
     }
 

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_kita/core/widgets/forms/app_text.dart';
+import 'package:flutter_kita/core/search/search_engine.dart';
 
 class RepairAddPage extends StatefulWidget {
   final String? warrantyId;
@@ -171,12 +173,13 @@ class _RepairAddPageState extends State<RepairAddPage> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      // ================= WARRANTY SNAPSHOT =================
+      // ================= WARRANTY CHECK =================
       if (isWarranty && _selectedWarrantyId != null) {
-        final warrantyDoc = await FirebaseFirestore.instance
+        final warrantyRef = FirebaseFirestore.instance
             .collection('warranty')
-            .doc(_selectedWarrantyId)
-            .get();
+            .doc(_selectedWarrantyId);
+
+        final warrantyDoc = await warrantyRef.get();
 
         if (!warrantyDoc.exists) {
           throw Exception('Garansi tidak ditemukan');
@@ -184,6 +187,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
 
         final warrantyData = warrantyDoc.data() as Map<String, dynamic>;
 
+        // cek expired
         final Timestamp expireAt = warrantyData['expireAt'];
         final bool isExpired = expireAt.toDate().isBefore(DateTime.now());
 
@@ -200,25 +204,52 @@ class _RepairAddPageState extends State<RepairAddPage> {
           return;
         }
 
+        // ================= CLAIM LIMIT CHECK =================
+        final int claimCount = warrantyData['claimCount'] ?? 0;
+        final int? maxClaim = warrantyData['maxClaim'];
+
+        if (maxClaim != null && claimCount >= maxClaim) {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Batas klaim garansi sudah tercapai')),
+          );
+
+          setState(() => _saving = false);
+          return;
+        }
+
+        // snapshot data warranty
         payload['warrantySnapshot'] = {
           'startAt': warrantyData['startAt'],
           'expireAt': warrantyData['expireAt'],
           'warrantyType': warrantyData['warrantyType'],
-          'claimCountBefore': warrantyData['claimCount'],
+          'claimCountBefore': claimCount,
+          'maxClaim': maxClaim,
         };
+
+        // buat repair
+        final docRef = await FirebaseFirestore.instance
+            .collection('repair')
+            .add(payload);
+
+        // increment claim
+        await warrantyRef.update({'claimCount': FieldValue.increment(1)});
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perbaikan berhasil ditambahkan')),
+        );
+
+        Navigator.of(context).pop({'ok': true, 'id': docRef.id});
+        return;
       }
 
+      // ================= NON WARRANTY =================
       final docRef = await FirebaseFirestore.instance
           .collection('repair')
           .add(payload);
-
-      // Update claimCount kalau warranty
-      if (isWarranty && _selectedWarrantyId != null) {
-        await FirebaseFirestore.instance
-            .collection('warranty')
-            .doc(_selectedWarrantyId)
-            .update({'claimCount': FieldValue.increment(1)});
-      }
 
       if (!mounted) return;
 
@@ -501,10 +532,13 @@ class CurrencyInputFormatter extends TextInputFormatter {
 
 class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
   final TextEditingController _searchCtrl = TextEditingController();
+  final InvertedIndex _searchEngine = InvertedIndex();
+  Timer? _debounce;
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -551,6 +585,7 @@ class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
               child: TextField(
                 controller: _searchCtrl,
                 cursorColor: MyColors.secondary,
+
                 decoration: InputDecoration(
                   hintText: 'Cari nama pembeli / produk',
                   hintStyle: TextStyle(
@@ -566,6 +601,16 @@ class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
                     horizontal: 12,
                   ),
                 ),
+
+                onChanged: (value) {
+                  _debounce?.cancel();
+
+                  _debounce = Timer(const Duration(milliseconds: 200), () {
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  });
+                },
               ),
             ),
 
@@ -583,22 +628,46 @@ class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  final query = _searchCtrl.text.toLowerCase();
+                  /// ambil semua docs
+                  final docs = snapshot.data!.docs;
 
-                  final results = snapshot.data!.docs.where((doc) {
+                  /// BUILD SEARCH INDEX
+                  _searchEngine.clear();
+
+                  for (final doc in docs) {
                     final data = doc.data() as Map<String, dynamic>;
 
-                    final buyer = (data['buyerName'] ?? '')
-                        .toString()
-                        .toLowerCase();
+                    _searchEngine.addDocument(
+                      doc.id,
+                      [
+                        data['buyerName'],
+                        data['productName'],
+                        data['serialNumber'],
+                        data['phone'],
+                      ].whereType<String>().toList(),
+                    );
+                  }
 
-                    final product = (data['productName'] ?? '')
-                        .toString()
-                        .toLowerCase();
+                  final query = _searchCtrl.text.toLowerCase();
 
-                    if (query.isEmpty) return true;
+                  final ids = query.isEmpty
+                      ? docs.map((d) => d.id).toSet()
+                      : _searchEngine.search(query);
 
-                    return buyer.contains(query) || product.contains(query);
+                  final results = docs.where((doc) {
+                    if (!ids.contains(doc.id)) return false;
+
+                    final data = doc.data() as Map<String, dynamic>;
+                    final claim = data['claimCount'] ?? 0;
+                    final max = data['maxClaim'] ?? 0;
+
+                    /// kalau tidak search → sembunyikan garansi habis
+                    if (query.isEmpty) {
+                      return claim < max;
+                    }
+
+                    /// kalau sedang search → tampilkan semua
+                    return true;
                   }).toList();
 
                   if (results.isEmpty) {
@@ -614,6 +683,12 @@ class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
                       final doc = results[index];
                       final data = doc.data() as Map<String, dynamic>;
 
+                      final claim = data['claimCount'] ?? 0;
+                      final maxClaim = data['maxClaim'] ?? 0;
+                      final serial = data['serialNumber'] ?? '-';
+
+                      final isActive = claim < maxClaim;
+
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -625,13 +700,45 @@ class _WarrantySearchSheetState extends State<WarrantySearchSheet> {
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
 
-                        subtitle: const Text(
-                          'Garansi Aktif',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: MyColors.success,
-                          ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'SN: $serial',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+
+                            const SizedBox(height: 2),
+
+                            Row(
+                              children: [
+                                Text(
+                                  'Claim $claim/$maxClaim',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: MyColors.success,
+                                  ),
+                                ),
+
+                                const SizedBox(width: 8),
+
+                                Text(
+                                  isActive ? 'Garansi Aktif' : 'Garansi Habis',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isActive
+                                        ? MyColors.success
+                                        : Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
 
                         onTap: () {
