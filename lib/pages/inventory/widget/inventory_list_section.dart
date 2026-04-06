@@ -37,7 +37,7 @@ class InventoryListSection extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.4),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -50,7 +50,7 @@ class InventoryListSection extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: MyColors.secondary.withOpacity(0.1),
+                    color: MyColors.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -105,8 +105,8 @@ class InventoryListSection extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: (item.stock ?? 0) > 0
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.red.withOpacity(0.1),
+                          ? MyColors.success.withValues(alpha: 0.1)
+                          : MyColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(

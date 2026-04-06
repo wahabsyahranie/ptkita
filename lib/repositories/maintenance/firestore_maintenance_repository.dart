@@ -118,11 +118,11 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
   Future<String?> getItemImageUrl(String itemId) async {
     if (itemId.isEmpty) return null;
 
-    final ref = _firestore.collection('items').doc(itemId);
+    final ref = _itemCollection.doc(itemId);
     final snap = await ref.get();
 
-    final data = snap.data();
-    return data?['imageUrl'] as String?;
+    final item = snap.data();
+    return item?.imageUrl;
   }
 
   CollectionReference<Item> get _itemCollection => _firestore
@@ -134,14 +134,9 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
 
   @override
   Future<List<Item>> getTopItems({int limit = 5}) async {
-    final snapshot = await _firestore
-        .collection('items')
+    final snapshot = await _itemCollection
         .orderBy('movementTotalScore', descending: true)
         .limit(limit)
-        .withConverter<Item>(
-          fromFirestore: Item.fromFirestore,
-          toFirestore: (i, _) => i.toFirestore(),
-        )
         .get();
 
     return snapshot.docs.map((doc) => doc.data()).toList();
@@ -149,16 +144,11 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
 
   @override
   Future<List<Item>> searchItems(String query, {int limit = 10}) async {
-    final snapshot = await _firestore
-        .collection('items')
+    final snapshot = await _itemCollection
         .orderBy('name_lowercase')
         .startAt([query])
-        .endAt([query + '\uf8ff'])
+        .endAt(['$query\uf8ff'])
         .limit(limit)
-        .withConverter<Item>(
-          fromFirestore: Item.fromFirestore,
-          toFirestore: (i, _) => i.toFirestore(),
-        )
         .get();
 
     return snapshot.docs.map((doc) => doc.data()).toList();

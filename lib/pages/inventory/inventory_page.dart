@@ -192,7 +192,7 @@ class _InventoryPageState extends State<InventoryPage> {
               },
               child: _service.items.isEmpty
                   ? CustomScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
+                      physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
                         SliverPadding(
                           padding: const EdgeInsets.only(bottom: 10),
