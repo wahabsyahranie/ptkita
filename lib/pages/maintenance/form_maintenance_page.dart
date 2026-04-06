@@ -31,6 +31,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
   String? _selectedItemName;
   String? _selectedPriority;
   String? _selectedItemtypeUnit;
+  String? _selectedPartNumber;
   bool _isSaving = false;
 
   @override
@@ -54,6 +55,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
     _selectedItemName = it?.itemName;
     _selectedPriority = it?.priority;
     _selectedItemtypeUnit = it?.typeUnit;
+    _selectedItemName = it?.itemName;
 
     // 🔑 LOAD TASKS SAAT EDIT
     if (it != null && it.tasks.isNotEmpty) {
@@ -119,6 +121,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
       itemId: _selectedItemId!,
       itemName: _selectedItemName!,
       typeUnit: _selectedItemtypeUnit,
+      partNumber: _selectedPartNumber,
       intervalDays: intervalDays,
       priority: _selectedPriority!,
       lastMaintenanceAt: widget.initialItem?.lastMaintenanceAt,
@@ -197,6 +200,7 @@ class _FormMaintenancePageState extends State<FormMaintenancePage> {
                         _selectedItemId = selected.id;
                         _selectedItemName = selected.name;
                         _selectedItemtypeUnit = selected.typeUnit;
+                        _selectedPartNumber = selected.partNumber;
                       });
                     }
                   },

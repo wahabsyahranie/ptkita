@@ -34,14 +34,13 @@ class MaintenanceBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return MyColors.warning;
       case MaintenanceStatus.terjadwal:
-      return MyColors.success;
+        return MyColors.success;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final name = main.itemName;
-    final typeUnit = main.typeUnit ?? '-';
     final intervalDays = main.intervalDays;
     final priority = main.priority;
     final initial = main.cycleInitialQuantity;
@@ -108,7 +107,9 @@ class MaintenanceBox extends StatelessWidget {
               ),
               // const SizedBox(height: 6),
               Text(
-                typeUnit,
+                main.partNumber != null && main.partNumber!.isNotEmpty
+                    ? 'Nomor Part: ${main.partNumber}'
+                    : 'Tipe Unit: ${main.typeUnit ?? '-'}',
                 style: TextStyle(color: MyColors.black.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 12),
@@ -178,7 +179,7 @@ class MaintenanceBox extends StatelessWidget {
       case MaintenanceStatus.dalamProses:
         return 'Dalam Proses';
       case MaintenanceStatus.terjadwal:
-      return 'Terjadwal';
+        return 'Terjadwal';
     }
   }
 }
