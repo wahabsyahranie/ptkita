@@ -1,175 +1,103 @@
-# Capstone Project – Layered Architecture Blueprint (CLA v1)
+# 💻 Source Code - Maintenance App
 
-This project uses a structured layered architecture to ensure scalability, maintainability, and future backend flexibility.
+## 📥 Requirements
 
----
+Pastikan sudah terinstall:
 
-## Architecture Overview
-
-The application follows a layered pattern:
-
-UI (Widgets)
-↓
-Service (Business Logic)
-↓
-Repository (Data Access)
-↓
-Data Source (Firestore / Excel / MySQL / API)
-
-Each layer has a clear responsibility and must not violate separation rules.
+- Flutter SDK
+- Android Studio / VSCode
+- Dart
 
 ---
 
-## Layer Responsibilities
+## 🚀 Cara Menjalankan Project
 
-### UI Layer (Widgets / Pages)
-
-Location:
-lib/pages/
-
-Responsibilities:
-
-- Render UI
-- Handle user interaction
-- Consume data from Service layer
-- Must NOT access Firestore, API, or database directly
-- Must NOT contain business logic
-
-Rules:
-
-- No Firebase queries inside UI
-- No Map<String, dynamic> parsing
-- Use Models only
+```bash
+flutter pub get
+flutter run
+```
 
 ---
 
-### Service Layer
+## 🏗️ Build APK
 
-Location:
-lib/services/
-
-Responsibilities:
-
-- Business logic
-- Data transformation
-- Combining multiple repositories
-- Calculations (progress, summary, filtering logic)
-
-Service communicates only with Repository.
+```bash
+flutter build apk --release
+```
 
 ---
 
-### Repository Layer
+## 📁 Struktur Project
 
-Location:
-lib/repositories/
-
-Responsibilities:
-
-- Data access abstraction
-- Communicate with database (Firestore, Excel, MySQL, API)
-- Convert raw data into Models
-
-All repositories must implement abstract classes.
-
-Example:
-
-abstract class HomeRepository {
-Future<RepairSummaryModel> getRepairSummary(int days);
-}
-
-Concrete implementation:
-
-class FirestoreHomeRepository implements HomeRepository
-
-This allows easy backend replacement.
+```bash
+lib/
+ ├── models/
+ ├── services/
+ ├── repositories/
+ ├── pages/
+ ├── widgets/
+```
 
 ---
 
-### Model Layer
+## 🧠 Arsitektur
 
-Location:
-lib/models/
+Menggunakan pola:
 
-Responsibilities:
+```
+UI → Service → Repository → Firestore
+```
 
-- Data structure definition (DTO)
-- Strong typing
-- Optional computed properties
+### Aturan:
 
-Models MUST NOT:
-
-- Query database
-- Contain business logic
-- Know about Firestore
+- UI hanya render
+- Business logic di Service
+- Repository handle Firestore
+- Stream digunakan untuk data real-time
 
 ---
 
-## Data Flow Example
+## 🔥 Data Flow
 
-HomePage
-↓
-HomeService
-↓
-FirestoreHomeRepository
-↓
-Firestore
+- Stream digunakan untuk:
+  - Maintenance
+  - Statistik
 
----
-
-## Design Principles
-
-- UI is database-agnostic
-- No vendor lock-in
-- Future caching handled in initState()
-- Streams only used for real-time data
-- Modular widgets per page
-- No business logic inside widgets
+- Future digunakan untuk:
+  - Inventory
+  - Summary
+  - Chart
 
 ---
 
-## Color System
+## ⚠️ Catatan Developer
 
-Color palette is centralized in:
-
-lib/styles/colors.dart
-
-Status colors:
-
-- success
-- error
-- warning
-- info
-
-Colors follow a warm-industrial theme to match brand identity.
+- Jangan melakukan query di UI
+- Gunakan stream yang sudah di-cache di initState
+- Hindari nested StreamBuilder
 
 ---
 
-## Backend Flexibility
+## 🔐 Firebase Setup
 
-Because of repository abstraction, backend can be replaced with:
+Tambahkan file berikut:
 
-- Excel local file
-- MySQL server
-- REST API
-- Firebase
-- Offline database
+### Android:
 
-Without modifying UI layer.
+```
+android/app/google-services.json
+```
 
----
+### iOS:
 
-## Naming Convention
-
-All code variables use English naming.
-
-Discussion may use Indonesian, but code must remain English.
+```
+ios/Runner/GoogleService-Info.plist
+```
 
 ---
 
-## Current Architecture Version
+## 📌 Versi
 
-Blueprint Name:
-Capstone Layered Architecture v1 (CLA v1)
+v1.0.0
 
-Any new feature must follow this blueprint.
+---
