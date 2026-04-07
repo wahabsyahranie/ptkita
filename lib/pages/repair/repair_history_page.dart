@@ -198,7 +198,8 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
                     : ListView.separated(
                         controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                        itemCount: filtered.length + 1,
+                        itemCount:
+                            filtered.length + (_historyService.hasMore ? 1 : 0),
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, i) {
                           if (i < filtered.length) {
@@ -208,10 +209,6 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
                                 loadRepairs(refresh: true);
                               },
                             );
-                          }
-
-                          if (!_historyService.hasMore) {
-                            return const SizedBox();
                           }
 
                           return const Padding(

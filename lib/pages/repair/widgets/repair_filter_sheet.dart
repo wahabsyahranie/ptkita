@@ -80,15 +80,17 @@ class _RepairFilterSheetState extends State<RepairFilterSheet> {
 
           const SizedBox(height: 20),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _chip('all', 'Semua'),
-              const SizedBox(width: 12),
-              _chip('done', 'Selesai'),
-              const SizedBox(width: 12),
-              _chip('pending', 'Belum Selesai'),
-            ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _chip('all', 'Semua'),
+                _chip('done', 'Selesai'),
+                _chip('pending', 'Belum Selesai'),
+              ],
+            ),
           ),
 
           const SizedBox(height: 26),
