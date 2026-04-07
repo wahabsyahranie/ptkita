@@ -68,12 +68,12 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
                   horizontal: 16,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(Icons.check_circle, color: Colors.green),
                     SizedBox(width: 8),
                     Text(
@@ -193,11 +193,11 @@ class _AnalysisSuccessPageState extends State<AnalysisSuccessPage> {
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(16),
       color: Colors.white,
-      boxShadow: [
+      boxShadow: const [
         BoxShadow(
           color: Colors.black12,
           blurRadius: 10,
-          offset: const Offset(0, 4),
+          offset: Offset(0, 4),
         ),
       ],
     ),
