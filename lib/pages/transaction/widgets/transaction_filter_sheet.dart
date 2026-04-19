@@ -125,101 +125,104 @@ class _TransactionFilterSheetState extends State<TransactionFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 26),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF3E6D7),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// DRAG HANDLE
-            Center(
-              child: Container(
-                width: 42,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-
-            /// TITLE
-            const Center(
-              child: Text(
-                "Filter Tanggal",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-            ),
-
-            const SizedBox(height: 22),
-
-            /// QUICK FILTER
-            const Text(
-              "Rentang Cepat",
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-
-            const SizedBox(height: 10),
-
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                chip("today", "Hari Ini"),
-                chip("7days", "7 Hari"),
-                chip("30days", "30 Hari"),
-                chip("all", "Semua"),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            /// CUSTOM RANGE
-            const Text(
-              "Rentang Custom",
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                dateBox("Start", startDate, pickStart),
-                const SizedBox(width: 10),
-                dateBox("End", endDate, pickEnd),
-              ],
-            ),
-
-            const SizedBox(height: 28),
-
-            /// BUTTON
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MyColors.secondary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 26),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF3E6D7),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// DRAG HANDLE
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                onPressed: () {
-                  widget.onApply(selected, startDate, endDate);
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  "Simpan",
-                  style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+
+              /// TITLE
+              const Center(
+                child: Text(
+                  "Filter Tanggal",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 22),
+
+              /// QUICK FILTER
+              const Text(
+                "Rentang Cepat",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+
+              const SizedBox(height: 10),
+
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  chip("today", "Hari Ini"),
+                  chip("7days", "7 Hari"),
+                  chip("30days", "30 Hari"),
+                  chip("all", "Semua"),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              /// CUSTOM RANGE
+              const Text(
+                "Rentang Custom",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+
+              const SizedBox(height: 10),
+
+              Row(
+                children: [
+                  dateBox("Start", startDate, pickStart),
+                  const SizedBox(width: 10),
+                  dateBox("End", endDate, pickEnd),
+                ],
+              ),
+
+              const SizedBox(height: 28),
+
+              /// BUTTON
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MyColors.secondary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: () {
+                    widget.onApply(selected, startDate, endDate);
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    "Simpan",
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
