@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+const _noChange = Object();
+
 class Item {
   final String? id;
   final String? name;
@@ -105,7 +107,7 @@ class Item {
       'movementBaseScore': movementBaseScore,
       'movementAutoScore': movementAutoScore,
       'movementTotalScore': movementTotalScore,
-      if (partNumber != null) 'partNumber': partNumber,
+      'partNumber': partNumber,
       if (createdById != null) 'createdById': createdById,
       if (createdByName != null) 'createdByName': createdByName,
       if (createdAt != null) 'createdAt': createdAt,
@@ -123,7 +125,7 @@ class Item {
     int? stock,
     String? description,
     String? locationCode,
-    String? partNumber,
+    Object? partNumber = _noChange,
     String? category,
     String? merk,
     String? brandId,
@@ -157,7 +159,9 @@ class Item {
       movementBaseScore: movementBaseScore ?? this.movementBaseScore,
       movementAutoScore: movementAutoScore ?? this.movementAutoScore,
       movementTotalScore: movementTotalScore ?? this.movementTotalScore,
-      partNumber: partNumber ?? this.partNumber,
+      partNumber: identical(partNumber, _noChange)
+          ? this.partNumber
+          : partNumber as String?,
       createdById: createdById ?? this.createdById,
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,
