@@ -53,69 +53,72 @@ class _RepairFilterSheetState extends State<RepairFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 26),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF3E6D7),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          /// drag handle
-          Container(
-            width: 42,
-            height: 5,
-            margin: const EdgeInsets.only(bottom: 14),
-            decoration: BoxDecoration(
-              color: Colors.black26,
-              borderRadius: BorderRadius.circular(10),
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 26),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF3E6D7),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            /// drag handle
+            Container(
+              width: 42,
+              height: 5,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-          ),
 
-          const Text(
-            'Filter',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-
-          const SizedBox(height: 20),
-
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _chip('all', 'Semua'),
-                _chip('done', 'Selesai'),
-                _chip('pending', 'Belum Selesai'),
-              ],
+            const Text(
+              'Filter',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
-          ),
 
-          const SizedBox(height: 26),
+            const SizedBox(height: 20),
 
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MyColors.secondary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _chip('all', 'Semua'),
+                  _chip('done', 'Selesai'),
+                  _chip('pending', 'Belum Selesai'),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 26),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MyColors.secondary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () {
+                  widget.onApply(selected);
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'Simpan',
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-              onPressed: () {
-                widget.onApply(selected);
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Simpan',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

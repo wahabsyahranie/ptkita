@@ -46,77 +46,78 @@ class WarrantyFilterSheet extends StatelessWidget {
 
     return StatefulBuilder(
       builder: (context, setModalState) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Center(
-                child: SizedBox(width: 40, child: Divider(thickness: 4)),
-              ),
-
-              const SizedBox(height: 16),
-
-              const Center(
-                child: Text(
-                  'Filter',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: SizedBox(width: 40, child: Divider(thickness: 4)),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _buildFilterOption(
-                    label: 'Semua',
-                    value: 'all',
-                    groupValue: tempFilter,
-                    onChanged: (v) => setModalState(() => tempFilter = v),
+                const Center(
+                  child: Text(
+                    'Filter',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
+                ),
 
-                  _buildFilterOption(
-                    label: 'Aktif',
-                    value: 'active',
-                    groupValue: tempFilter,
-                    onChanged: (v) => setModalState(() => tempFilter = v),
-                  ),
+                const SizedBox(height: 20),
 
-                  _buildFilterOption(
-                    label: 'Expired',
-                    value: 'expired',
-                    groupValue: tempFilter,
-                    onChanged: (v) => setModalState(() => tempFilter = v),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MyColors.secondary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _buildFilterOption(
+                      label: 'Semua',
+                      value: 'all',
+                      groupValue: tempFilter,
+                      onChanged: (v) => setModalState(() => tempFilter = v),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: () {
-                    onApply(tempFilter);
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'Simpan',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    _buildFilterOption(
+                      label: 'Aktif',
+                      value: 'active',
+                      groupValue: tempFilter,
+                      onChanged: (v) => setModalState(() => tempFilter = v),
+                    ),
+                    _buildFilterOption(
+                      label: 'Expired',
+                      value: 'expired',
+                      groupValue: tempFilter,
+                      onChanged: (v) => setModalState(() => tempFilter = v),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MyColors.secondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      onApply(tempFilter);
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      'Simpan',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

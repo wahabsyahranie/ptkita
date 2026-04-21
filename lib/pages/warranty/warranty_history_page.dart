@@ -43,7 +43,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >
           _scrollController.position.maxScrollExtent - 200) {
-        if (!_isLoading && _hasMore) {
+        if (!_isLoading && _hasMore && _statusFilter != 'expired') {
           _loadMore();
         }
       }
@@ -225,7 +225,11 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount:
                           displayList.length +
-                          (_searchCtrl.text.isEmpty && _hasMore ? 1 : 0),
+                          (_searchCtrl.text.isEmpty &&
+                                  _hasMore &&
+                                  _statusFilter != 'expired'
+                              ? 1
+                              : 0),
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, i) {
                         if (i < displayList.length) {
@@ -233,7 +237,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
                           return WarrantyCard(warranty: w);
                         }
 
-                        if (_hasMore) {
+                        if (_hasMore && _statusFilter != 'expired') {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 20),
                             child: Center(child: CircularProgressIndicator()),
