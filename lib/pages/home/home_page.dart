@@ -52,6 +52,10 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await widget.userService.validateSession();
+    });
+
     _homeService = HomeService(FirestoreHomeRepository());
 
     _repairSummaryFuture = _homeService.repairSummary(30);
