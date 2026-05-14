@@ -178,8 +178,34 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
             qty: _cartItems[index].qty + _qty,
           );
         });
+
         return;
       }
+
+      /// TAMBAH INI
+      final cartItem = CartItemModel(
+        itemId: _selectedItem!['id'],
+        name: _selectedItem!['name'],
+        type: _selectedItem!['category'] ?? 'item',
+        brandName: _selectedItem!['brandName'],
+        price: price,
+        qty: _qty,
+        hasWarranty: false,
+        warrantyYear: 0,
+        warrantyType: null,
+        serialNumbers: [],
+        claimLimit: null,
+      );
+
+      setState(() {
+        _cartItems.add(cartItem);
+
+        _selectedItem = null;
+        _selectedItemId = null;
+        _qty = 1;
+      });
+
+      return;
     }
 
     if (isUnit) {
