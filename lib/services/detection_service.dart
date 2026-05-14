@@ -22,7 +22,7 @@ class DetectionService {
 
       var responseBody = await response.stream.bytesToString();
 
-      print("Response server: $responseBody");
+      // print("Response server: $responseBody");
 
       // ===============================
       // HANDLE ERROR STATUS CODE
@@ -48,7 +48,7 @@ class DetectionService {
 
       return decoded;
     } catch (e) {
-      print("Detection error: $e");
+      // print("Detection error: $e");
 
       return {
         "status": "failed",
