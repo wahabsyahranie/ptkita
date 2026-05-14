@@ -32,10 +32,12 @@ class InventoryService extends ChangeNotifier {
   InventoryFilter? _currentFilter;
   String _currentSearch = '';
 
+  bool _isInitialLoading = false;
+  bool get isInitialLoading => _isInitialLoading;
+
   List<Item> get items => List.unmodifiable(_items);
   bool get hasMore => _hasMore;
   bool get isLoading => _isLoading;
-
   Future<void> resetAndFetch({
     required InventoryFilter filter,
     required String searchQuery,
@@ -43,11 +45,19 @@ class InventoryService extends ChangeNotifier {
     _items.clear();
     _cursor = null;
     _hasMore = true;
+
     _currentFilter = filter;
     _currentSearch = searchQuery.toLowerCase().trim();
 
-    await fetchNextPage();
+    _isInitialLoading = true;
     notifyListeners();
+
+    try {
+      await fetchNextPage();
+    } finally {
+      _isInitialLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> fetchNextPage() async {
@@ -55,6 +65,7 @@ class InventoryService extends ChangeNotifier {
     if (_currentFilter == null) return;
 
     _isLoading = true;
+    notifyListeners();
 
     try {
       final result = await _repository.fetchItemsPage(

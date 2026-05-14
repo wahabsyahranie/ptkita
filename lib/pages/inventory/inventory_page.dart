@@ -190,7 +190,7 @@ class _InventoryPageState extends State<InventoryPage> {
               onRefresh: () async {
                 await _service.refresh();
               },
-              child: _service.items.isEmpty
+              child: _service.isInitialLoading
                   ? CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [

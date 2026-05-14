@@ -22,13 +22,21 @@ class FirestoreUserRepository implements UserRepository {
   }
 
   @override
-  Stream<UserModel> getUserProfile(String uid) {
-    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
-      final data = doc.data() ?? {};
+  Stream<UserModel?> getUserProfile(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().asyncMap((
+      doc,
+    ) async {
+      // 🔥 user firestore sudah dihapus
+      if (!doc.exists) {
+        await _auth.signOut();
+        return null;
+      }
+
+      final data = doc.data()!;
 
       return UserModel(
         id: uid,
-        name: data['name'] ?? 'Teknisi',
+        name: data['name'],
         photoUrl: data['photoUrl'],
         phone: data['phone'],
       );

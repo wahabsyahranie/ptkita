@@ -27,4 +27,21 @@ class UserService {
 
     await repository.signIn(email: email, password: password);
   }
+
+  // Validasi Sesi
+  Future<void> validateSession() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    try {
+      await user.reload();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'user-disabled') {
+        await repository.signOut();
+      } else {
+        rethrow;
+      }
+    }
+  }
 }

@@ -9,7 +9,7 @@ abstract class UserRepository {
   Future<void> signOut();
 
   /// Ambil user profile berdasarkan uid
-  Stream<UserModel> getUserProfile(String uid);
+  Stream<UserModel?> getUserProfile(String uid);
 
   Future<void> signIn({required String email, required String password});
 }
