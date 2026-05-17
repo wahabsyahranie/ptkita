@@ -408,12 +408,26 @@ class _RepairAddPageState extends State<RepairAddPage> {
                   label: 'No. Hp',
                   keyboardType: TextInputType.phone,
                   readOnly: _repairCategory == 'warranty',
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'No. Hp wajib diisi';
+                    }
+
+                    if (v.trim().length < 10) {
+                      return 'No. Hp tidak valid';
+                    }
+
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
 
                 AppTextFormField(
                   controller: _completenessCtrl,
                   label: 'Kelengkapan',
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Kelengkapan wajib diisi'
+                      : null,
                 ),
                 const SizedBox(height: 12),
 

@@ -75,11 +75,14 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       _hasMore = false;
     }
 
-    _docs.addAll(newDocs);
-    _applyDateFilter();
-
     if (mounted) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _docs.addAll(newDocs);
+
+        _applyDateFilter();
+
+        _isLoading = false;
+      });
     }
   }
 
@@ -206,7 +209,11 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           if (res is Map && res['ok'] == true) {
             messenger.showSnackBar(const SnackBar(content: Text('Added!')));
 
-            _refresh();
+            await _refresh();
+
+            if (mounted) {
+              setState(() {});
+            }
           }
         },
       ),
@@ -303,7 +310,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                                 MaterialPageRoute(
                                   builder: (_) => TransactionDetailPage(
                                     data: data,
-                                    transactionId: _docs[i].id,
+                                    transactionId: _filteredDocs[i].id,
                                   ),
                                 ),
                               );
