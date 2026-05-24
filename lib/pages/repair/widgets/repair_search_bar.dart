@@ -24,6 +24,7 @@ class RepairSearchBar extends StatelessWidget {
         children: [
           const Icon(Icons.search_rounded, color: MyColors.secondary),
           const SizedBox(width: 10),
+
           Expanded(
             child: TextField(
               controller: controller,
@@ -36,14 +37,27 @@ class RepairSearchBar extends StatelessWidget {
               ),
             ),
           ),
-          if (controller.text.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                controller.clear();
-                onChanged('');
-              },
-              child: const Icon(Icons.close_rounded, color: MyColors.secondary),
-            ),
+
+          /// CLEAR BUTTON
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              if (value.text.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return GestureDetector(
+                onTap: () {
+                  controller.clear();
+                  onChanged('');
+                },
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: MyColors.secondary,
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

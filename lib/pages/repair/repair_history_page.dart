@@ -41,6 +41,12 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
     loadRepairs();
 
     _scrollController.addListener(() {
+      /// JANGAN LOAD SAAT SEARCH AKTIF
+      if (_search.text.trim().isNotEmpty) return;
+
+      /// JANGAN LOAD SAAT MASIH SEARCHING
+      if (_isSearching) return;
+
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
         loadRepairs();
@@ -54,6 +60,8 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
     if (refresh) {
       repairs.clear();
       filteredRepairs.clear();
+
+      _search.clear();
     }
 
     setState(() {
@@ -68,7 +76,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
 
     setState(() {
       repairs.addAll(data);
-      filteredRepairs = List.from(repairs);
+      filteredRepairs = [...repairs];
 
       isLoading = false;
       isFirstLoad = false;
@@ -78,11 +86,15 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
   void _onSearchChanged(String text) async {
     final query = text.trim();
 
+    /// SEARCH KOSONG
     if (query.isEmpty) {
+      if (!mounted) return;
+
       setState(() {
-        filteredRepairs = List.from(repairs);
+        filteredRepairs = [...repairs];
         _isSearching = false;
       });
+
       return;
     }
 
@@ -90,15 +102,21 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
       _isSearching = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    /// CEGAH SEARCH LAMA MENIMPA SEARCH BARU
+    if (_search.text.trim() != query) return;
 
     final ids = _historyService.search(query);
 
-    // print("SEARCH IDS: $ids");
-    // print("REPAIRS IDS: ${repairs.map((e) => e.id).toList()}");
+    final results = repairs.where((r) {
+      return ids.contains(r.id);
+    }).toList();
+
+    if (!mounted) return;
 
     setState(() {
-      filteredRepairs = repairs.where((r) => ids.contains(r.id)).toList();
+      filteredRepairs = results;
       _isSearching = false;
     });
   }
@@ -199,7 +217,10 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
                         controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
                         itemCount:
-                            filtered.length + (_historyService.hasMore ? 1 : 0),
+                            filtered.length +
+                            (_historyService.hasMore && _search.text.isEmpty
+                                ? 1
+                                : 0),
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, i) {
                           if (i < filtered.length) {
