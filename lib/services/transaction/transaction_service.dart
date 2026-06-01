@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../models/transaction/cart_item_model.dart';
 import 'package:flutter_kita/services/warranty/warranty_service.dart';
 
@@ -34,14 +36,28 @@ class TransactionService {
     required String phone,
     required DateTime date,
     required List<CartItemModel> items,
+    required int serviceFee,
   }) async {
     final txRef = db.collection('transaction').doc();
 
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid;
+
+    String createdByName = 'Unknown';
+
     final transactionId = txRef.id;
+
+    if (uid != null) {
+      final userDoc = await db.collection('users').doc(uid).get();
+
+      createdByName = userDoc.data()?['name'] ?? 'Unknown';
+    }
 
     final totalQty = items.fold<int>(0, (s, e) => s + e.qty);
 
-    final subtotal = items.fold<int>(0, (s, e) => s + e.subtotal);
+    final itemSubtotal = items.fold<int>(0, (s, e) => s + e.subtotal);
+
+    final subtotal = itemSubtotal + serviceFee;
 
     final txCode = await generateTxCode();
 
@@ -51,7 +67,15 @@ class TransactionService {
 
       'items': items.map((e) => e.toMap()).toList(),
 
-      'summary': {'subtotal': subtotal, 'totalQty': totalQty, 'txCode': txCode},
+      'summary': {
+        'subtotal': subtotal,
+        'serviceFee': serviceFee,
+        'totalQty': totalQty,
+        'txCode': txCode,
+      },
+
+      'createdByUid': uid,
+      'createdByName': createdByName,
 
       'status': 'Sudah Dibayar',
       'createdAt': FieldValue.serverTimestamp(),

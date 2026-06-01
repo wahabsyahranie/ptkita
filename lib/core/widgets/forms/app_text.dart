@@ -9,6 +9,7 @@ class AppTextFormField extends StatelessWidget {
   final int maxLines;
   final bool readOnly;
   final VoidCallback? onTap;
+  final Function(String)? onChanged;
 
   const AppTextFormField({
     super.key,
@@ -19,6 +20,7 @@ class AppTextFormField extends StatelessWidget {
     this.maxLines = 1,
     this.readOnly = false,
     this.onTap,
+    this.onChanged,
   });
 
   @override
@@ -30,6 +32,7 @@ class AppTextFormField extends StatelessWidget {
       maxLines: maxLines,
       readOnly: readOnly,
       onTap: onTap,
+      onChanged: onChanged,
 
       decoration: InputDecoration(
         labelText: label,

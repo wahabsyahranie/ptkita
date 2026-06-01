@@ -27,6 +27,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _dateCtrl = TextEditingController();
   final TextEditingController _phoneCtrl = TextEditingController();
+  final TextEditingController _serviceFeeCtrl = TextEditingController();
 
   // final FocusNode _nameFocus = FocusNode();
   // final FocusNode _phoneFocus = FocusNode();
@@ -77,9 +78,14 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   @override
   void initState() {
     super.initState();
+
     _loadItems();
 
     _generateSerialControllers();
+
+    _serviceFeeCtrl.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -87,6 +93,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
     _nameCtrl.dispose();
     _dateCtrl.dispose();
     _phoneCtrl.dispose();
+    _serviceFeeCtrl.dispose();
     super.dispose();
   }
 
@@ -130,8 +137,18 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // =========================
   // TOTAL
   // =========================
-  int get _total {
+  int get _serviceFee {
+    final clean = _serviceFeeCtrl.text.replaceAll('.', '');
+
+    return int.tryParse(clean) ?? 0;
+  }
+
+  int get _subtotalItem {
     return _cartItems.fold<int>(0, (acc, item) => acc + item.subtotal);
+  }
+
+  int get _total {
+    return _subtotalItem + _serviceFee;
   }
 
   // =========================
@@ -279,6 +296,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
         phone: _phoneCtrl.text.trim(),
         date: _transactionDate ?? DateTime.now(),
         items: _cartItems,
+        serviceFee: _serviceFee,
       );
 
       if (!mounted) return;
@@ -329,6 +347,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                       nameCtrl: _nameCtrl,
                       phoneCtrl: _phoneCtrl,
                       dateCtrl: _dateCtrl,
+                      serviceFeeCtrl: _serviceFeeCtrl,
                       onPickDate: _pickDate,
                     ),
 

@@ -21,6 +21,7 @@ class TransactionDetailPage extends StatelessWidget {
     final items = List<Map<String, dynamic>>.from(data['items'] ?? []);
     final date = (data['date'] as Timestamp).toDate();
     final status = data['status'] ?? '—';
+    final createdByName = data['createdByName'] ?? '—';
 
     final hasWarranty = items.any((i) => i['hasWarranty'] == true);
 
@@ -77,7 +78,12 @@ class TransactionDetailPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
-            _Header(txCode: summary['txCode'], status: status, date: date),
+            _Header(
+              txCode: summary['txCode'],
+              status: status,
+              date: date,
+              createdByName: createdByName,
+            ),
             const SizedBox(height: 16),
 
             _SectionCard(
@@ -109,10 +115,19 @@ class TransactionDetailPage extends StatelessWidget {
               child: Column(
                 children: [
                   _row('Total Item', '${summary['totalQty']}'),
-                  const Divider(),
+
+                  _row('Biaya Jasa', 'Rp ${_fmt(summary['serviceFee'] ?? 0)}'),
+
                   _row(
                     'Subtotal',
-                    'Rp ${_fmt(summary['subtotal'])}',
+                    'Rp ${_fmt((summary['subtotal'] ?? 0) - (summary['serviceFee'] ?? 0))}',
+                  ),
+
+                  const Divider(),
+
+                  _row(
+                    'Total',
+                    'Rp ${_fmt(summary['subtotal'] ?? 0)}',
                     isBold: true,
                   ),
                 ],
@@ -177,11 +192,13 @@ class _Header extends StatelessWidget {
     required this.txCode,
     required this.status,
     required this.date,
+    required this.createdByName,
   });
 
   final String? txCode;
   final String status;
   final DateTime date;
+  final String createdByName;
 
   @override
   Widget build(BuildContext context) {
@@ -210,6 +227,13 @@ class _Header extends StatelessWidget {
           Text(
             '${date.day}/${date.month}/${date.year}',
             style: TextStyle(color: Colors.grey.shade600),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            'Dibuat Oleh: $createdByName',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
         ],
       ),
