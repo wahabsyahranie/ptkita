@@ -7,9 +7,14 @@ class TransactionFilterSheet extends StatefulWidget {
     super.key,
     required this.currentFilter,
     required this.onApply,
+    this.initialStartDate,
+    this.initialEndDate,
   });
 
   final String currentFilter;
+  final DateTime? initialStartDate;
+  final DateTime? initialEndDate;
+
   final Function(String, DateTime?, DateTime?) onApply;
 
   @override
@@ -17,10 +22,19 @@ class TransactionFilterSheet extends StatefulWidget {
 }
 
 class _TransactionFilterSheetState extends State<TransactionFilterSheet> {
-  String selected = "all";
+  late String selected;
 
   DateTime? startDate;
   DateTime? endDate;
+
+  @override
+  void initState() {
+    super.initState();
+
+    selected = widget.currentFilter;
+    startDate = widget.initialStartDate;
+    endDate = widget.initialEndDate;
+  }
 
   /// CHIP FILTER
   Widget chip(String value, String label) {

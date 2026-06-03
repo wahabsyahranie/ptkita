@@ -244,6 +244,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                         builder: (context) {
                           return TransactionFilterSheet(
                             currentFilter: _dateFilter,
+                            initialStartDate: _startDate,
+                            initialEndDate: _endDate,
                             onApply: (value, start, end) {
                               setState(() {
                                 _dateFilter = value;
