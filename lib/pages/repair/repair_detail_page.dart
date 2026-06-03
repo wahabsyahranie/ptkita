@@ -133,6 +133,8 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
           transactionId: _current['transactionId'],
           transactionCode: _current['transactionCode'],
 
+          warrantyType: _current['warrantySnapshot']?['warrantyType'],
+
           onSubmit: () async {
             await _markSelesai();
             if (!mounted) return;

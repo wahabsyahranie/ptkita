@@ -154,6 +154,7 @@ class WarrantyDetailPage extends StatelessWidget {
                                   'buyerName': warranty.buyerName,
                                   'productName': warranty.productName,
                                   'phone': warranty.phone,
+                                  'warrantyType': warranty.warrantyType,
                                 },
                               ),
                             ),

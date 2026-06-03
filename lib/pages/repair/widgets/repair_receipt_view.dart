@@ -76,6 +76,11 @@ class RepairReceiptView extends StatelessWidget {
               _buildRow("Nama Pelanggan", data['buyerName']),
               _buildRow("No WhatsApp", phone),
               _buildRow("Nama Barang", data['itemName']),
+              if (_isWarranty)
+                _buildRow(
+                  "Jenis Garansi",
+                  "Garansi ${data['warrantySnapshot']?['warrantyType'] ?? '-'}",
+                ),
               _buildRow("Kelengkapan", kelengkapan),
 
               const SizedBox(height: 6),

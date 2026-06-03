@@ -157,6 +157,18 @@ class _TransactionSearchSheetState extends State<TransactionSearchSheet> {
 
                       final summary = data['summary'] as Map<String, dynamic>?;
 
+                      final items = data['items'] as List<dynamic>? ?? [];
+
+                      final serviceFee = summary?['serviceFee'] ?? 0;
+
+                      final partCost = items.fold<int>(
+                        0,
+                        (totalPart, item) =>
+                            totalPart + ((item['subtotal'] ?? 0) as int),
+                      );
+
+                      final total = summary?['subtotal'] ?? 0;
+
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -173,13 +185,29 @@ class _TransactionSearchSheetState extends State<TransactionSearchSheet> {
                           children: [
                             Text(customer?['name'] ?? '-'),
 
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 6),
 
                             Text(
-                              'Rp ${NumberFormat.decimalPattern('id_ID').format(summary?['subtotal'] ?? 0)}',
+                              'Jasa : Rp ${NumberFormat.decimalPattern('id_ID').format(serviceFee)}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.black54,
+                              ),
+                            ),
+
+                            Text(
+                              'Part : Rp ${NumberFormat.decimalPattern('id_ID').format(partCost)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+
+                            Text(
+                              'Total : Rp ${NumberFormat.decimalPattern('id_ID').format(total)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],

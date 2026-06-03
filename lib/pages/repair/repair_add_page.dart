@@ -75,6 +75,22 @@ class _RepairAddPageState extends State<RepairAddPage> {
     }
   }
 
+  void _resetFormSelection() {
+    _selectedWarrantyId = null;
+    _selectedWarrantyData = null;
+
+    _selectedTransactionId = null;
+    _selectedTransaction = null;
+
+    _buyerCtrl.clear();
+    _itemCtrl.clear();
+    _hpCtrl.clear();
+    _completenessCtrl.clear();
+    _detailCtrl.clear();
+
+    _costCtrl.clear();
+  }
+
   Future<void> _autoFillTechnician() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -130,6 +146,34 @@ class _RepairAddPageState extends State<RepairAddPage> {
       if (result != null) {
         final summary = result['summary'] as Map<String, dynamic>? ?? {};
 
+        final items = result['items'] as List<dynamic>? ?? [];
+
+        final serviceFee = summary['serviceFee'] ?? 0;
+
+        final partCost = items.fold<int>(
+          0,
+          (totalPart, item) => totalPart + ((item['subtotal'] ?? 0) as int),
+        );
+
+        final total = summary['subtotal'] ?? 0;
+
+        int finalCost = total;
+
+        if (_repairCategory == 'warranty') {
+          final warrantyType = (_selectedWarrantyData?['warrantyType'] ?? '')
+              .toString()
+              .toLowerCase()
+              .trim();
+
+          if (warrantyType == 'jasa') {
+            // jasa gratis → customer bayar part
+            finalCost = partCost;
+          } else if (warrantyType == 'sparepart' || warrantyType == 'part') {
+            // part gratis → customer bayar jasa
+            finalCost = serviceFee;
+          }
+        }
+
         setState(() {
           _selectedTransactionId = result['id'];
           _selectedTransaction = result;
@@ -138,7 +182,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
             locale: 'id_ID',
             symbol: 'Rp ',
             decimalDigits: 0,
-          ).format(summary['subtotal'] ?? 0);
+          ).format(finalCost);
         });
       }
     });
@@ -332,7 +376,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
                             : (v) {
                                 setState(() {
                                   _repairCategory = v!;
-                                  _costCtrl.text = '0';
+                                  _resetFormSelection();
                                 });
                               },
                         dense: true,
@@ -350,9 +394,7 @@ class _RepairAddPageState extends State<RepairAddPage> {
                             : (v) {
                                 setState(() {
                                   _repairCategory = v!;
-                                  _selectedWarrantyId = null;
-                                  _selectedWarrantyData = null;
-                                  _costCtrl.clear();
+                                  _resetFormSelection();
                                 });
                               },
                         dense: true,
@@ -413,6 +455,61 @@ class _RepairAddPageState extends State<RepairAddPage> {
                   readOnly: _repairCategory == 'warranty',
                 ),
                 const SizedBox(height: 12),
+
+                if (_repairCategory == 'warranty' &&
+                    _selectedWarrantyData != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Jenis Garansi',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          _selectedWarrantyData!['warrantyType'] ?? '-',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          'Biaya yang ditagihkan:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          (_selectedWarrantyData!['warrantyType'] == 'Jasa')
+                              ? 'Part saja'
+                              : 'Jasa saja',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                ],
 
                 AppTextFormField(
                   controller: _technicianController,
@@ -506,10 +603,19 @@ class _RepairAddPageState extends State<RepairAddPage> {
                                     const SizedBox(height: 4),
 
                                     Text(
-                                      'Rp ${NumberFormat.decimalPattern('id_ID').format(_selectedTransaction!['summary']['subtotal'] ?? 0)}',
-                                      style: const TextStyle(
+                                      'Biaya yang ditagihkan',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
                                         fontSize: 12,
-                                        color: Colors.black54,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 2),
+
+                                    Text(
+                                      _costCtrl.text,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],

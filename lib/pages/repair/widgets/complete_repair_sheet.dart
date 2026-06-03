@@ -8,6 +8,7 @@ class CompleteRepairSheet extends StatefulWidget {
 
   final String? transactionId;
   final String? transactionCode;
+  final String? warrantyType;
 
   final VoidCallback onSubmit;
 
@@ -17,6 +18,7 @@ class CompleteRepairSheet extends StatefulWidget {
     required this.costCtrl,
     required this.transactionId,
     required this.transactionCode,
+    required this.warrantyType,
     required this.onSubmit,
   });
 
@@ -44,10 +46,34 @@ class _CompleteRepairSheetState extends State<CompleteRepairSheet> {
 
     final summary = result['summary'] as Map<String, dynamic>? ?? {};
 
+    final items = result['items'] as List<dynamic>? ?? [];
+
+    final serviceFee = summary['serviceFee'] ?? 0;
+
+    final partCost = items.fold<int>(
+      0,
+      (totalPart, item) => totalPart + ((item['subtotal'] ?? 0) as int),
+    );
+
+    final total = summary['subtotal'] ?? 0;
+
+    int finalCost = total;
+
+    final warrantyType = widget.warrantyType?.toLowerCase().trim();
+
+    if (warrantyType == 'jasa') {
+      finalCost = partCost;
+    } else if (warrantyType == 'part' || warrantyType == 'sparepart') {
+      finalCost = serviceFee;
+    }
+
+    print('Warranty Type: ${widget.warrantyType}');
+    print('Final Cost: $finalCost');
+
     setState(() {
       _selectedTransaction = result;
 
-      widget.costCtrl.text = (summary['subtotal'] ?? 0).toString();
+      widget.costCtrl.text = finalCost.toString();
     });
   }
 
@@ -168,16 +194,28 @@ class _CompleteRepairSheetState extends State<CompleteRepairSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _selectedTransaction!['summary']['txCode'],
+                            '${_selectedTransaction!['summary']['txCode']} - ${_selectedTransaction!['customer']['name']}',
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
 
                           const SizedBox(height: 4),
 
                           Text(
-                            Formatters.formatRupiah(
-                              _selectedTransaction!['summary']['subtotal'] ?? 0,
+                            'Biaya yang ditagihkan',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
                             ),
+                          ),
+
+                          const SizedBox(height: 2),
+
+                          Text(
+                            Formatters.formatRupiah(
+                              int.tryParse(widget.costCtrl.text) ?? 0,
+                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
