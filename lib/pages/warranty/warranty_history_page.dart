@@ -27,6 +27,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
 
   bool _isLoading = false;
   bool _hasMore = true;
+  bool _allDataLoaded = false;
 
   final int _limit = 10;
 
@@ -88,6 +89,7 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
       _lastDoc = null;
       _hasMore = true;
       _isLoading = false;
+      _allDataLoaded = false;
     });
 
     await _loadMore();
@@ -101,6 +103,17 @@ class _WarrantyHistoryPageState extends State<WarrantyHistoryPage> {
         _filteredWarranties = List.from(_warranties);
       });
       return;
+    }
+
+    await _repository.buildGlobalIndex();
+
+    if (!_allDataLoaded) {
+      final allData = await _repository.getAllWarranties();
+
+      _warranties.clear();
+      _warranties.addAll(allData);
+
+      _allDataLoaded = true;
     }
 
     final ids = _repository.search(query);

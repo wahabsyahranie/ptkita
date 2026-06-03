@@ -5,6 +5,7 @@ import '../../core/search/search_engine.dart';
 class WarrantyRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final InvertedIndex _searchEngine = InvertedIndex();
+  bool _globalIndexLoaded = false;
 
   Future<Map<String, dynamic>> getWarranties({
     DocumentSnapshot? lastDoc,
@@ -54,6 +55,40 @@ class WarrantyRepository {
     }
 
     return {"data": warranties, "lastDoc": newLastDoc};
+  }
+
+  Future<void> buildGlobalIndex() async {
+    if (_globalIndexLoaded) return;
+
+    final snapshot = await _firestore.collection('warranty').get();
+
+    _searchEngine.clear();
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+
+      final fields = [
+        (data['buyerName'] ?? '').toString().toLowerCase(),
+        (data['phone'] ?? '').toString().toLowerCase(),
+        (data['productName'] ?? '').toString().toLowerCase(),
+        (data['serialNumber'] ?? '').toString().toLowerCase(),
+        (data['transactionId'] ?? '').toString().toLowerCase(),
+      ];
+
+      if (fields.any((f) => f.trim().isNotEmpty)) {
+        _searchEngine.addDocument(doc.id, fields);
+      }
+    }
+
+    _globalIndexLoaded = true;
+  }
+
+  Future<List<WarrantyModel>> getAllWarranties() async {
+    final snapshot = await _firestore.collection('warranty').get();
+
+    return snapshot.docs
+        .map((doc) => WarrantyModel.fromFirestore(doc))
+        .toList();
   }
 
   List<String> search(String query) {
