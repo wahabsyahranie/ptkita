@@ -92,13 +92,10 @@ class WarrantyModel {
   String get warrantyTypeLabel {
     switch (warrantyType.toLowerCase()) {
       case 'jasa':
-        return 'Garansi Servis Jasa';
+        return 'Garansi Perbaikan Jasa';
 
       case 'sparepart':
         return 'Garansi Sparepart';
-
-      case 'jasa & sparepart':
-        return 'Garansi Servis & Sparepart';
 
       default:
         return warrantyType;

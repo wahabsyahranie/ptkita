@@ -93,6 +93,8 @@ class WarrantyDetailPage extends StatelessWidget {
                   children: [
                     _infoRow('Nama Pembeli', warranty.buyerName),
                     _divider(),
+                    _infoRow('No. HP', warranty.phone),
+                    _divider(),
                     _infoRow('Produk', warranty.productName),
                     _divider(),
                     _infoRow("Brand", warranty.brandName),

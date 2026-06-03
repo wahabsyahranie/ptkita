@@ -236,10 +236,6 @@ class ItemDetailCard extends StatelessWidget {
                 dropdownMenuEntries: const [
                   DropdownMenuEntry(value: 'Jasa', label: 'Jasa'),
                   DropdownMenuEntry(value: 'SparePart', label: 'SparePart'),
-                  DropdownMenuEntry(
-                    value: 'Jasa & SparePart',
-                    label: 'Jasa & SparePart',
-                  ),
                 ],
                 onSelected: (v) {
                   if (v != null) {

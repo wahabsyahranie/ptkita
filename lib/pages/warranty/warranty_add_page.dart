@@ -23,6 +23,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
   ];
 
   String _selectedBrand = "Firman";
+  String _selectedWarrantyType = "Jasa";
 
   final _buyerController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -65,7 +66,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
       serialNumber: _serialController.text.trim(),
       itemId: "",
       transactionId: "",
-      warrantyType: "Jasa",
+      warrantyType: _selectedWarrantyType,
       brandName: _selectedBrand,
       maxClaim: _maxClaim,
       startAt: _startDate!,
@@ -165,6 +166,8 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
   @override
   Widget build(BuildContext context) {
+    const double dropdownWidth = 220;
+
     return Scaffold(
       backgroundColor: MyColors.white,
       appBar: AppBar(
@@ -228,8 +231,8 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(
                     _startDate == null
-                        ? "Pilih Tanggal Transaksi"
-                        : "Tanggal Transaksi: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}",
+                        ? "Pilih Tanggal Mulai Garansi"
+                        : "Tanggal Mulai Garansi: ${_startDate!.day}/${_startDate!.month}/${_startDate!.year}",
                   ),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
@@ -252,6 +255,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
                 /// BRAND
                 DropdownMenu<String>(
+                  width: dropdownWidth,
                   label: const Text("Brand"),
                   initialSelection: _selectedBrand,
                   inputDecorationTheme: dropdownDecoration(),
@@ -270,8 +274,28 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
                 const SizedBox(height: 12),
 
+                /// JENIS GARANSI
+                DropdownMenu<String>(
+                  width: dropdownWidth,
+                  label: const Text("Jenis Garansi"),
+                  initialSelection: _selectedWarrantyType,
+                  inputDecorationTheme: dropdownDecoration(),
+                  dropdownMenuEntries: const [
+                    DropdownMenuEntry(value: "Jasa", label: "Jasa"),
+                    DropdownMenuEntry(value: "Sparepart", label: "Sparepart"),
+                  ],
+                  onSelected: (value) {
+                    setState(() {
+                      _selectedWarrantyType = value!;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
                 /// DURASI GARANSI
                 DropdownMenu<int>(
+                  width: dropdownWidth,
                   label: const Text("Durasi Garansi"),
                   initialSelection: _durationMonth,
                   inputDecorationTheme: dropdownDecoration(),
@@ -291,6 +315,7 @@ class _WarrantyAddPageState extends State<WarrantyAddPage> {
 
                 /// BATAS KLAIM
                 DropdownMenu<int?>(
+                  width: dropdownWidth,
                   label: const Text("Batas Klaim"),
                   initialSelection: _maxClaim,
                   inputDecorationTheme: dropdownDecoration(),
