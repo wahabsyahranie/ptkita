@@ -129,6 +129,10 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         return CompleteRepairSheet(
           detailCtrl: _detailCtrl,
           costCtrl: _costCtrl,
+
+          transactionId: _current['transactionId'],
+          transactionCode: _current['transactionCode'],
+
           onSubmit: () async {
             await _markSelesai();
             if (!mounted) return;

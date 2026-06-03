@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_kita/core/widgets/forms/app_text.dart';
 import 'package:flutter_kita/core/search/search_engine.dart';
+import 'widgets/transaction_search_sheet.dart';
 
 class RepairAddPage extends StatefulWidget {
   final String? warrantyId;
@@ -38,6 +39,9 @@ class _RepairAddPageState extends State<RepairAddPage> {
   String _repairCategory = 'non_warranty';
   String? _selectedWarrantyId;
   Map<String, dynamic>? _selectedWarrantyData;
+
+  String? _selectedTransactionId;
+  Map<String, dynamic>? _selectedTransaction;
 
   @override
   void dispose() {
@@ -117,6 +121,29 @@ class _RepairAddPageState extends State<RepairAddPage> {
     });
   }
 
+  Future<void> _openTransactionSelector() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const TransactionSearchSheet(),
+    ).then((result) {
+      if (result != null) {
+        final summary = result['summary'] as Map<String, dynamic>? ?? {};
+
+        setState(() {
+          _selectedTransactionId = result['id'];
+          _selectedTransaction = result;
+
+          _costCtrl.text = NumberFormat.currency(
+            locale: 'id_ID',
+            symbol: 'Rp ',
+            decimalDigits: 0,
+          ).format(summary['subtotal'] ?? 0);
+        });
+      }
+    });
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -149,6 +176,8 @@ class _RepairAddPageState extends State<RepairAddPage> {
 
       final payload = {
         'repairCategory': _repairCategory,
+        'transactionId': _selectedTransactionId,
+        'transactionCode': _selectedTransaction?['summary']?['txCode'],
         'warrantyId': isWarranty ? _selectedWarrantyId : null,
         'buyerName': _buyerCtrl.text.trim(),
         'itemName': _itemCtrl.text.trim(),
@@ -439,19 +468,76 @@ class _RepairAddPageState extends State<RepairAddPage> {
                 const SizedBox(height: 12),
 
                 _label('Biaya'),
-                TextFormField(
-                  controller: _costCtrl,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    CurrencyInputFormatter(),
-                  ],
-                  decoration: _inputDecoration(
-                    hint: _repairCategory == 'warranty'
-                        ? 'Gratis (Garansi)'
-                        : 'Masukkan biaya',
+
+                GestureDetector(
+                  onTap: _openTransactionSelector,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _selectedTransaction == null
+                              ? const Text(
+                                  'Cari transaksi...',
+                                  style: TextStyle(color: Colors.black54),
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${_selectedTransaction!['summary']['txCode']} - ${_selectedTransaction!['customer']['name']}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 4),
+
+                                    Text(
+                                      'Rp ${NumberFormat.decimalPattern('id_ID').format(_selectedTransaction!['summary']['subtotal'] ?? 0)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        _selectedTransaction == null
+                            ? const Icon(Icons.search)
+                            : IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedTransactionId = null;
+                                    _selectedTransaction = null;
+                                    _costCtrl.clear();
+                                  });
+                                },
+                              ),
+                      ],
+                    ),
                   ),
                 ),
+
                 const SizedBox(height: 24),
 
                 SizedBox(
@@ -501,12 +587,12 @@ class _RepairAddPageState extends State<RepairAddPage> {
     ),
   );
 
-  InputDecoration _inputDecoration({String? hint}) {
-    return InputDecoration(
-      hintText: hint,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-    );
-  }
+  // InputDecoration _inputDecoration({String? hint}) {
+  //   return InputDecoration(
+  //     hintText: hint,
+  //     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+  //   );
+  // }
 }
 
 class WarrantySearchSheet extends StatefulWidget {
