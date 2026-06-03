@@ -12,6 +12,8 @@ class CompleteRepairSheet extends StatefulWidget {
 
   final VoidCallback onSubmit;
 
+  final Function(Map<String, dynamic>? transaction)? onTransactionSelected;
+
   const CompleteRepairSheet({
     super.key,
     required this.detailCtrl,
@@ -20,6 +22,7 @@ class CompleteRepairSheet extends StatefulWidget {
     required this.transactionCode,
     required this.warrantyType,
     required this.onSubmit,
+    this.onTransactionSelected,
   });
 
   @override
@@ -72,6 +75,8 @@ class _CompleteRepairSheetState extends State<CompleteRepairSheet> {
 
     setState(() {
       _selectedTransaction = result;
+
+      widget.onTransactionSelected?.call(result);
 
       widget.costCtrl.text = finalCost.toString();
     });

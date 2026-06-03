@@ -6,6 +6,9 @@ class RepairService {
     required String docId,
     required String detail,
     required int cost,
+
+    String? transactionId,
+    String? transactionCode,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     final uid = user?.uid;
@@ -25,6 +28,10 @@ class RepairService {
       'status': 'Selesai',
       'detailPart': detail,
       'cost': cost,
+
+      'transactionId': transactionId,
+      'transactionCode': transactionCode,
+
       'completedAt': FieldValue.serverTimestamp(),
       'completedByName': completedByName,
       'completedByUid': uid,

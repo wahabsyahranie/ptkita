@@ -19,6 +19,9 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
   late Map<String, dynamic> _current;
   late String? _docId;
 
+  String? _selectedTransactionId;
+  String? _selectedTransactionCode;
+
   final TextEditingController _detailCtrl = TextEditingController();
   final TextEditingController _costCtrl = TextEditingController();
 
@@ -31,6 +34,9 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
 
     _detailCtrl.text = (_current['detailPart'] ?? '').toString();
     _costCtrl.text = (_current['cost'] ?? '').toString();
+
+    _selectedTransactionId = _current['transactionId'];
+    _selectedTransactionCode = _current['transactionCode'];
   }
 
   @override
@@ -92,6 +98,11 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         docId: _docId!,
         detail: detail,
         cost: costVal,
+
+        transactionId: _selectedTransactionId ?? _current['transactionId'],
+
+        transactionCode:
+            _selectedTransactionCode ?? _current['transactionCode'],
       );
 
       if (!mounted) return;
@@ -100,7 +111,15 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
         _current['status'] = 'Selesai';
         _current['detailPart'] = detail;
         _current['cost'] = costVal;
+
+        _current['transactionId'] =
+            _selectedTransactionId ?? _current['transactionId'];
+
+        _current['transactionCode'] =
+            _selectedTransactionCode ?? _current['transactionCode'];
+
         _current['completedByName'] = result['completedByName'];
+
         _current['completedAt'] = result['completedAt'];
       });
 
@@ -134,6 +153,11 @@ class _RepairDetailPageState extends State<RepairDetailPage> {
           transactionCode: _current['transactionCode'],
 
           warrantyType: _current['warrantySnapshot']?['warrantyType'],
+
+          onTransactionSelected: (transaction) {
+            _selectedTransactionId = transaction?['id'];
+            _selectedTransactionCode = transaction?['summary']?['txCode'];
+          },
 
           onSubmit: () async {
             await _markSelesai();
