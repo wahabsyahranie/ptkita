@@ -6,6 +6,7 @@ class RepairRepository {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   final InvertedIndex _searchEngine = InvertedIndex();
+  bool _globalIndexLoaded = false;
 
   QueryDocumentSnapshot<Map<String, dynamic>>? lastDoc;
 
@@ -16,6 +17,7 @@ class RepairRepository {
       lastDoc = null;
       hasMore = true;
       _searchEngine.clear();
+      _globalIndexLoaded = false;
     }
 
     if (!hasMore) return [];
@@ -57,6 +59,40 @@ class RepairRepository {
     }
 
     return snap.docs.map((doc) => RepairModel.fromFirestore(doc)).toList();
+  }
+
+  Future<void> buildGlobalIndex() async {
+    if (_globalIndexLoaded) return;
+
+    final snapshot = await _db.collection('repair').get();
+
+    _searchEngine.clear();
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+
+      final List<String> fields = [
+        (data['buyerName'] ?? data['buyer'] ?? "").toString(),
+        (data['itemName'] ?? data['product'] ?? "").toString(),
+        (data['techName'] ?? data['technician'] ?? "").toString(),
+        (data['status'] ?? "").toString(),
+      ];
+
+      if (fields.any((f) => f.trim().isNotEmpty)) {
+        _searchEngine.addDocument(doc.id, fields);
+      }
+    }
+
+    _globalIndexLoaded = true;
+  }
+
+  Future<List<RepairModel>> getAllRepairs() async {
+    final snapshot = await _db
+        .collection('repair')
+        .orderBy('date', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) => RepairModel.fromFirestore(doc)).toList();
   }
 
   List<String> search(String query) {

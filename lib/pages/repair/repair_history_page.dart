@@ -30,6 +30,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
   bool isLoading = false;
   bool isFirstLoad = true;
   bool _isSearching = false;
+  bool _allDataLoaded = false;
 
   /// filter state
   String filter = 'all';
@@ -62,6 +63,7 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
       filteredRepairs.clear();
 
       _search.clear();
+      _allDataLoaded = false;
     }
 
     setState(() {
@@ -106,6 +108,17 @@ class _RepairHistoryPageState extends State<RepairHistoryPage> {
 
     /// CEGAH SEARCH LAMA MENIMPA SEARCH BARU
     if (_search.text.trim() != query) return;
+
+    await _repository.buildGlobalIndex();
+
+    if (!_allDataLoaded) {
+      final allData = await _repository.getAllRepairs();
+
+      repairs.clear();
+      repairs.addAll(allData);
+
+      _allDataLoaded = true;
+    }
 
     final ids = _historyService.search(query);
 
