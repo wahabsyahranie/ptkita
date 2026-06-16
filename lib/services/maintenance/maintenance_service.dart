@@ -377,14 +377,12 @@ class MaintenanceService {
     // ==============================
     // CASE 2: SIKLUS SELESAI
     // ==============================
-    final baseDate = maintenance.nextMaintenanceAt?.toDate() ?? now;
-
-    final nextMaintenanceDate = baseDate.add(
+    final lastMaintenanceNew = now;
+    final nextMaintenanceDate = lastMaintenanceNew.add(
       Duration(days: maintenance.intervalDays),
     );
-
     final maintenanceUpdate = {
-      'lastMaintenanceAt': completedTimestamp,
+      'lastMaintenanceAt': Timestamp.fromDate(lastMaintenanceNew),
       'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),
       'cycleInitialQuantity': currentStock,
       'remainingQuantity': currentStock,
@@ -445,15 +443,13 @@ class MaintenanceService {
       'action': 'maintenance_skipped',
     };
 
-    // RESET SIKLUS (SAMA SEPERTI COMPLETE)
-    final baseDate = maintenance.nextMaintenanceAt?.toDate() ?? now;
-
-    final nextMaintenanceDate = baseDate.add(
+    // RESET SIKLUS (SAMA SEPERTI COMPLETE - BERBASIS WAKTU EKSEKUSI SKIP)
+    final skippedTimestampNew = now;
+    final nextMaintenanceDate = skippedTimestampNew.add(
       Duration(days: maintenance.intervalDays),
     );
-
     final maintenanceUpdate = {
-      'lastMaintenanceAt': skippedTimestamp,
+      'lastMaintenanceAt': Timestamp.fromDate(skippedTimestampNew),
       'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),
       'cycleInitialQuantity': currentStock,
       'remainingQuantity': currentStock,
