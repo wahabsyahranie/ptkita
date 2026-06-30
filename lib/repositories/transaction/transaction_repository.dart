@@ -5,6 +5,7 @@ class TransactionRepository {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   final InvertedIndex _searchEngine = InvertedIndex();
+  bool _globalIndexLoaded = false;
 
   Future<Map<String, dynamic>> getTransactions({
     DocumentSnapshot? lastDoc,
@@ -21,15 +22,55 @@ class TransactionRepository {
 
     final snapshot = await query.get();
 
+    // print("JUMLAH DATA: ${snapshot.docs.length}");
+
     DocumentSnapshot? newLastDoc;
 
     if (snapshot.docs.isNotEmpty) {
       newLastDoc = snapshot.docs.last;
     }
 
-    /// BUILD INDEX
+    /// Menyiapkan field yang akan diindeks ke dalam Inverted Index
     for (var doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
+
+      final customer = data['customer'] ?? {};
+      final summary = data['summary'] ?? {};
+      final items = data['items'] ?? [];
+
+      final List<String> fields = [];
+
+      fields.add((customer['name'] ?? "").toString().toLowerCase());
+      fields.add((customer['phone'] ?? "").toString().toLowerCase());
+      fields.add((summary['txCode'] ?? "").toString().toLowerCase());
+
+      for (var item in items) {
+        fields.add((item['name'] ?? "").toString().toLowerCase());
+      }
+
+      if (fields.any((f) => f.trim().isNotEmpty)) {
+        // print("DOC ID: ${doc.id}");
+        // print("FIELDS: $fields");
+        _searchEngine.addDocument(doc.id, fields);
+      }
+    }
+
+    return {"data": snapshot.docs, "lastDoc": newLastDoc};
+  }
+
+  List<String> search(String query) {
+    return _searchEngine.search(query).toList();
+  }
+
+  Future<void> buildGlobalIndex() async {
+    if (_globalIndexLoaded) return;
+
+    final snapshot = await _db.collection('transaction').get();
+
+    _searchEngine.clear();
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
 
       final customer = data['customer'] ?? {};
       final summary = data['summary'] ?? {};
@@ -50,10 +91,15 @@ class TransactionRepository {
       }
     }
 
-    return {"data": snapshot.docs, "lastDoc": newLastDoc};
+    _globalIndexLoaded = true;
   }
 
-  List<String> search(String query) {
-    return _searchEngine.search(query).toList();
+  Future<List<DocumentSnapshot>> getAllTransactions() async {
+    final snapshot = await _db
+        .collection('transaction')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return snapshot.docs;
   }
 }

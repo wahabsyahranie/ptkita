@@ -6,25 +6,25 @@ class InvertedIndex {
     _index.clear();
   }
 
-  /// tambah dokumen ke index
+  /// Menambahkan dokumen ke dalam struktur Inverted Index
   void addDocument(String id, List<String> fields) {
     for (final field in fields) {
+      // print("FIELD: $field");
+      // print("TOKENS: ${_tokenize(field)}");
       final tokens = _tokenize(field);
 
       for (final token in tokens) {
-        // print("TOKEN: $token");
-
         _index.putIfAbsent(token, () => <String>{});
         _index[token]!.add(id);
       }
     }
+    // print("INDEX SAAT INI:");
+    // print(_index);
   }
 
-  /// search with prefix and exmacth
+  /// Mencocokkan kata kunci pencarian dengan token pada Inverted Index
   Set<String> search(String query) {
     final tokens = _tokenize(query);
-
-    // print("QUERY TOKENS: $tokens");
 
     final Set<String> results = {};
 
@@ -40,7 +40,7 @@ class InvertedIndex {
     return results;
   }
 
-  /// tokenize text
+  /// Melakukan tokenisasi dan normalisasi teks
   List<String> _tokenize(String text) {
     return text
         .toLowerCase()

@@ -28,6 +28,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   bool _isLoading = false;
   bool _hasMore = true;
   bool _isSearching = false;
+  bool _allDataLoaded = false;
   String _dateFilter = "all";
 
   // ignore: unused_field
@@ -91,6 +92,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       _docs.clear();
       _lastDoc = null;
       _hasMore = true;
+
+      _allDataLoaded = false;
     });
 
     await _loadMore();
@@ -112,6 +115,17 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     });
 
     await Future.delayed(const Duration(milliseconds: 200));
+
+    await _repository.buildGlobalIndex();
+
+    if (!_allDataLoaded) {
+      final allDocs = await _repository.getAllTransactions();
+
+      _docs.clear();
+      _docs.addAll(allDocs);
+
+      _allDataLoaded = true;
+    }
 
     final ids = _repository.search(query);
 

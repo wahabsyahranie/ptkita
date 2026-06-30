@@ -70,8 +70,8 @@ class _CompleteRepairSheetState extends State<CompleteRepairSheet> {
       finalCost = serviceFee;
     }
 
-    print('Warranty Type: ${widget.warrantyType}');
-    print('Final Cost: $finalCost');
+    // print('Warranty Type: ${widget.warrantyType}');
+    // print('Final Cost: $finalCost');
 
     setState(() {
       _selectedTransaction = result;
