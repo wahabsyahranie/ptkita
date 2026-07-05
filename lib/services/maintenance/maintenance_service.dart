@@ -86,13 +86,17 @@ class MaintenanceService {
   }
 
   Stream<MaintenanceDetailView?> streamMaintenanceDetail(String id) {
-    return _repository.streamMaintenanceDetail(id).map((detail) {
+    return _repository.streamMaintenanceDetail(id).asyncMap((detail) async {
       if (detail == null) return null;
 
-      final item = detail.item;
-      if (item == null) return null;
-
       final maintenance = detail.maintenance;
+
+      // 🔄 Ambil data Item secara lengkap dari InventoryService agar brandLogoUrl & imageUrl terbaca
+      final fullItem = await _inventoryService
+          .streamItemById(maintenance.itemId)
+          .first;
+
+      if (fullItem == null) return null;
 
       final initial = maintenance.cycleInitialQuantity;
       final remaining = maintenance.remainingQuantity;
@@ -102,7 +106,8 @@ class MaintenanceService {
           ? (completed / initial).clamp(0.0, 1.0)
           : 0.0;
 
-      final imageProvider = _inventoryService.resolveImage(item);
+      // 🎨 Sekarang resolveImage akan mendeteksi brandLogoUrl milik fullItem dengan benar
+      final imageProvider = _inventoryService.resolveImage(fullItem);
 
       return MaintenanceDetailView(
         maintenance: maintenance,
@@ -114,6 +119,36 @@ class MaintenanceService {
       );
     });
   }
+
+  // Stream<MaintenanceDetailView?> streamMaintenanceDetail(String id) {
+  //   return _repository.streamMaintenanceDetail(id).map((detail) {
+  //     if (detail == null) return null;
+
+  //     final item = detail.item;
+  //     if (item == null) return null;
+
+  //     final maintenance = detail.maintenance;
+
+  //     final initial = maintenance.cycleInitialQuantity;
+  //     final remaining = maintenance.remainingQuantity;
+  //     final completed = initial - remaining;
+
+  //     final progress = initial > 0
+  //         ? (completed / initial).clamp(0.0, 1.0)
+  //         : 0.0;
+
+  //     final imageProvider = _inventoryService.resolveImage(item);
+
+  //     return MaintenanceDetailView(
+  //       maintenance: maintenance,
+  //       imageProvider: imageProvider,
+  //       initialQuantity: initial,
+  //       remainingQuantity: remaining,
+  //       completedQuantity: completed,
+  //       progress: progress,
+  //     );
+  //   });
+  // }
 
   // =========================================================
   // ====================== STATUS ===========================
@@ -135,9 +170,10 @@ class MaintenanceService {
     final today = DateTime(now.year, now.month, now.day);
     final nextDate = DateTime(next.year, next.month, next.day);
 
-    final isDueOrPast = !today.isBefore(nextDate);
+    // Hanya dianggap terlambat jika tanggal jadwal sudah lewat dari hari ini
+    final isPast = nextDate.isBefore(today);
 
-    if (isDueOrPast && remaining == initial) {
+    if (isPast && remaining == initial) {
       return MaintenanceStatus.terlambat;
     }
 
@@ -227,19 +263,18 @@ class MaintenanceService {
 
       final now = DateTime.now();
 
-      // 1️⃣ Ambil stok item
+      // Ambil stok item
       final item = await _inventoryService
           .streamItemById(maintenance.itemId)
           .first;
-
       final currentStock = item?.stock ?? 0;
 
-      // 2️⃣ Hitung next maintenance
+      // Hitung next maintenance
       final nextMaintenance = Timestamp.fromDate(
         now.add(Duration(days: maintenance.intervalDays)),
       );
 
-      // 3️⃣ Buat maintenance dengan snapshot siklus
+      // Buat maintenance dengan snapshot siklus
       final newMaintenance = maintenance.copyWith(
         nextMaintenanceAt: nextMaintenance,
         cycleInitialQuantity: currentStock,
@@ -377,10 +412,14 @@ class MaintenanceService {
     // ==============================
     // CASE 2: SIKLUS SELESAI
     // ==============================
+    // Tanggal pengerjaan riil hari ini
     final lastMaintenanceNew = now;
+
+    // Kalkulasi jadwal berikutnya: Last Maintenance Baru + Interval
     final nextMaintenanceDate = lastMaintenanceNew.add(
       Duration(days: maintenance.intervalDays),
     );
+
     final maintenanceUpdate = {
       'lastMaintenanceAt': Timestamp.fromDate(lastMaintenanceNew),
       'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),
@@ -443,11 +482,18 @@ class MaintenanceService {
       'action': 'maintenance_skipped',
     };
 
-    // RESET SIKLUS (SAMA SEPERTI COMPLETE - BERBASIS WAKTU EKSEKUSI SKIP)
+    // ============================================================
+    // CASE 3: MELEWATI PEMELIHARAAN (SKIP SIKLUS)
+    // ============================================================
+    // Waktu eksekusi skip hari ini
     final skippedTimestampNew = now;
-    final nextMaintenanceDate = skippedTimestampNew.add(
+    final baseDate = maintenance.nextMaintenanceAt?.toDate() ?? now;
+
+    // Kalkulasi jadwal berikutnya: Waktu Skip + Interval
+    final nextMaintenanceDate = baseDate.add(
       Duration(days: maintenance.intervalDays),
     );
+
     final maintenanceUpdate = {
       'lastMaintenanceAt': Timestamp.fromDate(skippedTimestampNew),
       'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),

@@ -21,7 +21,7 @@ class InventoryService extends ChangeNotifier {
   // ====================== PAGINATION STATE =================
   // =========================================================
 
-  final int _pageSize = 5;
+  final int _pageSize = 10;
 
   final List<Item> _items = [];
   PaginationCursor? _cursor;
