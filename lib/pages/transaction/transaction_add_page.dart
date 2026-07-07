@@ -73,7 +73,9 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   // =========================
   final List<CartItemModel> _cartItems = [];
 
-  List<TextEditingController> _serialControllers = [];
+  int? _editingIndex;
+
+  final List<TextEditingController> _serialControllers = [];
 
   @override
   void initState() {
@@ -131,7 +133,34 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
   }
 
   void _generateSerialControllers() {
-    _serialControllers = List.generate(_qty, (_) => TextEditingController());
+    // Jika qty bertambah, tambahkan controller baru
+    while (_serialControllers.length < _qty) {
+      _serialControllers.add(TextEditingController());
+    }
+
+    // Jika qty berkurang, hapus controller yang berlebih
+    while (_serialControllers.length > _qty) {
+      _serialControllers.removeLast().dispose();
+    }
+  }
+
+  void _resetItemForm() {
+    _editingIndex = null;
+
+    _selectedItem = null;
+    _selectedItemId = null;
+
+    _qty = 1;
+
+    _hasWarranty = true;
+    _warrantyYear = 1;
+    _warrantyType = 'Jasa';
+    _claimLimit = 3;
+
+    for (final c in _serialControllers) {
+      c.dispose();
+    }
+    _serialControllers.clear();
   }
 
   // =========================
@@ -217,9 +246,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       setState(() {
         _cartItems.add(cartItem);
 
-        _selectedItem = null;
-        _selectedItemId = null;
-        _qty = 1;
+        _resetItemForm();
       });
 
       return;
@@ -245,19 +272,88 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
       }
 
       setState(() {
-        _selectedItem = null;
-        _selectedItemId = null;
-        _qty = 1;
-
-        _hasWarranty = true;
-        _warrantyYear = 1;
-        _warrantyType = 'Jasa';
-
-        _serialControllers = [];
+        _resetItemForm();
       });
 
       return;
     }
+  }
+
+  void _updateCartItem() {
+    if (_editingIndex == null || _selectedItem == null) return;
+
+    final price = _selectedItem!['price'] as int;
+
+    final serialNumbers = _serialControllers.map((e) => e.text.trim()).toList();
+
+    if (_selectedItem!['category'] == 'unit') {
+      for (final sn in serialNumbers) {
+        if (sn.isEmpty) {
+          _showAlert('Serial number tidak boleh kosong');
+          return;
+        }
+      }
+    }
+
+    final updatedItem = CartItemModel(
+      itemId: _selectedItem!['id'],
+      name: _selectedItem!['name'],
+      type: _selectedItem!['category'] ?? 'item',
+      brandName: _selectedItem!['brandName'],
+      price: price,
+      qty: _qty,
+      hasWarranty: _selectedItem!['category'] == 'unit' ? _hasWarranty : false,
+      warrantyYear: _selectedItem!['category'] == 'unit' && _hasWarranty
+          ? _warrantyYear
+          : 0,
+      warrantyType: _selectedItem!['category'] == 'unit' && _hasWarranty
+          ? _warrantyType
+          : null,
+      serialNumbers: _selectedItem!['category'] == 'unit' ? serialNumbers : [],
+      claimLimit: _selectedItem!['category'] == 'unit' && _hasWarranty
+          ? _claimLimit
+          : null,
+    );
+
+    setState(() {
+      _cartItems[_editingIndex!] = updatedItem;
+
+      _resetItemForm();
+    });
+  }
+
+  // =========================
+  // edit
+  // =========================
+
+  void _editCartItem(int index) {
+    final cart = _cartItems[index];
+
+    final item = _items.firstWhere((e) => e['id'] == cart.itemId);
+
+    setState(() {
+      _editingIndex = index;
+
+      _selectedItem = item;
+      _selectedItemId = item['id'];
+
+      _qty = cart.qty;
+
+      _hasWarranty = cart.hasWarranty;
+      _warrantyYear = cart.warrantyYear;
+      _warrantyType = cart.warrantyType ?? 'Jasa';
+      _claimLimit = cart.claimLimit;
+
+      _generateSerialControllers();
+
+      for (
+        int i = 0;
+        i < cart.serialNumbers.length && i < _serialControllers.length;
+        i++
+      ) {
+        _serialControllers[i].text = cart.serialNumbers[i];
+      }
+    });
   }
 
   // =========================
@@ -391,12 +487,7 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
 
                         onClose: () {
                           setState(() {
-                            _selectedItem = null;
-                            _selectedItemId = null;
-                            _qty = 1;
-                            _hasWarranty = true;
-                            _warrantyYear = 1;
-                            _warrantyType = 'Jasa';
+                            _resetItemForm();
                           });
                         },
 
@@ -442,14 +533,18 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                       TextButton.icon(
                         onPressed: _selectedItem!['stock'] == 0
                             ? null
-                            : _addToCart,
+                            : (_editingIndex == null
+                                  ? _addToCart
+                                  : _updateCartItem),
                         icon: const Icon(
                           Icons.add_circle_outline,
                           color: MyColors.secondary,
                         ),
-                        label: const Text(
-                          'Tambah Item ke Transaksi',
-                          style: TextStyle(
+                        label: Text(
+                          _editingIndex == null
+                              ? 'Tambah Item ke Transaksi'
+                              : 'Simpan Perubahan',
+                          style: const TextStyle(
                             color: MyColors.secondary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -465,8 +560,22 @@ class _TransactionAddPageState extends State<TransactionAddPage> {
                       ..._cartItems.asMap().entries.map(
                         (e) => CartItemCard(
                           item: e.value,
-                          onDelete: () =>
-                              setState(() => _cartItems.removeAt(e.key)),
+                          onEdit: () {
+                            _editCartItem(e.key);
+                          },
+                          onDelete: () {
+                            setState(() {
+                              _cartItems.removeAt(e.key);
+
+                              if (_editingIndex != null) {
+                                if (_editingIndex == e.key) {
+                                  _resetItemForm();
+                                } else if (_editingIndex! > e.key) {
+                                  _editingIndex = _editingIndex! - 1;
+                                }
+                              }
+                            });
+                          },
                         ),
                       ),
                     ],

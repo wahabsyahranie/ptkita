@@ -31,6 +31,7 @@ class CompleteRepairSheet extends StatefulWidget {
 
 class _CompleteRepairSheetState extends State<CompleteRepairSheet> {
   // String? _selectedTransactionId;
+  final _formKey = GlobalKey<FormState>();
   Map<String, dynamic>? _selectedTransaction;
 
   @override
@@ -82,6 +83,14 @@ class _CompleteRepairSheetState extends State<CompleteRepairSheet> {
     });
   }
 
+  void _validateAndSubmit() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    widget.onSubmit();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -91,153 +100,166 @@ class _CompleteRepairSheetState extends State<CompleteRepairSheet> {
         top: 24,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox(width: 24),
-
-              const Text(
-                "Selesaikan Perbaikan",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          TextField(
-            controller: widget.detailCtrl,
-            decoration: const InputDecoration(
-              labelText: "Rincian Perbaikan",
-              border: OutlineInputBorder(),
-            ),
-            maxLines: 3,
-          ),
-
-          const SizedBox(height: 16),
-
-          /// SUDAH ADA TRANSAKSI
-          if (widget.transactionId != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade400),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Biaya',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Text(
-                    widget.transactionCode ?? '-',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    Formatters.formatRupiah(
-                      int.tryParse(widget.costCtrl.text) ?? 0,
-                    ),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ]
-          /// BELUM ADA TRANSAKSI
-          else ...[
-            GestureDetector(
-              onTap: _openTransactionSelector,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
               child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(width: 24),
+
+                const Text(
+                  "Selesaikan Perbaikan",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            TextFormField(
+              controller: widget.detailCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: "Rincian Perbaikan",
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return "Rincian perbaikan wajib diisi";
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            /// SUDAH ADA TRANSAKSI
+            if (widget.transactionId != null) ...[
+              Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade400),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: _selectedTransaction == null
-                    ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Cari transaksi...'),
-                          Icon(Icons.search),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${_selectedTransaction!['summary']['txCode']} - ${_selectedTransaction!['customer']['name']}',
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Biaya',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
 
-                          const SizedBox(height: 4),
+                    const SizedBox(height: 8),
 
-                          Text(
-                            'Biaya yang ditagihkan',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
-                            ),
-                          ),
+                    Text(
+                      widget.transactionCode ?? '-',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
 
-                          const SizedBox(height: 2),
+                    const SizedBox(height: 4),
 
-                          Text(
-                            Formatters.formatRupiah(
-                              int.tryParse(widget.costCtrl.text) ?? 0,
-                            ),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ],
+                    Text(
+                      Formatters.formatRupiah(
+                        int.tryParse(widget.costCtrl.text) ?? 0,
                       ),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]
+            /// BELUM ADA TRANSAKSI
+            else ...[
+              GestureDetector(
+                onTap: _openTransactionSelector,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: _selectedTransaction == null
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Cari transaksi...'),
+                            Icon(Icons.search),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_selectedTransaction!['summary']['txCode']} - ${_selectedTransaction!['customer']['name']}',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+
+                            const SizedBox(height: 4),
+
+                            Text(
+                              'Biaya yang ditagihkan',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+
+                            const SizedBox(height: 2),
+
+                            Text(
+                              Formatters.formatRupiah(
+                                int.tryParse(widget.costCtrl.text) ?? 0,
+                              ),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _validateAndSubmit,
+                child: const Text("Simpan & Tandai Selesai"),
               ),
             ),
           ],
-
-          const SizedBox(height: 20),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: widget.onSubmit,
-              child: const Text("Simpan & Tandai Selesai"),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
