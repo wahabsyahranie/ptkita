@@ -74,12 +74,12 @@ class MaintenanceHistoryBox extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: service
-                          .statusColor(history.status)
+                          .statusColor(history)
                           .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      service.formatStatus(history.status),
+                      service.formatStatus(history),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,

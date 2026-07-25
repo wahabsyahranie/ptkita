@@ -6,6 +6,7 @@ import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_empty_state.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_list_skeleton.dart';
 import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_box.dart';
+import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_detail_page.dart';
 import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_empty_state.dart';
 import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_filter_sheet.dart';
 import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_list_skeleton.dart';
@@ -168,6 +169,16 @@ class _MaintenanceHistoryPageState extends State<MaintenanceHistoryPage> {
                 return MaintenanceHistoryBox(
                   history: histories[index],
                   service: _service,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MaintenanceHistoryDetailPage(
+                          historyId: histories[index].id,
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             );

@@ -7,6 +7,8 @@ abstract class MaintenanceRepository {
 
   Stream<List<MaintenanceHistory>> streamMaintenanceHistory();
 
+  Stream<MaintenanceHistory?> streamMaintenanceHistoryDetail(String id);
+
   Future<List<Item>> getTopItems({int limit = 6});
 
   Future<List<Item>> searchItems(String query, {int limit = 10});

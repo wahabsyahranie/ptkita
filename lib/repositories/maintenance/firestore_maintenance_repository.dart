@@ -43,6 +43,19 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
         });
   }
 
+  @override
+  Stream<MaintenanceHistory?> streamMaintenanceHistoryDetail(String id) {
+    return _firestore
+        .collection('maintenance_history')
+        .doc(id)
+        .withConverter<MaintenanceHistory>(
+          fromFirestore: MaintenanceHistory.fromFirestore,
+          toFirestore: (history, _) => history.toFirestore(),
+        )
+        .snapshots()
+        .map((doc) => doc.data());
+  }
+
   FirestoreMaintenanceRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 

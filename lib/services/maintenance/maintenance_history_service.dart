@@ -26,6 +26,10 @@ class MaintenanceHistoryService {
     });
   }
 
+  Stream<MaintenanceHistory?> streamHistoryDetail(String id) {
+    return _repository.streamMaintenanceHistoryDetail(id);
+  }
+
   List<MaintenanceHistory> _filterByStatus(
     List<MaintenanceHistory> histories,
     MaintenanceHistoryFilter? filter,
@@ -91,7 +95,6 @@ class MaintenanceHistoryService {
   // =========================================================
   // ====================== FORMATTER =========================
   // =========================================================
-
   String formatDate(DateTime? date) {
     if (date == null) return '-';
 
@@ -100,27 +103,84 @@ class MaintenanceHistoryService {
         '${date.year}';
   }
 
-  String formatStatus(MaintenanceHistoryStatus status) {
-    switch (status) {
-      case MaintenanceHistoryStatus.completed:
-        return 'Completed';
-
-      case MaintenanceHistoryStatus.skipped:
-        return 'Skipped';
+  String formatStatus(MaintenanceHistory history) {
+    if (history.status == MaintenanceHistoryStatus.skipped) {
+      return "Maintenance Dilewati";
     }
+
+    final lateDays = calculateLateDays(history);
+
+    if (lateDays == 0) {
+      return "Selesai Tepat Waktu";
+    }
+
+    if (lateDays == 1) {
+      return "Terlambat 1 Hari";
+    }
+
+    return "Terlambat $lateDays Hari";
   }
 
   String formatCycle(int cycleNumber) {
     return 'Siklus $cycleNumber';
   }
 
-  Color statusColor(MaintenanceHistoryStatus status) {
-    switch (status) {
-      case MaintenanceHistoryStatus.completed:
-        return MyColors.success;
-
-      case MaintenanceHistoryStatus.skipped:
-        return MyColors.warning;
+  Color statusColor(MaintenanceHistory history) {
+    if (history.status == MaintenanceHistoryStatus.skipped) {
+      return MyColors.warning;
     }
+
+    final lateDays = calculateLateDays(history);
+
+    if (lateDays == 0) {
+      return MyColors.success;
+    }
+
+    return MyColors.error;
+  }
+
+  String formatLateDays(MaintenanceHistory history) {
+    if (history.status == MaintenanceHistoryStatus.skipped) {
+      return '-';
+    }
+
+    final lateDays = calculateLateDays(history);
+
+    if (lateDays == 0) {
+      return 'Tidak Terlambat';
+    }
+
+    if (lateDays == 1) {
+      return '1 Hari';
+    }
+
+    return '$lateDays Hari';
+  }
+
+  int calculateLateDays(MaintenanceHistory history) {
+    if (history.status == MaintenanceHistoryStatus.skipped) {
+      return 0;
+    }
+
+    final scheduled = history.scheduledAt?.toDate();
+    if (scheduled == null) return 0;
+
+    final completed = history.completedAt.toDate();
+
+    final scheduledDate = DateTime(
+      scheduled.year,
+      scheduled.month,
+      scheduled.day,
+    );
+
+    final completedDate = DateTime(
+      completed.year,
+      completed.month,
+      completed.day,
+    );
+
+    final diff = completedDate.difference(scheduledDate).inDays;
+
+    return diff > 0 ? diff : 0;
   }
 }
