@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
+import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 import 'maintenance_repository.dart';
 
@@ -57,6 +58,19 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
         )
         .snapshots()
         .map((snapshot) => snapshot.docs.map((e) => e.data()).toList());
+  }
+
+  @override
+  Stream<List<MaintenanceHistory>> streamMaintenanceHistory() {
+    return _firestore
+        .collection('maintenance_history')
+        .withConverter<MaintenanceHistory>(
+          fromFirestore: MaintenanceHistory.fromFirestore,
+          toFirestore: (history, _) => history.toFirestore(),
+        )
+        .orderBy('completedAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
   @override

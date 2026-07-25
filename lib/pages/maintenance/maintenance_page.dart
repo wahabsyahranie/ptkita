@@ -8,6 +8,7 @@ import 'package:flutter_kita/pages/maintenance/add_edit_maintenance_page.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_empty_state.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_filter_sheet.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_list_skeleton.dart';
+import 'package:flutter_kita/pages/maintenance_history/maintenance_history_page.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
@@ -163,6 +164,34 @@ class _MaintenancePageState extends State<MaintenancePage> {
                           Icons.add,
                           color: MyColors.white,
                           size: 30,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // tombol history
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: MyColors.secondary,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: IconButton(
+                        // onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MaintenanceHistoryPage(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.history,
+                          color: MyColors.white,
+                          size: 25,
                         ),
                       ),
                     ),

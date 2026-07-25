@@ -38,10 +38,11 @@ class MaintenanceHistory {
     this.createdAt,
   });
 
-  factory MaintenanceHistory.fromFirestore(
+  static MaintenanceHistory fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
+    SnapshotOptions? options,
   ) {
-    final data = doc.data() ?? {};
+    final data = doc.data()!;
 
     return MaintenanceHistory(
       id: doc.id,

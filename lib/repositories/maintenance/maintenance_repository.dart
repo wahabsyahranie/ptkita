@@ -1,10 +1,13 @@
 import 'package:flutter_kita/models/inventory/item_model.dart';
+import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
 
 abstract class MaintenanceRepository {
   Stream<List<Maintenance>> streamMaintenance();
 
-  Future<List<Item>> getTopItems({int limit = 4});
+  Stream<List<MaintenanceHistory>> streamMaintenanceHistory();
+
+  Future<List<Item>> getTopItems({int limit = 6});
 
   Future<List<Item>> searchItems(String query, {int limit = 10});
 
