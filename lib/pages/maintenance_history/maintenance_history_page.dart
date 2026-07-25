@@ -6,6 +6,9 @@ import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_empty_state.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_list_skeleton.dart';
 import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_box.dart';
+import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_empty_state.dart';
+import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_filter_sheet.dart';
+import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_list_skeleton.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
 import 'package:flutter_kita/services/maintenance/maintenance_history_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
@@ -64,6 +67,24 @@ class _MaintenanceHistoryPageState extends State<MaintenanceHistoryPage> {
     });
   }
 
+  Future<void> _openFilterSheet() async {
+    final result = await showModalBottomSheet<MaintenanceHistoryFilter>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: MyColors.white,
+      useSafeArea: true,
+      builder: (_) {
+        return MaintenanceHistoryFilterSheet(initialFilter: _appliedFilter);
+      },
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _appliedFilter = result;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,8 +123,7 @@ class _MaintenanceHistoryPageState extends State<MaintenanceHistoryPage> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: IconButton(
-                        // onPressed: () {},
-                        onPressed: () {},
+                        onPressed: _openFilterSheet,
                         icon: const Icon(
                           Icons.filter_alt,
                           color: MyColors.white,
@@ -131,13 +151,13 @@ class _MaintenanceHistoryPageState extends State<MaintenanceHistoryPage> {
             }
 
             if (!snapshot.hasData) {
-              return const MaintenanceListSkeleton();
+              return const MaintenanceHistoryListSkeleton();
             }
 
             final histories = snapshot.data!;
 
             if (histories.isEmpty) {
-              return const MaintenanceEmptyState();
+              return const MaintenanceHistoryEmptyState();
             }
 
             return ListView.separated(
@@ -145,7 +165,10 @@ class _MaintenanceHistoryPageState extends State<MaintenanceHistoryPage> {
               itemCount: histories.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                return MaintenanceHistoryBox(history: histories[index]);
+                return MaintenanceHistoryBox(
+                  history: histories[index],
+                  service: _service,
+                );
               },
             );
           },

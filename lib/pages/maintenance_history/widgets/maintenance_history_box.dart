@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/enum/maintenance_history_status.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
+import 'package:flutter_kita/services/maintenance/maintenance_history_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class MaintenanceHistoryBox extends StatelessWidget {
   final MaintenanceHistory history;
   final VoidCallback? onTap;
+  final MaintenanceHistoryService service;
 
-  const MaintenanceHistoryBox({super.key, required this.history, this.onTap});
+  const MaintenanceHistoryBox({
+    super.key,
+    required this.history,
+    this.onTap,
+    required this.service,
+  });
 
   Color _statusColor(MaintenanceHistoryStatus status) {
     switch (status) {
@@ -66,13 +73,13 @@ class MaintenanceHistoryBox extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _statusColor(
-                        history.status,
-                      ).withValues(alpha: 0.5),
+                      color: service
+                          .statusColor(history.status)
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      _statusText(history.status),
+                      service.formatStatus(history.status),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -103,14 +110,14 @@ class MaintenanceHistoryBox extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
 
-                  Text(history.completedAt.toDate().toString()),
+                  Text(service.formatDate(history.completedAt.toDate())),
 
                   const SizedBox(width: 16),
 
                   const Icon(Icons.autorenew, size: 18, color: MyColors.black),
                   const SizedBox(width: 6),
 
-                  Text('Cycle ${history.cycleNumber}'),
+                  Text(service.formatCycle(history.cycleNumber)),
 
                   const Spacer(),
                 ],

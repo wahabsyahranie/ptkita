@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter_kita/core/enum/maintenance_history_status.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_history_filter_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
 import 'package:flutter_kita/repositories/maintenance/maintenance_repository.dart';
+import 'package:flutter_kita/styles/colors.dart';
 
 class MaintenanceHistoryService {
   final MaintenanceRepository _repository;
@@ -83,5 +86,41 @@ class MaintenanceHistoryService {
 
       return true;
     }).toList();
+  }
+
+  // =========================================================
+  // ====================== FORMATTER =========================
+  // =========================================================
+
+  String formatDate(DateTime? date) {
+    if (date == null) return '-';
+
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
+  }
+
+  String formatStatus(MaintenanceHistoryStatus status) {
+    switch (status) {
+      case MaintenanceHistoryStatus.completed:
+        return 'Completed';
+
+      case MaintenanceHistoryStatus.skipped:
+        return 'Skipped';
+    }
+  }
+
+  String formatCycle(int cycleNumber) {
+    return 'Siklus $cycleNumber';
+  }
+
+  Color statusColor(MaintenanceHistoryStatus status) {
+    switch (status) {
+      case MaintenanceHistoryStatus.completed:
+        return MyColors.success;
+
+      case MaintenanceHistoryStatus.skipped:
+        return MyColors.warning;
+    }
   }
 }
