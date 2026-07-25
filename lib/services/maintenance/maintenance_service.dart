@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_kita/core/enum/maintenance_history_status.dart';
 import 'package:flutter_kita/core/enum/maintenance_status.dart';
 import 'package:flutter_kita/models/inventory/item_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_model.dart';
@@ -119,36 +120,6 @@ class MaintenanceService {
       );
     });
   }
-
-  // Stream<MaintenanceDetailView?> streamMaintenanceDetail(String id) {
-  //   return _repository.streamMaintenanceDetail(id).map((detail) {
-  //     if (detail == null) return null;
-
-  //     final item = detail.item;
-  //     if (item == null) return null;
-
-  //     final maintenance = detail.maintenance;
-
-  //     final initial = maintenance.cycleInitialQuantity;
-  //     final remaining = maintenance.remainingQuantity;
-  //     final completed = initial - remaining;
-
-  //     final progress = initial > 0
-  //         ? (completed / initial).clamp(0.0, 1.0)
-  //         : 0.0;
-
-  //     final imageProvider = _inventoryService.resolveImage(item);
-
-  //     return MaintenanceDetailView(
-  //       maintenance: maintenance,
-  //       imageProvider: imageProvider,
-  //       initialQuantity: initial,
-  //       remainingQuantity: remaining,
-  //       completedQuantity: completed,
-  //       progress: progress,
-  //     );
-  //   });
-  // }
 
   // =========================================================
   // ====================== STATUS ===========================
@@ -420,17 +391,37 @@ class MaintenanceService {
       Duration(days: maintenance.intervalDays),
     );
 
+    final historyData = {
+      'maintenanceId': maintenance.id,
+      'cycleNumber': maintenance.cycleNumber,
+      'itemId': maintenance.itemId,
+      'itemName': maintenance.itemName,
+      'partNumber': maintenance.partNumber,
+      'intervalDays': maintenance.intervalDays,
+      'priority': maintenance.priority,
+      'scheduledAt': maintenance.nextMaintenanceAt,
+      'completedAt': completedTimestamp,
+      'status': MaintenanceHistoryStatus.completed.name,
+      'completedQuantity': maintenance.cycleInitialQuantity,
+      'cycleInitialQuantity': maintenance.cycleInitialQuantity,
+      'userId': currentUser.id,
+      'userName': currentUser.name,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
     final maintenanceUpdate = {
       'lastMaintenanceAt': Timestamp.fromDate(lastMaintenanceNew),
       'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),
       'cycleInitialQuantity': currentStock,
       'remainingQuantity': currentStock,
+      'cycleNumber': maintenance.cycleNumber + 1,
     };
 
     await _repository.commitMaintenanceBatch(
       maintenanceId: maintenance.id,
       maintenanceUpdate: maintenanceUpdate,
       logData: logData,
+      historyData: historyData,
       incrementCompletedToday: true,
     );
 
@@ -494,17 +485,37 @@ class MaintenanceService {
       Duration(days: maintenance.intervalDays),
     );
 
+    final historyData = {
+      'maintenanceId': maintenance.id,
+      'cycleNumber': maintenance.cycleNumber,
+      'itemId': maintenance.itemId,
+      'itemName': maintenance.itemName,
+      'partNumber': maintenance.partNumber,
+      'intervalDays': maintenance.intervalDays,
+      'priority': maintenance.priority,
+      'scheduledAt': maintenance.nextMaintenanceAt,
+      'completedAt': skippedTimestamp,
+      'status': MaintenanceHistoryStatus.skipped.name,
+      'completedQuantity': maintenance.cycleInitialQuantity,
+      'cycleInitialQuantity': maintenance.cycleInitialQuantity,
+      'userId': currentUser.id,
+      'userName': currentUser.name,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
     final maintenanceUpdate = {
       'lastMaintenanceAt': Timestamp.fromDate(skippedTimestampNew),
       'nextMaintenanceAt': Timestamp.fromDate(nextMaintenanceDate),
       'cycleInitialQuantity': currentStock,
       'remainingQuantity': currentStock,
+      'cycleNumber': maintenance.cycleNumber + 1,
     };
 
     await _repository.commitMaintenanceBatch(
       maintenanceId: maintenance.id,
       maintenanceUpdate: maintenanceUpdate,
       logData: logData,
+      historyData: historyData,
       incrementCompletedToday: true,
     );
 

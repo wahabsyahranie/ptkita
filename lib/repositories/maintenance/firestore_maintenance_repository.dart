@@ -80,6 +80,7 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
     required String maintenanceId,
     required Map<String, dynamic> maintenanceUpdate,
     required Map<String, dynamic> logData,
+    Map<String, dynamic>? historyData,
     required bool incrementCompletedToday,
   }) async {
     final batch = _firestore.batch();
@@ -90,7 +91,13 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
 
     final logRef = _firestore.collection('maintenance_logs').doc();
 
+    final historyRef = _firestore.collection('maintenance_history').doc();
+
     batch.set(logRef, logData);
+
+    if (historyData != null) {
+      batch.set(historyRef, historyData);
+    }
 
     batch.update(maintenanceRef, maintenanceUpdate);
 

@@ -1,0 +1,4 @@
+enum MaintenanceHistoryStatus {
+  completed,
+  skipped,
+}

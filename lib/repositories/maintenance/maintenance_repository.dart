@@ -16,6 +16,7 @@ abstract class MaintenanceRepository {
     required String maintenanceId,
     required Map<String, dynamic> maintenanceUpdate,
     required Map<String, dynamic> logData,
+    Map<String, dynamic>? historyData,
     required bool incrementCompletedToday,
   });
 
