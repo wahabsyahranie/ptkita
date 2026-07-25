@@ -4,6 +4,7 @@ import 'package:flutter_kita/pages/inventory/widget/dottedline_widget.dart';
 import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
 import 'package:flutter_kita/services/maintenance/maintenance_history_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_detail_skeleton.dart';
 
 class MaintenanceHistoryDetailPage extends StatefulWidget {
   final String historyId;
@@ -17,12 +18,13 @@ class MaintenanceHistoryDetailPage extends StatefulWidget {
 
 class _MaintenanceHistoryDetailPageState
     extends State<MaintenanceHistoryDetailPage> {
+  final _repository = FirestoreMaintenanceRepository();
   late final MaintenanceHistoryService _service;
 
   @override
   void initState() {
     super.initState();
-    _service = MaintenanceHistoryService(FirestoreMaintenanceRepository());
+    _service = MaintenanceHistoryService(_repository);
   }
 
   @override
@@ -31,9 +33,7 @@ class _MaintenanceHistoryDetailPageState
       stream: _service.streamHistoryDetail(widget.historyId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const MaintenanceHistoryDetailSkeleton();
         }
 
         if (snapshot.hasError) {
@@ -95,19 +95,25 @@ class _MaintenanceHistoryDetailPageState
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("Interval", "${history.intervalDays} Hari"),
+                _rowInfo(
+                  "Interval",
+                  _service.formatInterval(history.intervalDays),
+                ),
 
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
-                _rowInfo("Prioritas", history.priority),
+                _rowInfo(
+                  "Prioritas",
+                  _service.formatPriority(history.priority),
+                ),
 
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
 
                 _rowInfo(
                   "Jumlah Maintenance",
-                  "${history.completedQuantity} Unit",
+                  _service.formatQuantity(history.completedQuantity),
                 ),
 
                 const DottedlineWidget(),
@@ -117,17 +123,6 @@ class _MaintenanceHistoryDetailPageState
 
                 const DottedlineWidget(),
                 const SizedBox(height: 10),
-
-                const Text(
-                  "Catatan",
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                ),
-
-                const SizedBox(height: 6),
-
-                const Text("-"),
-
-                const DottedlineWidget(),
 
                 const SizedBox(height: 30),
 
@@ -240,7 +235,9 @@ class _MaintenanceHistoryDetailPageState
 
                   const SizedBox(width: 8),
 
-                  Text("${history.completedQuantity} Unit dikerjakan"),
+                  Text(
+                    "${_service.formatQuantity(history.completedQuantity)} dikerjakan",
+                  ),
                 ],
               ),
             ],

@@ -157,6 +157,30 @@ class MaintenanceHistoryService {
     return '$lateDays Hari';
   }
 
+  String formatInterval(int intervalDays) {
+    return "$intervalDays Hari";
+  }
+
+  String formatQuantity(int quantity) {
+    return "$quantity Unit";
+  }
+
+  String formatPriority(String priority) {
+    switch (priority.toLowerCase()) {
+      case "high":
+        return "Tinggi";
+
+      case "medium":
+        return "Sedang";
+
+      case "low":
+        return "Rendah";
+
+      default:
+        return priority;
+    }
+  }
+
   int calculateLateDays(MaintenanceHistory history) {
     if (history.status == MaintenanceHistoryStatus.skipped) {
       return 0;

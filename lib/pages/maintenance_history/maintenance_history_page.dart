@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_history_filter_model.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
-import 'package:flutter_kita/pages/maintenance/widgets/maintenance_empty_state.dart';
-import 'package:flutter_kita/pages/maintenance/widgets/maintenance_list_skeleton.dart';
 import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_box.dart';
 import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_detail_page.dart';
 import 'package:flutter_kita/pages/maintenance_history/widgets/maintenance_history_empty_state.dart';
