@@ -16,6 +16,7 @@ class Maintenance {
   final int cycleInitialQuantity;
   final int remainingQuantity;
   final String? partNumber;
+  final int cycleNumber;
 
   Maintenance({
     required this.id,
@@ -30,6 +31,7 @@ class Maintenance {
     this.cycleInitialQuantity = 0,
     this.remainingQuantity = 0,
     this.partNumber,
+    this.cycleNumber = 1,
   });
 
   factory Maintenance.fromFirestore(
@@ -61,6 +63,7 @@ class Maintenance {
           (data['cycleInitialQuantity'] as num?)?.toInt() ?? 0,
       remainingQuantity: (data['remainingQuantity'] as num?)?.toInt() ?? 0,
       partNumber: data['partNumber'],
+      cycleNumber: (data['cycleNumber'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -76,6 +79,7 @@ class Maintenance {
     'cycleInitialQuantity': cycleInitialQuantity,
     'remainingQuantity': remainingQuantity,
     'partNumber': partNumber,
+    'cycleNumber': cycleNumber,
   };
 
   Maintenance copyWith({
@@ -91,6 +95,7 @@ class Maintenance {
     int? cycleInitialQuantity,
     int? remainingQuantity,
     String? partNumber,
+    int? cycleNumber,
   }) {
     return Maintenance(
       id: id ?? this.id,
@@ -105,6 +110,7 @@ class Maintenance {
       cycleInitialQuantity: cycleInitialQuantity ?? this.cycleInitialQuantity,
       remainingQuantity: remainingQuantity ?? this.remainingQuantity,
       partNumber: partNumber ?? this.partNumber,
+      cycleNumber: cycleNumber ?? this.cycleNumber,
     );
   }
 }

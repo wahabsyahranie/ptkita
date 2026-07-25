@@ -18,6 +18,7 @@ import 'package:flutter_kita/pages/maintenance/widgets/finish_maintenance_sheet.
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_meta_card.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_progress_card.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_alert_box.dart';
+import 'package:flutter_kita/pages/maintenance/widgets/interval_algorithm_sheet.dart';
 
 class DetailsMaintenancePage extends StatefulWidget {
   final String maintenanceId;
@@ -314,6 +315,24 @@ class _DetailsMaintenancePageState extends State<DetailsMaintenancePage> {
               maintenance.nextMaintenanceAt?.toDate(),
             ),
             priority: maintenance.priority,
+
+            onAlgorithmTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: MyColors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (_) => IntervalAlgorithmSheet(
+                  lastMaintenance: lastMaintenance,
+                  nextMaintenance: _service.formatDate(
+                    maintenance.nextMaintenanceAt?.toDate(),
+                  ),
+                  intervalDays: maintenance.intervalDays,
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 10),

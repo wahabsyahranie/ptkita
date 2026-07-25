@@ -90,13 +90,10 @@ class FirestoreMaintenanceRepository implements MaintenanceRepository {
 
     final logRef = _firestore.collection('maintenance_logs').doc();
 
-    // 1️⃣ insert log
     batch.set(logRef, logData);
 
-    // 2️⃣ update maintenance
     batch.update(maintenanceRef, maintenanceUpdate);
 
-    // 3️⃣ update snapshot (hanya jika siklus selesai)
     if (incrementCompletedToday) {
       final now = DateTime.now();
       final docId =

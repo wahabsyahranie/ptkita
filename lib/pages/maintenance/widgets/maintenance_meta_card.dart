@@ -5,12 +5,14 @@ class MaintenanceMetaCard extends StatelessWidget {
   final int intervalDays;
   final String nextMaintenance;
   final String priority;
+  final VoidCallback? onAlgorithmTap;
 
   const MaintenanceMetaCard({
     super.key,
     required this.intervalDays,
     required this.nextMaintenance,
     required this.priority,
+    this.onAlgorithmTap,
   });
 
   Color _priorityColor(String p) {
@@ -30,7 +32,7 @@ class MaintenanceMetaCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(vertical: 18),
+      // padding: const EdgeInsets.symmetric(vertical: 18),
       decoration: BoxDecoration(
         color: MyColors.white,
         borderRadius: BorderRadius.circular(18),
@@ -42,35 +44,66 @@ class MaintenanceMetaCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _metaItem("Interval", "$intervalDays hari"),
-          _divider(),
-          _metaItem("Berikutnya", nextMaintenance),
-          _divider(),
-          Column(
-            children: [
-              const Text("Prioritas", style: TextStyle(fontSize: 12)),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _metaItem("Interval", "$intervalDays hari"),
+                _divider(),
+                _metaItem("Berikutnya", nextMaintenance),
+                _divider(),
+                Column(
+                  children: [
+                    const Text("Prioritas", style: TextStyle(fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: priorityColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        priority[0].toUpperCase() + priority.substring(1),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: priorityColor,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                decoration: BoxDecoration(
-                  color: priorityColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  priority[0].toUpperCase() + priority.substring(1),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: priorityColor,
+              ],
+            ),
+          ),
+
+          const Divider(height: 1, color: MyColors.greySoft),
+
+          InkWell(
+            onTap: onAlgorithmTap,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: MyColors.secondary),
+                  SizedBox(width: 8),
+                  Text(
+                    'Lihat cara kerja penjadwalan',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: MyColors.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
