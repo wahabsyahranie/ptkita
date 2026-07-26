@@ -4,9 +4,14 @@ import 'package:flutter_kita/models/reporting/maintenance_report_chart.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
 class ReportBarChart extends StatelessWidget {
-  const ReportBarChart({super.key, required this.data});
+  const ReportBarChart({
+    super.key,
+    required this.data,
+    this.enableHorizontalScroll = false,
+  });
 
   final List<MaintenanceReportChart> data;
+  final bool enableHorizontalScroll;
 
   double _calculateMaxY() {
     if (data.isEmpty) return 5;
@@ -14,6 +19,24 @@ class ReportBarChart extends StatelessWidget {
     final maxValue = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
 
     return maxValue == 0 ? 5 : (maxValue + 2).toDouble();
+  }
+
+  int _labelInterval() {
+    final count = data.length;
+
+    if (count <= 7) {
+      return 1;
+    }
+
+    if (count <= 14) {
+      return 2;
+    }
+
+    if (count <= 21) {
+      return 3;
+    }
+
+    return 5;
   }
 
   @override
@@ -71,14 +94,20 @@ class ReportBarChart extends StatelessWidget {
                   final index = value.toInt();
 
                   if (index < 0 || index >= data.length) {
-                    return const SizedBox();
+                    return const SizedBox.shrink();
                   }
 
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                  final interval = _labelInterval();
+
+                  if (index % interval != 0 && index != data.length - 1) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return SideTitleWidget(
+                    axisSide: meta.axisSide,
                     child: Text(
                       data[index].label,
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: const TextStyle(fontSize: 10),
                     ),
                   );
                 },
