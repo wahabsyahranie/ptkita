@@ -13,6 +13,9 @@ import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repo
 import 'package:flutter_kita/repositories/maintenance_reporting/firestore_maintenance_reporting_repository.dart';
 import 'package:flutter_kita/services/maintenance/maintenance_history_service.dart';
 import 'package:flutter_kita/services/maintenance_reporting/maintenance_reporting_service.dart';
+import 'package:flutter_kita/pages/reporting/widgets/report_summary_grid_skeleton.dart';
+import 'package:flutter_kita/pages/reporting/widgets/report_bar_chart_skeleton.dart';
+import 'package:flutter_kita/pages/reporting/widgets/report_recent_history_card_skeleton.dart';
 import 'package:flutter_kita/styles/colors.dart';
 import 'package:flutter_kita/widget/sheets/info_sheet.dart';
 import 'package:flutter_kita/widget/sheets/sheet_helper.dart';
@@ -36,6 +39,7 @@ class _ReportingPageState extends State<ReportingPage> {
   );
   List<MaintenanceReportChart> _chart = [];
   List<MaintenanceHistory> _recentHistory = [];
+  bool _isLoading = true;
   late final MaintenanceReportingService _reportingService;
   late final MaintenanceHistoryService _historyService;
 
@@ -50,9 +54,7 @@ class _ReportingPageState extends State<ReportingPage> {
       FirestoreMaintenanceRepository(),
     );
 
-    _loadSummary();
-    _loadChart();
-    _loadRecentHistory();
+    _loadReporting();
   }
 
   Future<void> _onPeriodChanged(ReportPeriod period) async {
@@ -72,8 +74,7 @@ class _ReportingPageState extends State<ReportingPage> {
         _customRange = result;
       });
 
-      await _loadSummary();
-      await _loadChart();
+      await _loadReporting();
 
       return;
     }
@@ -82,8 +83,7 @@ class _ReportingPageState extends State<ReportingPage> {
       _selectedPeriod = period;
     });
 
-    await _loadSummary();
-    await _loadChart();
+    await _loadReporting();
   }
 
   String _formatDate(DateTime date) {
@@ -176,6 +176,20 @@ class _ReportingPageState extends State<ReportingPage> {
     });
   }
 
+  Future<void> _loadReporting() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    await Future.wait([_loadSummary(), _loadChart(), _loadRecentHistory()]);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -253,7 +267,9 @@ class _ReportingPageState extends State<ReportingPage> {
 
               const SizedBox(height: 12),
 
-              ReportSummaryGrid(summary: _summary),
+              _isLoading
+                  ? const ReportSummaryGridSkeleton()
+                  : ReportSummaryGrid(summary: _summary),
 
               const SizedBox(height: 28),
 
@@ -293,7 +309,9 @@ class _ReportingPageState extends State<ReportingPage> {
 
               const SizedBox(height: 12),
 
-              ReportBarChart(data: _chart),
+              _isLoading
+                  ? const ReportBarChartSkeleton()
+                  : ReportBarChart(data: _chart),
 
               const SizedBox(height: 24),
 
@@ -328,7 +346,16 @@ class _ReportingPageState extends State<ReportingPage> {
 
               const SizedBox(height: 12),
 
-              if (_recentHistory.isEmpty)
+              if (_isLoading)
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 3,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, __) =>
+                      const ReportRecentHistoryCardSkeleton(),
+                )
+              else if (_recentHistory.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(

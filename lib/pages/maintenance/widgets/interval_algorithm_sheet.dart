@@ -18,7 +18,7 @@ class IntervalAlgorithmSheet extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -26,50 +26,39 @@ class IntervalAlgorithmSheet extends StatelessWidget {
             children: [
               Center(
                 child: Container(
-                  width: 48,
+                  width: 40,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(100),
+                    color: MyColors.greySoft,
+                    borderRadius: BorderRadius.circular(4),
                   ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              const Center(
+                child: Text(
+                  'Cara Kerja Penjadwalan',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              const Row(
-                children: [
-                  Icon(Icons.schedule, color: MyColors.secondary),
-                  SizedBox(width: 10),
-                  Text(
-                    'Cara Kerja Penjadwalan',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ],
+              const Text(
+                'Aplikasi menggunakan Interval Scheduling Algorithm untuk menentukan jadwal maintenance berikutnya berdasarkan tanggal maintenance terakhir dan interval perawatan yang telah ditentukan.',
+                style: TextStyle(fontSize: 15, height: 1.6),
               ),
 
-              const SizedBox(height: 14),
-
-              Text(
-                'Aplikasi menggunakan Interval Scheduling Algorithm '
-                'untuk menentukan jadwal maintenance berikutnya '
-                'berdasarkan tanggal maintenance terakhir dan '
-                'interval perawatan.',
-                style: TextStyle(color: Colors.grey.shade700, height: 1.6),
-              ),
-
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 24,
-                  horizontal: 20,
-                ),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: MyColors.white,
+                  color: MyColors.greySoft,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
                   children: [
@@ -77,51 +66,50 @@ class IntervalAlgorithmSheet extends StatelessWidget {
                       const Text(
                         'Penjadwalan Pertama',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                         ),
                         textAlign: TextAlign.center,
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
-                      Text(
-                        'Belum pernah dilakukan maintenance. '
-                        'Jadwal maintenance pertama akan dihitung secara otomatis '
-                        'berdasarkan interval yang telah ditentukan.',
+                      const Text(
+                        'Belum pernah dilakukan maintenance sehingga jadwal maintenance pertama akan dihitung secara otomatis berdasarkan interval yang telah ditentukan.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          height: 1.5,
-                        ),
+                        style: TextStyle(height: 1.5),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                     ] else ...[
                       const Text(
                         'Maintenance Terakhir',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(
+                          color: MyColors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
 
                       const SizedBox(height: 6),
 
                       Text(
                         lastMaintenance,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
                           fontSize: 18,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
 
                       const SizedBox(height: 18),
 
                       const Icon(
-                        Icons.keyboard_arrow_down,
-                        size: 32,
+                        Icons.keyboard_arrow_down_rounded,
                         color: MyColors.secondary,
+                        size: 30,
                       ),
 
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                     ],
 
                     Container(
@@ -130,14 +118,14 @@ class IntervalAlgorithmSheet extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: MyColors.secondary.withOpacity(.08),
+                        color: MyColors.secondary.withValues(alpha: .12),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Text(
                         '+ $intervalDays Hari',
                         style: const TextStyle(
                           color: MyColors.secondary,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -145,25 +133,29 @@ class IntervalAlgorithmSheet extends StatelessWidget {
                     const SizedBox(height: 18),
 
                     const Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 32,
+                      Icons.keyboard_arrow_down_rounded,
                       color: MyColors.secondary,
+                      size: 30,
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
 
                     const Text(
                       'Maintenance Berikutnya',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(
+                        color: MyColors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
 
                     const SizedBox(height: 6),
 
                     Text(
                       nextMaintenance,
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
                         fontSize: 18,
+                        fontWeight: FontWeight.w700,
                         color: MyColors.secondary,
                       ),
                     ),
@@ -175,22 +167,44 @@ class IntervalAlgorithmSheet extends StatelessWidget {
 
               const Text(
                 'Rumus Penjadwalan',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
 
               const SizedBox(height: 12),
 
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
+                  color: MyColors.greySoft,
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Text(
                   'Next Maintenance = Last Maintenance + Interval',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  height: 55,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: MyColors.secondary,
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  child: const Text(
+                    'Mengerti',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: MyColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],

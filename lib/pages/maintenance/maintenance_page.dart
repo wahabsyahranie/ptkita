@@ -156,13 +156,12 @@ class _MaintenancePageState extends State<MaintenancePage> {
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const AddEditMaintenancePage(),
+                              builder: (context) => const ReportingPage(),
                             ),
                           );
                         },
                         icon: const Icon(
-                          Icons.add,
+                          Icons.bar_chart,
                           color: MyColors.white,
                           size: 30,
                         ),
@@ -226,15 +225,15 @@ class _MaintenancePageState extends State<MaintenancePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: MyColors.white,
-        foregroundColor: MyColors.secondary,
+        backgroundColor: MyColors.secondary,
+        foregroundColor: MyColors.white,
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ReportingPage()),
+            MaterialPageRoute(builder: (_) => const AddEditMaintenancePage()),
           );
         },
-        child: const Icon(Icons.bar_chart),
+        child: const Icon(Icons.add),
       ),
       body: SafeArea(
         child: StreamBuilder<List<Maintenance>>(
