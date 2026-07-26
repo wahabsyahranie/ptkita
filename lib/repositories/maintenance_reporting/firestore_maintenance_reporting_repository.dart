@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/enum/maintenance_history_status.dart';
+import 'package:flutter_kita/core/enum/report_period.dart';
 import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
 import 'package:flutter_kita/models/reporting/maintenance_report_chart.dart';
 import 'package:flutter_kita/models/reporting/maintenance_report_summary.dart';
@@ -63,6 +64,7 @@ class FirestoreMaintenanceReportingRepository
 
   Future<List<MaintenanceReportChart>> getChart({
     required DateTimeRange period,
+    required ReportPeriod reportPeriod,
   }) async {
     final snapshot = await _firestore
         .collection('maintenance_history')
@@ -87,28 +89,33 @@ class FirestoreMaintenanceReportingRepository
         )
         .toList();
 
-    return _buildChartData(histories, period);
+    return _buildChartData(histories, reportPeriod, period);
   }
 
   List<MaintenanceReportChart> _buildChartData(
     List<MaintenanceHistory> histories,
+    ReportPeriod reportPeriod,
     DateTimeRange period,
   ) {
-    final duration = period.end.difference(period.start).inDays + 1;
+    switch (reportPeriod) {
+      case ReportPeriod.week:
+        return _buildDailyChart(histories, period);
 
-    if (duration <= 7) {
-      return _buildDailyChart(histories, period);
+      case ReportPeriod.month:
+        return _buildWeeklyChart(histories, period);
+
+      case ReportPeriod.year:
+        return _buildMonthlyChart(histories, period);
+
+      case ReportPeriod.custom:
+        final duration = period.end.difference(period.start).inDays + 1;
+
+        if (duration <= 31) {
+          return _buildDailyChart(histories, period);
+        }
+
+        return _buildMonthlyChart(histories, period);
     }
-
-    if (duration <= 31) {
-      return _buildWeeklyChart(histories, period);
-    }
-
-    if (duration <= 366) {
-      return _buildMonthlyChart(histories, period);
-    }
-
-    return _buildMonthlyChart(histories, period);
   }
 
   List<MaintenanceReportChart> _buildDailyChart(

@@ -141,7 +141,10 @@ class _ReportingPageState extends State<ReportingPage> {
   }
 
   Future<void> _loadChart() async {
-    final chart = await _reportingService.getChart(period: _activeDateRange);
+    final chart = await _reportingService.getChart(
+      reportPeriod: _selectedPeriod,
+      period: _activeDateRange,
+    );
 
     if (!mounted) return;
 
