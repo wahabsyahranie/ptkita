@@ -121,6 +121,20 @@ class MaintenanceHistoryService {
     return "Terlambat $lateDays Hari";
   }
 
+  String formatReportStatus(MaintenanceHistory history) {
+    if (history.status == MaintenanceHistoryStatus.skipped) {
+      return 'Dilewati';
+    }
+
+    final lateDays = calculateLateDays(history);
+
+    if (lateDays == 0) {
+      return 'Selesai';
+    }
+
+    return '+$lateDays Hari';
+  }
+
   String formatCycle(int cycleNumber) {
     return 'Siklus $cycleNumber';
   }

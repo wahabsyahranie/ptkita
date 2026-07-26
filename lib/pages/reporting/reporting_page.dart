@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_kita/core/enum/report_period.dart';
+import 'package:flutter_kita/models/maintenance/maintenance_history_model.dart';
 import 'package:flutter_kita/models/reporting/maintenance_report_chart.dart';
 import 'package:flutter_kita/models/reporting/maintenance_report_summary.dart';
+import 'package:flutter_kita/pages/maintenance_history/maintenance_history_page.dart';
 import 'package:flutter_kita/pages/reporting/widgets/report_bar_chart.dart';
 import 'package:flutter_kita/pages/reporting/widgets/report_period_selector.dart';
 import 'package:flutter_kita/pages/reporting/widgets/report_period_sheet.dart';
+import 'package:flutter_kita/pages/reporting/widgets/report_recent_history_card.dart';
 import 'package:flutter_kita/pages/reporting/widgets/report_summary_grid.dart';
+import 'package:flutter_kita/repositories/maintenance/firestore_maintenance_repository.dart';
 import 'package:flutter_kita/repositories/maintenance_reporting/firestore_maintenance_reporting_repository.dart';
+import 'package:flutter_kita/services/maintenance/maintenance_history_service.dart';
 import 'package:flutter_kita/services/maintenance_reporting/maintenance_reporting_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
 
@@ -28,7 +33,9 @@ class _ReportingPageState extends State<ReportingPage> {
     quantity: 0,
   );
   List<MaintenanceReportChart> _chart = [];
+  List<MaintenanceHistory> _recentHistory = [];
   late final MaintenanceReportingService _reportingService;
+  late final MaintenanceHistoryService _historyService;
 
   @override
   void initState() {
@@ -37,9 +44,13 @@ class _ReportingPageState extends State<ReportingPage> {
     _reportingService = MaintenanceReportingService(
       repository: FirestoreMaintenanceReportingRepository(),
     );
+    _historyService = MaintenanceHistoryService(
+      FirestoreMaintenanceRepository(),
+    );
 
     _loadSummary();
     _loadChart();
+    _loadRecentHistory();
   }
 
   Future<void> _onPeriodChanged(ReportPeriod period) async {
@@ -153,6 +164,16 @@ class _ReportingPageState extends State<ReportingPage> {
     });
   }
 
+  Future<void> _loadRecentHistory() async {
+    final histories = await _reportingService.getRecentHistory();
+
+    if (!mounted) return;
+
+    setState(() {
+      _recentHistory = histories;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,14 +237,54 @@ class _ReportingPageState extends State<ReportingPage> {
               const SizedBox(height: 24),
 
               // History
-              const Text(
-                "Riwayat Maintenance",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              // History
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Riwayat Maintenance",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MaintenanceHistoryPage(),
+                        ),
+                      );
+                    },
+                    child: const Text("Semua"),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 12),
 
-              const SizedBox(height: 300, child: Placeholder()),
+              if (_recentHistory.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      'Belum ada riwayat maintenance.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _recentHistory.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    return ReportRecentHistoryCard(
+                      history: _recentHistory[index],
+                      service: _historyService,
+                    );
+                  },
+                ),
             ],
           ),
         ),

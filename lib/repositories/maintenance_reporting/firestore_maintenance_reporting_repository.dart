@@ -62,6 +62,7 @@ class FirestoreMaintenanceReportingRepository
     );
   }
 
+  @override
   Future<List<MaintenanceReportChart>> getChart({
     required DateTimeRange period,
     required ReportPeriod reportPeriod,
@@ -90,6 +91,21 @@ class FirestoreMaintenanceReportingRepository
         .toList();
 
     return _buildChartData(histories, reportPeriod, period);
+  }
+
+  @override
+  Future<List<MaintenanceHistory>> getRecentHistory({int limit = 5}) async {
+    final snapshot = await _firestore
+        .collection('maintenance_history')
+        .withConverter<MaintenanceHistory>(
+          fromFirestore: MaintenanceHistory.fromFirestore,
+          toFirestore: (model, _) => model.toFirestore(),
+        )
+        .orderBy('completedAt', descending: true)
+        .limit(limit)
+        .get();
+
+    return snapshot.docs.map((doc) => doc.data()).toList();
   }
 
   List<MaintenanceReportChart> _buildChartData(
