@@ -9,6 +9,7 @@ import 'package:flutter_kita/pages/maintenance/widgets/maintenance_empty_state.d
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_filter_sheet.dart';
 import 'package:flutter_kita/pages/maintenance/widgets/maintenance_list_skeleton.dart';
 import 'package:flutter_kita/pages/maintenance_history/maintenance_history_page.dart';
+import 'package:flutter_kita/pages/reporting/reporting_page.dart';
 import 'package:flutter_kita/repositories/inventory/firestore_inventory_repository.dart';
 import 'package:flutter_kita/repositories/user/firestore_user_repository.dart';
 import 'package:flutter_kita/services/inventory/inventory_service.dart';
@@ -223,6 +224,17 @@ class _MaintenancePageState extends State<MaintenancePage> {
             ),
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: MyColors.white,
+        foregroundColor: MyColors.secondary,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReportingPage()),
+          );
+        },
+        child: const Icon(Icons.bar_chart),
       ),
       body: SafeArea(
         child: StreamBuilder<List<Maintenance>>(
