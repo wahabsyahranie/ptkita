@@ -61,18 +61,54 @@ class ReportBarChart extends StatelessWidget {
       height: 220,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: MyColors.white,
+        color: MyColors.greySoft,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: MyColors.greySoft),
       ),
       child: BarChart(
         BarChartData(
           borderData: FlBorderData(show: false),
-          gridData: const FlGridData(show: false),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: 1,
+            getDrawingHorizontalLine: (_) {
+              return const FlLine(
+                color: MyColors.background,
+                strokeWidth: 0.6,
+                dashArray: [6, 4],
+              );
+            },
+          ),
 
           alignment: BarChartAlignment.spaceAround,
 
           maxY: _calculateMaxY(),
+
+          barTouchData: BarTouchData(
+            enabled: true,
+
+            touchTooltipData: BarTouchTooltipData(
+              tooltipRoundedRadius: 12,
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+
+              getTooltipColor: (_) => MyColors.white,
+
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                return BarTooltipItem(
+                  rod.toY.toInt().toString(),
+                  const TextStyle(
+                    color: MyColors.background,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                );
+              },
+            ),
+          ),
 
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(
@@ -83,8 +119,18 @@ class ReportBarChart extends StatelessWidget {
               sideTitles: SideTitles(showTitles: false),
             ),
 
-            leftTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 28,
+                interval: 1,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    value.toInt().toString(),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  );
+                },
+              ),
             ),
 
             bottomTitles: AxisTitles(
@@ -121,9 +167,14 @@ class ReportBarChart extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: data[index].value.toDouble(),
-                  width: 18,
-                  borderRadius: BorderRadius.circular(6),
-                  color: MyColors.secondary,
+                  width: 20,
+
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(4),
+                  ),
+
+                  color: index.isEven ? MyColors.secondary : MyColors.primary,
                 ),
               ],
             );

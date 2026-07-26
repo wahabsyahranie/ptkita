@@ -152,9 +152,9 @@ class RepairChartCard extends StatelessWidget {
 
         borderData: FlBorderData(show: false),
 
-        lineTouchData: const LineTouchData(
+        lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            tooltipBgColor: Colors.black87,
+            getTooltipColor: (touchedSpot) => Colors.black87,
             fitInsideHorizontally: true,
             fitInsideVertically: true,
           ),

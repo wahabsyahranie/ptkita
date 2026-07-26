@@ -21,13 +21,12 @@ class ReportRecentHistoryCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Material(
-        elevation: 2,
         borderRadius: BorderRadius.circular(12),
         color: MyColors.white,
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: MyColors.white,
+            color: MyColors.greySoft,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(

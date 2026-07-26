@@ -14,6 +14,8 @@ import 'package:flutter_kita/repositories/maintenance_reporting/firestore_mainte
 import 'package:flutter_kita/services/maintenance/maintenance_history_service.dart';
 import 'package:flutter_kita/services/maintenance_reporting/maintenance_reporting_service.dart';
 import 'package:flutter_kita/styles/colors.dart';
+import 'package:flutter_kita/widget/sheets/info_sheet.dart';
+import 'package:flutter_kita/widget/sheets/sheet_helper.dart';
 
 class ReportingPage extends StatefulWidget {
   const ReportingPage({super.key});
@@ -179,11 +181,62 @@ class _ReportingPageState extends State<ReportingPage> {
     return Scaffold(
       backgroundColor: MyColors.white,
       appBar: AppBar(
-        title: const Text("Reporting Maintenance"),
+        title: const Text("Laporan Perawatan"),
         backgroundColor: MyColors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 2,
         shadowColor: MyColors.black.withValues(alpha: 0.25),
+
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(100),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Column(
+              children: [
+                // const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Periode",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    Row(
+                      children: [
+                        Text(
+                          "${_formatDate(_activeDateRange.start)} - ${_formatDate(_activeDateRange.end)}",
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        const Icon(
+                          Icons.calendar_month,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                ReportPeriodSelector(
+                  selectedPeriod: _selectedPeriod,
+                  onChanged: _onPeriodChanged,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -191,27 +244,7 @@ class _ReportingPageState extends State<ReportingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Periode",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-
-              const SizedBox(height: 12),
-
-              ReportPeriodSelector(
-                selectedPeriod: _selectedPeriod,
-                onChanged: _onPeriodChanged,
-              ),
-              const SizedBox(height: 16),
-
-              // Range tanggal
-              Text(
-                "${_formatDate(_activeDateRange.start)} - ${_formatDate(_activeDateRange.end)}",
-                style: const TextStyle(color: Colors.grey),
-              ),
-
-              const SizedBox(height: 24),
-
+              const SizedBox(height: 14),
               // Summary
               const Text(
                 "Ringkasan",
@@ -222,12 +255,40 @@ class _ReportingPageState extends State<ReportingPage> {
 
               ReportSummaryGrid(summary: _summary),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // Chart
-              const Text(
-                "Grafik Maintenance",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              Row(
+                children: [
+                  const Text(
+                    "Grafik Perawatan",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      showAppModalSheet(
+                        context: context,
+                        builder: (_) => const InfoSheet(
+                          title: 'Informasi Grafik',
+                          message:
+                              'Grafik Perawatan menampilkan jumlah maintenance yang telah diselesaikan pada setiap periode yang dipilih. Data yang ditampilkan hanya berasal dari maintenance yang telah selesai, sehingga maintenance yang berstatus Skipped tidak dihitung.',
+                        ),
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(2),
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: MyColors.secondary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 12),
@@ -242,11 +303,11 @@ class _ReportingPageState extends State<ReportingPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    "Riwayat Maintenance",
+                    "Perawatan Terakhir",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
 
-                  TextButton(
+                  IconButton(
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -255,7 +316,12 @@ class _ReportingPageState extends State<ReportingPage> {
                         ),
                       );
                     },
-                    child: const Text("Semua"),
+                    icon: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 18,
+                      color: MyColors.secondary,
+                    ),
+                    tooltip: 'Lihat semua',
                   ),
                 ],
               ),
@@ -285,6 +351,7 @@ class _ReportingPageState extends State<ReportingPage> {
                     );
                   },
                 ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

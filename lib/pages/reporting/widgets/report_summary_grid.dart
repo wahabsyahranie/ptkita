@@ -35,7 +35,7 @@ class ReportSummaryGrid extends StatelessWidget {
           children: [
             Expanded(
               child: ReportSummaryCard(
-                title: 'Skipped',
+                title: 'Dilewati',
                 value: summary.skipped.toString(),
               ),
             ),

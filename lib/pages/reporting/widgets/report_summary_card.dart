@@ -14,17 +14,11 @@ class ReportSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 95,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: MyColors.white,
+        color: MyColors.greySoft,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: MyColors.greySoft,
-        ),
+        border: Border.all(color: MyColors.greySoft),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,12 +27,12 @@ class ReportSummaryCard extends StatelessWidget {
             title,
             style: const TextStyle(
               fontSize: 14,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
+              color: MyColors.black,
+              fontWeight: FontWeight.w300,
             ),
           ),
 
-          const Spacer(),
+          const SizedBox(height: 12),
 
           Text(
             value,
